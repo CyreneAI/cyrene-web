@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Layout from "@/app/components/shared/layout";
+import Layout from "@/components/shared/layout";
 
 export default function Token() {
   return (
@@ -12,7 +12,7 @@ export default function Token() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center gap-24"
+          className="flex flex-col items-center gap-24 mb-48"
         >
           <h1 className="text-5xl text-white font-medium mb-8" 
             style={{ 
@@ -126,17 +126,6 @@ export default function Token() {
             >
               GO TO SWISS BORG AND BUY
             </a>
-          </div>
-
-          <div className="mt-auto py-12 w-full text-center">
-            <p className="text-4xl text-white/90" 
-              style={{ 
-                fontFamily: 'PingFang SC',
-                textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
-              }}
-            >
-              Always here for you.
-            </p>
           </div>
         </motion.div>
       </div>

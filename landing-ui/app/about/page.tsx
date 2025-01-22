@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Layout from "@/app/components/shared/layout";
+import Layout from "@/components/shared/layout";
 
 export default function About() {
   return (
@@ -12,7 +12,7 @@ export default function About() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center gap-24"
+          className="flex flex-col items-center gap-24 mb-48"
         >
           <h2 className="text-5xl text-white font-medium mb-8" 
             style={{ 

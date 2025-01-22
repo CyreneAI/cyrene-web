@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/landing-ui/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { usePathname } from "next/navigation";
 
 interface LayoutProps {
@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F]">
       {/* Cover Image */}
-      <div className="relative w-full h-[600px]">
+      <div className="relative w-full h-[500px]">
         <Image
           src="/Cyrene cover_85 2.png"
           alt="Cyrene Cover"
@@ -28,16 +28,18 @@ export default function Layout({ children }: LayoutProps) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <h1 
-            className="text-6xl md:text-7xl font-bold text-white tracking-tight text-center max-w-5xl"
-            style={{ 
-              fontFamily: 'PingFang SC', 
-              textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
-            }}
-          >
-            Your Cosmic Guide to the Digital Frontier
-          </h1>
+        <div className="absolute inset-0">
+          <div className="container mx-auto px-8 pt-24">
+            <h1 
+              className="text-5xl font-medium text-white tracking-tight max-w-2xl"
+              style={{ 
+                fontFamily: 'PingFang SC', 
+                textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
+              }}
+            >
+              Your Cosmic Guide to the Digital Frontier
+            </h1>
+          </div>
         </div>
       </div>
 
@@ -122,12 +124,24 @@ export default function Layout({ children }: LayoutProps) {
       </nav>
 
       {/* Main Content */}
-      <div className="relative">
+      <div className="relative min-h-[calc(100vh-900px)]">
         {children}
       </div>
 
+      {/* Always here for you text */}
+      <div className="container mx-auto px-8 text-center mb-12">
+        <p className="text-4xl text-white/90" 
+          style={{ 
+            fontFamily: 'PingFang SC',
+            textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
+          }}
+        >
+          Always here for you.
+        </p>
+      </div>
+
       {/* Footer */}
-      <footer className="relative h-[400px] overflow-hidden mt-32">
+      <footer className="relative h-[400px] overflow-hidden">
         <Image
           src="/Cyrene cover 2_85 6.png"
           alt="Cosmic Portal"
