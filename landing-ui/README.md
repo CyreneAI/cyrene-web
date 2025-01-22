@@ -1,6 +1,3 @@
-# cyrene-web
-CyreneAI Webapp for interacting with AI Agents
-
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

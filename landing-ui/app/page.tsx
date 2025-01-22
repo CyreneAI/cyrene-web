@@ -4,7 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
-import Layout from "@/landing-ui/components/shared/layout";
+import Layout from "@/app/components/shared/layout";
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");

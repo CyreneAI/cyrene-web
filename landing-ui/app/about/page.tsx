@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Layout from "@/landing-ui/components/shared/layout";
+import Layout from "@/app/components/shared/layout";
 
 export default function About() {
   return (

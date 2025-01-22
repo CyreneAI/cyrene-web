@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/landing-ui/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import { usePathname } from "next/navigation";
 
 interface LayoutProps {
@@ -129,17 +129,7 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </div>
 
-      {/* Always here for you text */}
-      <div className="container mx-auto px-8 text-center mb-16">
-        <p className="text-4xl text-white/90" 
-          style={{ 
-            fontFamily: 'PingFang SC',
-            textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
-          }}
-        >
-          Always here for you.
-        </p>
-      </div>
+      
 
       {/* Footer */}
       <footer className="relative h-[400px] overflow-hidden">
