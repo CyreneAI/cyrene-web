@@ -164,13 +164,15 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-xl text-white/70">Brought to you by</span>
-                  <Image
-                    src="/Netsepio_logo_white_with_text 3.png"
-                    alt="NetSepio"
-                    width={140}
-                    height={35}
-                    className="object-contain"
-                  />
+                  <Link href="https://netsepio.com" target="_blank" rel="noopener noreferrer" className="no-underline">
+                    <Image
+                      src="/Netsepio_logo_white_with_text 3.png"
+                      alt="NetSepio"
+                      width={140}
+                      height={35}
+                      className="object-contain"
+                    />
+                  </Link>
                 </div>
               </div>
             </div>

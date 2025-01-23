@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F]">
       {/* Cover Image */}
-      <div className="relative w-full h-[500px]">
+      <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
         <Image
           src="/Cyrene cover_85 2.png"
           alt="Cyrene Cover"
@@ -29,9 +29,9 @@ export default function Layout({ children }: LayoutProps) {
           priority
         />
         <div className="absolute inset-0">
-          <div className="container mx-auto px-8 pt-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-20 md:pt-24">
             <h1 
-              className="text-5xl font-medium text-white tracking-tight max-w-2xl"
+              className="text-3xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight max-w-2xl mx-4"
               style={{ 
                 fontFamily: 'PingFang SC', 
                 textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
@@ -45,19 +45,19 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B1220]">
-        <div className="container mx-auto px-8 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center">
             <Link href="/" className="no-underline">
               <Image
                 src="/CyreneAI logo NEW 1.png"
                 alt="Cyrene AI"
-                width={140}
-                height={35}
-                className="object-contain cursor-pointer"
+                width={120}
+                height={30}
+                className="object-contain cursor-pointer sm:w-[140px] sm:h-[35px]"
               />
             </Link>
           </div>
-          <div className="flex gap-8">
+          <div className="flex gap-4 sm:gap-6 md:gap-8">
             <Link href="/" className="no-underline">
               <span 
                 className={`text-base ${pathname === '/' ? 'text-white' : 'text-white/80 hover:text-white'}`}
@@ -124,13 +124,13 @@ export default function Layout({ children }: LayoutProps) {
       </nav>
 
       {/* Main Content */}
-      <div className="relative min-h-[calc(100vh-900px)]">
+      <div className="relative min-h-[calc(100vh-800px)]">
         {children}
       </div>
 
       {/* Always here for you text */}
-      <div className="container mx-auto px-8 text-center mb-12">
-        <p className="text-4xl text-white/90" 
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center mb-8 sm:mb-12">
+        <p className="text-2xl sm:text-3xl md:text-4xl text-white/90" 
           style={{ 
             fontFamily: 'PingFang SC',
             textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
@@ -141,7 +141,7 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Footer */}
-      <footer className="relative h-[400px] overflow-hidden">
+      <footer className="relative h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
         <Image
           src="/Cyrene cover 2_85 6.png"
           alt="Cosmic Portal"
@@ -149,36 +149,36 @@ export default function Layout({ children }: LayoutProps) {
           className="object-cover object-[center_20%]"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent">
-          <div className="h-full container mx-auto px-8 flex flex-col">
+        <div className="absolute inset-0">
+          <div className="h-full container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col">
             <a 
               href="https://twitter.com/CyreneAI" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="absolute top-8 right-8 w-10 h-10 transition-opacity hover:opacity-80 no-underline"
+              className="absolute top-8 right-4 sm:right-6 lg:right-8 w-8 h-8 sm:w-10 sm:h-10 transition-opacity hover:opacity-80 no-underline"
             >
               <Image
                 src="/x-logo.png"
                 alt="X (Twitter)"
-                width={40}
-                height={40}
-                className="invert"
+                width={32}
+                height={32}
+                className="invert sm:w-10 sm:h-10"
               />
             </a>
-            <div className="mt-auto pb-8">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-8">
-                  <a href="#" className="text-xl text-white/70 hover:text-white no-underline">Privacy Policy</a>
-                  <a href="#" className="text-xl text-white/70 hover:text-white no-underline">Terms and Conditions</a>
+            <div className="mt-auto pb-6 sm:pb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
+                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Privacy Policy</a>
+                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Terms and Conditions</a>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xl text-white/70">Brought to you by</span>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <span className="text-base sm:text-lg md:text-xl text-white/70">Brought to you by</span>
                   <Image
                     src="/Netsepio_logo_white_with_text 3.png"
                     alt="NetSepio"
-                    width={140}
-                    height={35}
-                    className="object-contain"
+                    width={100}
+                    height={25}
+                    className="object-contain sm:w-[120px] sm:h-[30px] md:w-[140px] md:h-[35px]"
                   />
                 </div>
               </div>
