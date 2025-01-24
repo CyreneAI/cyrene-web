@@ -179,8 +179,8 @@ export default function Layout({ children }: LayoutProps) {
             <div className="mt-auto pb-6 sm:pb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
-                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Privacy Policy</a>
-                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Terms and Conditions</a>
+                  <Link href="/privacy" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Privacy Policy</Link>
+                  <Link href="/terms" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline">Terms and Conditions</Link>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <span className="text-base sm:text-lg md:text-xl text-white/70">Brought to you by</span>
