@@ -22,7 +22,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Cover Image */}
       <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
         <Image
-          src="/Cyrene cover_85 2.png"
+          src="/new_cyrene_cover_85.jpg"
           alt="Cyrene Cover"
           fill
           className="object-cover"
@@ -49,7 +49,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center">
             <Link href="/" className="no-underline">
               <Image
-                src="/CyreneAI logo NEW 1.png"
+                src="/cyrene_AI_logo_draft.png"
                 alt="Cyrene AI"
                 width={120}
                 height={30}
@@ -143,10 +143,10 @@ export default function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="relative h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
         <Image
-          src="/Cyrene cover 2_85 6.png"
+          src="/footer_zoom_out_85.jpg"
           alt="Cosmic Portal"
           fill
-          className="object-cover object-[center_20%]"
+          className="object-cover object-[center_40%]"
           priority
         />
         <div className="absolute inset-0">
