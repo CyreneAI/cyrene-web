@@ -12,9 +12,9 @@ export default function Token() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center gap-16 sm:gap-20 md:gap-24 mb-32 sm:mb-40 md:mb-48"
+          className="flex flex-col items-center gap-8 sm:gap-10 md:gap-12 mb-32 sm:mb-40 md:mb-48"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl text-white font-medium mb-6 sm:mb-8" 
+          <h1 className="text-3xl sm:text-4xl md:text-5xl text-white font-medium" 
             style={{ 
               fontFamily: 'PingFang SC',
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
@@ -23,7 +23,7 @@ export default function Token() {
             CyreneAI Token
           </h1>
 
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96">
+          <div className="relative w-72 h-72 sm:w-96 sm:h-96 md:w-[500px] md:h-[500px]">
             <Image
               src="/CyreneAI token NEW_800 5.png"
               alt="Cyrene Token"
@@ -32,7 +32,7 @@ export default function Token() {
             />
           </div>
 
-          <div className="w-full max-w-2xl mb-16 sm:mb-20 md:mb-24">
+          <div className="w-full max-w-sm mb-16 sm:mb-20 md:mb-24">
             <h2 className="text-2xl sm:text-2xl md:text-3xl text-white mb-8 sm:mb-10 md:mb-12 text-center" 
               style={{ 
                 fontFamily: 'PingFang SC',
@@ -41,27 +41,27 @@ export default function Token() {
             >
               Tokenomics
             </h2>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 border border-white/10">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-white text-sm sm:text-base">
-                <div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-white/10">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 text-white text-sm sm:text-base mx-auto">
+                <div className="flex justify-between gap-4">
                   <span className="text-white/60">Token Symbol:</span>
-                  <span className="ml-2 sm:ml-4">CYRENE</span>
+                  <span>CYRENE</span>
                 </div>
-                <div>
+                <div className="flex justify-between gap-4">
                   <span className="text-white/60">Token Name:</span>
-                  <span className="ml-2 sm:ml-4">CyreneAI</span>
+                  <span>CyreneAI</span>
                 </div>
-                <div>
+                <div className="flex justify-between gap-4">
                   <span className="text-white/60">Token Type:</span>
-                  <span className="ml-2 sm:ml-4">Utility</span>
+                  <span>Utility</span>
                 </div>
-                <div>
+                <div className="flex justify-between gap-4">
                   <span className="text-white/60">Total Token Supply:</span>
-                  <span className="ml-2 sm:ml-4">1,000,000,000</span>
+                  <span>1,000,000,000</span>
                 </div>
-                <div>
+                <div className="flex justify-between gap-4">
                   <span className="text-white/60">Network:</span>
-                  <span className="ml-2 sm:ml-4">Solana</span>
+                  <span>Solana</span>
                 </div>
               </div>
             </div>
