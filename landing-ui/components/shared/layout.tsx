@@ -117,6 +117,17 @@ export default function Layout({ children }: LayoutProps) {
                     Erebrus Mobile App
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem className="text-white/80 hover:text-white focus:bg-white/90 rounded-lg">
+                  <Link
+                    href="https://testflight.apple.com/join/BvdARC75"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 no-underline"
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Erebrus App (iOS*)
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
