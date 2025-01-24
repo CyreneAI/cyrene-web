@@ -173,13 +173,20 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <span className="text-base sm:text-lg md:text-xl text-white/70">Brought to you by</span>
-                  <Image
-                    src="/Netsepio_logo_white_with_text 3.png"
-                    alt="NetSepio"
-                    width={100}
-                    height={25}
-                    className="object-contain sm:w-[120px] sm:h-[30px] md:w-[140px] md:h-[35px]"
-                  />
+                  <a 
+                    href="https://netsepio.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="no-underline"
+                  >
+                    <Image
+                      src="/Netsepio_logo_white_with_text 3.png"
+                      alt="NetSepio"
+                      width={120}
+                      height={30}
+                      className="object-contain sm:w-[140px] sm:h-[35px] md:w-[160px] md:h-[40px]"
+                    />
+                  </a>
                 </div>
               </div>
             </div>
