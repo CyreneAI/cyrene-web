@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Cyrene Token",
+  title: "Cyrene AI",
   description: "The future of AI tokens",
 };
 
@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/CyreneAI_logo_square.png" />
+        <link rel="icon" type="image/png" href="/CyreneAI_logo_square.png" />
       </head>
       <body className={inter.className}>{children}</body>
     </html>
