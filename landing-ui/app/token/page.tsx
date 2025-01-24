@@ -123,14 +123,15 @@ export default function Token() {
                 className="object-contain"
               />
             </div>
-            <a 
-              href="https://swissborg.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-sm sm:text-base transition-colors"
+            <p 
+              className="text-blue-400/90 text-lg sm:text-xl font-medium"
+              style={{ 
+                fontFamily: 'PingFang SC',
+                textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
+              }}
             >
-              GO TO SWISS BORG AND BUY
-            </a>
+              Coming Soon!
+            </p>
           </div>
         </motion.div>
       </div>
