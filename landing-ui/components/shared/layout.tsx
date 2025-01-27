@@ -119,13 +119,22 @@ export default function Layout({ children }: LayoutProps) {
                     X (Twitter)
                   </a>
                   <a 
-                    href="#"
+                    href="https://apps.apple.com/app/erebrus/id6474476171"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
                     style={{ fontFamily: 'PingFang SC' }}
                   >
-                    Erebrus Mobile App
+                    Erebrus App (iOS)
+                  </a>
+                  <a 
+                    href="https://play.google.com/store/apps/details?id=com.erebrus.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Erebrus App (Android)
                   </a>
                 </div>
               )}
