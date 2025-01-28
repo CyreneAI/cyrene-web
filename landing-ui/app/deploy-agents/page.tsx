@@ -6,9 +6,27 @@ import { toast, Toaster } from 'react-hot-toast';
 import Layout from '@/components/shared/layout';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gateway.erebrus.io/api/v1.0';
+
+interface Agent {
+  id: string;
+  name: string;
+  domain: string;
+  status: 'active' | 'paused' | 'stopped';
+  clients: string[];
+}
+
+interface Node {
+  id: string;
+  nodename: string;
+  chainName: string;
+  region: string;
+  domain: string;
+  status: string;
+}
+
 // API client functions
 const agentApi = {
-  async addAgent(formData) {
+  async addAgent(formData: FormData) {
     const response = await axios.post(`${API_BASE_URL}/agents/us01.erebrus.io`, formData, {
       headers: { 
         'Content-Type': 'multipart/form-data',
@@ -17,32 +35,35 @@ const agentApi = {
     return response.data;
   },
 
-  async getAgents() {
-    const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io`, {
-    });
+  async getAgents(): Promise<Agent[]> {
+    const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io`);
     return response.data.agents || [];
   },
 
-  async deleteAgent(id) {
+  async deleteAgent(id: string) {
     const response = await axios.delete(`${API_BASE_URL}/agents/us01.erebrus.io/${id}`);
     return response.data;
   },
 
-  async manageAgent(id, action) {
+  async manageAgent(id: string, action: 'pause' | 'resume') {
     const response = await axios.patch(`${API_BASE_URL}/agents/us01.erebrus.io/${id}?action=${action}`);
     return response.data;
   },
 };
 
 // Modal Component
-function AddAgentModal({ onClose, onSuccess }) {
-  const [file, setFile] = useState(null);
+interface AddAgentModalProps {
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddAgentModal({ onClose, onSuccess }: AddAgentModalProps) {
+  const [file, setFile] = useState<File | null>(null);
   const [domain, setDomain] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedNode, setSelectedNode] = useState('');
-  const [nodes, setNodes] = useState([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Get unique regions from active nodes
   const regions = useMemo(() => {
@@ -66,20 +87,19 @@ function AddAgentModal({ onClose, onSuccess }) {
       try {
         const response = await axios.get('https://gateway.erebrus.io/api/v1.0/nodes/all');
         setNodes(response.data.payload || []);
-      } catch (error) {
+      } catch {
         toast.error('Failed to fetch nodes');
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchNodes();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file || !domain || !selectedNode) return;
 
     const selectedNodeData = nodes.find(node => node.id === selectedNode);
+    if (!selectedNodeData) return;
     
     setIsSubmitting(true);
     try {
@@ -91,9 +111,8 @@ function AddAgentModal({ onClose, onSuccess }) {
       await agentApi.addAgent(formData);
       toast.success('Agent added successfully');
       onSuccess();
-    } catch (error) {
-      const errorMessage = handleApiError(error);
-      toast.error(errorMessage);
+    } catch {
+      toast.error('Failed to add agent');
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +183,7 @@ function AddAgentModal({ onClose, onSuccess }) {
                     <div className="text-gray-200">{nodes.find(n => n.id === selectedNode)?.region}</div>
                     
                     <div className="text-gray-400">Node ID:</div>
-                    <div className="text-gray-200">{nodes.find(n => n.id === selectedNode)?.id.substring(0, 20)}...</div>
+                    <div className="text-gray-200">{nodes.find(n => n.id === selectedNode)?.id.substring(0, 20)}&hellip;</div>
                   </div>
                 </div>
               )}
@@ -179,7 +198,10 @@ function AddAgentModal({ onClose, onSuccess }) {
             </div>
             <input
               type="file"
-              onChange={(e) => setFile(e.target.files?.[0])}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const file = e.target.files?.[0] || null;
+                setFile(file);
+              }}
               className="w-full p-2 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               accept=".json"
               required
@@ -239,45 +261,42 @@ function AddAgentModal({ onClose, onSuccess }) {
 
 // Main Page Component
 export default function AgentsPage() {
-  const [agents, setAgents] = useState([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadAgents = async () => {
-    try {
-      const data = await agentApi.getAgents();
-      setAgents(Array.isArray(data) ? data : []);
-    } catch (error) {
-      const errorMessage = handleApiError(error);
-      toast.error(errorMessage);
-      setAgents([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadAgents();
   }, []);
 
-  const handleManageAgent = async (id, action) => {
+  const loadAgents = async () => {
+    setIsLoading(true);
+    try {
+      const data = await agentApi.getAgents();
+      setAgents(data);
+    } catch {
+      toast.error('Failed to load agents');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleManageAgent = async (id: string, action: 'pause' | 'resume') => {
     try {
       await agentApi.manageAgent(id, action);
-      toast.success(`Agent ${action}d successfully`);
-      loadAgents();
-    } catch (error) {
+      toast.success(`Agent ${action}ed successfully`);
+      await loadAgents();
+    } catch {
       toast.error(`Failed to ${action} agent`);
     }
   };
 
-  const handleDeleteAgent = async (id) => {
-    if (!confirm('Are you sure you want to delete this agent?')) return;
-    
+  const handleDeleteAgent = async (id: string) => {
     try {
       await agentApi.deleteAgent(id);
       toast.success('Agent deleted successfully');
-      setAgents(agents.filter(agent => agent.id !== id));
-    } catch (error) {
+      await loadAgents();
+    } catch {
       toast.error('Failed to delete agent');
     }
   };
@@ -304,7 +323,7 @@ export default function AgentsPage() {
             <div className="text-center py-10 text-gray-300">Loading agents...</div>
           ) : agents.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
-              No agents found. Click "Add Agent" to create one.
+              No agents found. Click &quot;Add Agent&quot; to create one.
             </div>
           ) : (
             /* Agents Grid */
@@ -386,3 +405,4 @@ export default function AgentsPage() {
     </Layout>
   );
 }
+
