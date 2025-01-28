@@ -99,7 +99,7 @@ export default function Layout({ children }: LayoutProps) {
                 Links
               </button>
               {isOpen && (
-                <div className="absolute right-0 mt-2 min-w-[12rem] bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl p-1 z-[100]">
+                <div className="absolute right-0 mt-2 min-w-[16rem] bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl p-1 z-[100]">
                   <a 
                     href="/CyreneAI - The Future of Autonomous AI Agents.pdf"
                     target="_blank"
@@ -119,13 +119,13 @@ export default function Layout({ children }: LayoutProps) {
                     X (Twitter)
                   </a>
                   <a 
-                    href="https://apps.apple.com/app/erebrus/id6474476171"
+                    href="https://testflight.apple.com/join/BvdARC75"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
                     style={{ fontFamily: 'PingFang SC' }}
                   >
-                    Erebrus App (iOS)
+                    Erebrus App (iOS*)
                   </a>
                   <a 
                     href="https://play.google.com/store/apps/details?id=com.erebrus.app"
