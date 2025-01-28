@@ -96,7 +96,10 @@ class VoiceManager {
         body: JSON.stringify({ text }),
       });
 
-      if (!response.ok) throw new Error('Failed to generate voice');
+      if (!response.ok) {
+        console.error('TTS API error:', response.status, response.statusText);
+        throw new Error('Failed to generate voice');
+      }
       
       const audioBlob = await response.blob();
       return URL.createObjectURL(audioBlob);
