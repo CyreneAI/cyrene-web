@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,7 +35,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/CyreneAI_logo_square.png" />
         <link rel="shortcut icon" href="/CyreneAI_logo_square.png" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

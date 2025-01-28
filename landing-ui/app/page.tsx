@@ -77,6 +77,7 @@ export default function Home() {
         formData.append('user', 'user');
         formData.append('voice_mode', useVoiceMode.toString());
 
+        // const response = await fetch('https://ai.us01.erebrus.io/b450db11-332b-0fc2-a144-92824a34f699/message', {
         const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
@@ -194,6 +195,30 @@ export default function Home() {
 
   return (
     <Layout>
+            {/* Cover Image */}
+            <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
+        <Image
+          src="/new_cyrene_cover_85.jpg"
+          alt="Cyrene Cover"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-20 md:pt-24">
+            <h1 
+              className="text-3xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight max-w-2xl mx-4"
+              style={{ 
+                fontFamily: 'PingFang SC', 
+                textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
+              }}
+            >
+              Your Cosmic Guide to the Digital Frontier
+            </h1>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

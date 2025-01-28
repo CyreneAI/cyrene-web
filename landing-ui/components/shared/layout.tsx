@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useState, useEffect } from 'react';
+import bs58 from 'bs58';
+require('@solana/wallet-adapter-react-ui/styles.css');
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,8 +16,50 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
+  const { publicKey, signMessage, connected } = useWallet();
+  const [signature, setSignature] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle wallet connection and signing
+  useEffect(() => {
+    const handleWalletConnection = async () => {
+      if (localStorage.getItem('signature') == null) {
+        console.log("signature  ", signature);
+      if (publicKey && signMessage && connected) {
+        try {
+          // Store wallet address in localStorage
+          localStorage.setItem('walletAddress', publicKey.toString());
+          console.log('Wallet connected:', publicKey.toString());
+
+          // Sign message
+          const message = new TextEncoder().encode('Do you want to sign in with CyreneAI?');
+          const sig = await signMessage(message);
+          const signatureStr = bs58.encode(sig);
+          setSignature(signatureStr);
+          // Store signature
+          localStorage.setItem('signature', signatureStr);
+          console.log('Message signed:', signatureStr);
+        } catch (error) {
+          console.error('Error signing message:', error);
+        }
+      }
+    }
+    };
+
+    handleWalletConnection();
+  }, [publicKey, signMessage, connected]);
+
+  // Clear localStorage when wallet disconnects
+  useEffect(() => {
+    if (publicKey == null || signMessage == undefined || !connected) {
+      console.log('Wallet connected or disconnected:', connected);
+      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('signature');
+      setSignature(null);
+      console.log('Wallet disconnected, localStorage cleared');
+    }
+  }, [connected]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -24,8 +71,9 @@ export default function Layout({ children }: LayoutProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
 
-  return (
+ return (
     <main className="relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F] overflow-x-hidden">
       {/* Cover Image */}
       <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
@@ -38,11 +86,11 @@ export default function Layout({ children }: LayoutProps) {
         />
         <div className="absolute inset-0">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
-            <h1 
+            <h1
               className="text-3xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight max-w-2xl"
-              style={{ 
-                fontFamily: 'PingFang SC', 
-                textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
+              style={{
+                fontFamily: "PingFang SC",
+                textShadow: "0 0 20px rgba(79, 172, 254, 0.5)",
               }}
             >
               Your Cosmic Guide to the Digital Frontier
@@ -65,95 +113,121 @@ export default function Layout({ children }: LayoutProps) {
               />
             </Link>
           </div>
-          <div className="flex gap-3 sm:gap-6 md:gap-8 items-center">
+          <div className="flex gap-4 sm:gap-6 md:gap-8 items-center">
             <Link href="/" className="no-underline">
-              <span 
-                className={`text-sm sm:text-base ${pathname === '/' ? 'text-white' : 'text-white/80 hover:text-white'}`}
-                style={{ fontFamily: 'PingFang SC' }}
+              <span
+                className={`text-sm sm:text-base ${
+                  pathname === "/" ? "text-white" : "text-white/80 hover:text-white"
+                }`}
+                style={{ fontFamily: "PingFang SC" }}
               >
                 Home
               </span>
             </Link>
             <Link href="/about" className="no-underline">
-              <span 
-                className={`text-sm sm:text-base ${pathname === '/about' ? 'text-white' : 'text-white/80 hover:text-white'}`}
-                style={{ fontFamily: 'PingFang SC' }}
+              <span
+                className={`text-sm sm:text-base ${
+                  pathname === "/about"
+                    ? "text-white"
+                    : "text-white/80 hover:text-white"
+                }`}
+                style={{ fontFamily: "PingFang SC" }}
               >
                 About
               </span>
             </Link>
             <Link href="/token" className="no-underline">
-              <span 
-                className={`text-sm sm:text-base ${pathname === '/token' ? 'text-white' : 'text-white/80 hover:text-white'}`}
-                style={{ fontFamily: 'PingFang SC' }}
+              <span
+                className={`text-sm sm:text-base ${
+                  pathname === "/token"
+                    ? "text-white"
+                    : "text-white/80 hover:text-white"
+                }`}
+                style={{ fontFamily: "PingFang SC" }}
               >
                 Token
+              </span>
+            </Link>
+            <Link href="/deploy-agents" className="no-underline">
+              <span
+                className={`text-base ${
+                  pathname === "/deploy-agents"
+                    ? "text-white"
+                    : "text-white/80 hover:text-white"
+                }`}
+                style={{ fontFamily: "PingFang SC" }}
+              >
+                AI Agents
               </span>
             </Link>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`text-sm sm:text-base bg-transparent border-0 cursor-pointer ${pathname === '/links' ? 'text-white' : 'text-white/80 hover:text-white'}`}
-                style={{ fontFamily: 'PingFang SC' }}
+                className={`text-sm sm:text-base bg-transparent border-0 cursor-pointer ${
+                  pathname === "/links"
+                    ? "text-white"
+                    : "text-white/80 hover:text-white"
+                }`}
+                style={{ fontFamily: "PingFang SC" }}
               >
                 Links
               </button>
               {isOpen && (
                 <div className="absolute right-0 mt-2 min-w-[16rem] bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl p-1 z-[100]">
-                  <a 
+                  <a
                     href="/CyreneAI - The Future of Autonomous AI Agents.pdf"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
-                    style={{ fontFamily: 'PingFang SC' }}
+                    style={{ fontFamily: "PingFang SC" }}
                   >
                     Tech Overview (PDF)
                   </a>
-                  <a 
+                  <a
                     href="https://twitter.com/CyreneAI"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
-                    style={{ fontFamily: 'PingFang SC' }}
+                    style={{ fontFamily: "PingFang SC" }}
                   >
                     X (Twitter)
                   </a>
-                  <a 
+                  <a
                     href="https://testflight.apple.com/join/BvdARC75"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
-                    style={{ fontFamily: 'PingFang SC' }}
+                    style={{ fontFamily: "PingFang SC" }}
                   >
                     Erebrus App (iOS*)
                   </a>
-                  <a 
+                  <a
                     href="https://play.google.com/store/apps/details?id=com.erebrus.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors"
-                    style={{ fontFamily: 'PingFang SC' }}
+                    style={{ fontFamily: "PingFang SC" }}
                   >
                     Erebrus App (Android)
                   </a>
                 </div>
               )}
             </div>
+            <WalletMultiButton className="phantom-button" />
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="relative min-h-[calc(100vh-800px)]">
-        {children}
-      </div>
+      <div className="relative min-h-[calc(100vh-800px)]">{children}</div>
 
       {/* Always here for you text */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8 md:mb-12">
-        <p className="text-2xl sm:text-3xl md:text-4xl text-white/90" 
-          style={{ 
-            fontFamily: 'PingFang SC',
-            textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
+        <p
+          className="text-2xl sm:text-3xl md:text-4xl text-white/90"
+          style={{
+            fontFamily: "PingFang SC",
+            textShadow: "0 0 20px rgba(79, 172, 254, 0.3)",
           }}
         >
           Always here for you.
@@ -175,12 +249,24 @@ export default function Layout({ children }: LayoutProps) {
             <div className="mt-auto pb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-8 sm:gap-0">
                 <div className="grid grid-cols-2 gap-6 sm:flex sm:gap-8 w-full sm:w-auto place-items-center">
-                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline text-center">Privacy Policy</a>
-                  <a href="#" className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline text-center">Terms and Conditions</a>
+                  <a
+                    href="#"
+                    className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline text-center"
+                  >
+                    Privacy Policy
+                  </a>
+                  <a
+                    href="#"
+                    className="text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline text-center"
+                  >
+                    Terms and Conditions
+                  </a>
                 </div>
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <span className="text-lg sm:text-xl md:text-2xl text-white/70">Brought to you by</span>
-                  <a 
+                  <span className="text-lg sm:text-xl md:text-2xl text-white/70">
+                    Brought to you by
+                  </span>
+                  <a
                     href="https://netsepio.com"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -202,4 +288,4 @@ export default function Layout({ children }: LayoutProps) {
       </footer>
     </main>
   );
-} 
+}

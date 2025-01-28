@@ -34,7 +34,7 @@
     "landing-ui/.next/types/**/*.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts"
-  ],
+, "app/deploy-agents/page.js"  ],
   "exclude": [
     "node_modules"
   ]
