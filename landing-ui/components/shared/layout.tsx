@@ -6,9 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { useState, useEffect } from 'react';
 import bs58 from 'bs58';
-require('@solana/wallet-adapter-react-ui/styles.css');
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 interface LayoutProps {
   children: React.ReactNode;
