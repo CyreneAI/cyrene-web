@@ -52,7 +52,7 @@ export default function Home() {
         formData.append('text', text);
         formData.append('user', 'user');
 
-        const response = await fetch('https://ai.us01.erebrus.io/b450db11-332b-0fc2-a144-92824a34f699/message', {
+        const response = await fetch('https://0667-2405-201-801c-10b3-8d43-5c12-bd30-55d6.ngrok-free.app/message', {
           method: 'POST',
           body: formData,
         });
@@ -62,13 +62,22 @@ export default function Home() {
         responseText = data[0].text;
       }
 
-      // Always generate voice in voice mode
-      const audioUrl = await voiceManager.current.generateVoice(responseText);
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.play();
+      // Only generate voice in voice mode
+      let audioUrl = null;
+      if (isVoiceMode) {
+        audioUrl = await voiceManager.current.generateVoice(responseText);
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.play();
+        }
       }
 
+      setMessages(prev => [
+        ...prev,
+        { isUser: true, text },
+        { isUser: false, text: responseText, audio: audioUrl }
+      ]);
+      setInputValue('');
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -252,7 +261,7 @@ export default function Home() {
             )}
 
             {/* Input Form with Loading Indicator */}
-            <div className="w-half sticky bottom-8 mt-16 mb-32">
+            <div className="w-full sticky bottom-8 mt-16 mb-32">
               <div className="relative">
                 <form onSubmit={(e) => {
                   e.preventDefault();
