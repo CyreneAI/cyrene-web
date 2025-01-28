@@ -106,6 +106,14 @@ export default function Layout({ children }: LayoutProps) {
                 Token
               </span>
             </Link>
+            <Link href="/deploy-agents" className="no-underline">
+              <span 
+                className={`text-base ${pathname === '/deploy-agents' ? 'text-white' : 'text-white/80 hover:text-white'}`}
+                style={{ fontFamily: 'PingFang SC' }}
+              >
+                AI Agents
+              </span>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span 
