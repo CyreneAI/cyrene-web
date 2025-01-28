@@ -52,12 +52,23 @@ export default function Home() {
         formData.append('text', text);
         formData.append('user', 'user');
 
-        const response = await fetch('https://0667-2405-201-801c-10b3-8d43-5c12-bd30-55d6.ngrok-free.app/message', {
+        const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
+        console.log('Message API URL:', messageApiUrl); // Debug log
+        if (!messageApiUrl) throw new Error('Message API URL not configured');
+        
+        const response = await fetch(`${messageApiUrl}/message`, {
           method: 'POST',
           body: formData,
         });
 
-        if (!response.ok) throw new Error('Failed to send message');
+        if (!response.ok) {
+          console.error('Response error:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url
+          });
+          throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
+        }
         const data = await response.json();
         responseText = data[0].text;
       }

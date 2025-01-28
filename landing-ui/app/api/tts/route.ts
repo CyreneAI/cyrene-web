@@ -4,10 +4,10 @@ export async function POST(req: Request) {
   try {
     const { text } = await req.json()
 
-    // Old endpoint
-    // const response = await fetch('http://localhost:8880/v1/audio/speech', {
-    // New endpoint
-    const response = await fetch('https://0f17-2405-201-801c-10b3-8d43-5c12-bd30-55d6.ngrok-free.app/v1/audio/speech', {
+    const ttsApiUrl = process.env.NEXT_PUBLIC_TTS_API_URL;
+    if (!ttsApiUrl) throw new Error('TTS API URL not configured');
+
+    const response = await fetch(`${ttsApiUrl}/v1/audio/speech`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
