@@ -76,13 +76,13 @@ export default function Token() {
             >
               Token Allocation
             </h2>
-            <div className="relative w-full h-[600px] sm:h-[800px] md:h-[1000px] mb-16 sm:mb-20 md:mb-24">
+            <div className="relative w-full max-w-4xl mx-auto">
               <Image
-                src="/token allocation NEW 1 (1).png"
+                src="/FINAL token allocation graphs 1.png"
                 alt="Token Allocation"
-                fill
-                className="object-contain"
-                priority
+                width={1200}
+                height={800}
+                className="w-full h-auto"
               />
             </div>
           </div>
