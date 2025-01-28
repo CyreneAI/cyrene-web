@@ -9,6 +9,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePathname } from "next/navigation";
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useState, useEffect } from 'react';
+import bs58 from 'bs58';
+require('@solana/wallet-adapter-react-ui/styles.css');
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,32 +21,51 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
+  const { publicKey, signMessage, connected } = useWallet();
+  const [signature, setSignature] = useState<string | null>(null);
+
+  // Handle wallet connection and signing
+  useEffect(() => {
+    const handleWalletConnection = async () => {
+      if (localStorage.getItem('signature') == null) {
+        console.log("signature  ", signature);
+      if (publicKey && signMessage && connected) {
+        try {
+          // Store wallet address in localStorage
+          localStorage.setItem('walletAddress', publicKey.toString());
+          console.log('Wallet connected:', publicKey.toString());
+
+          // Sign message
+          const message = new TextEncoder().encode('Do you want to sign in with CyreneAI?');
+          const sig = await signMessage(message);
+          const signatureStr = bs58.encode(sig);
+          setSignature(signatureStr);
+          // Store signature
+          localStorage.setItem('signature', signatureStr);
+          console.log('Message signed:', signatureStr);
+        } catch (error) {
+          console.error('Error signing message:', error);
+        }
+      }
+    }
+    };
+
+    handleWalletConnection();
+  }, [publicKey, signMessage, connected]);
+
+  // Clear localStorage when wallet disconnects
+  useEffect(() => {
+    if (publicKey == null || signMessage == undefined || !connected) {
+      console.log('Wallet connected or disconnected:', connected);
+      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('signature');
+      setSignature(null);
+      console.log('Wallet disconnected, localStorage cleared');
+    }
+  }, [connected]);
 
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F]">
-      {/* Cover Image */}
-      <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
-        <Image
-          src="/new_cyrene_cover_85.jpg"
-          alt="Cyrene Cover"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-20 md:pt-24">
-            <h1 
-              className="text-3xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight max-w-2xl mx-4"
-              style={{ 
-                fontFamily: 'PingFang SC', 
-                textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
-              }}
-            >
-              Your Cosmic Guide to the Digital Frontier
-            </h1>
-          </div>
-        </div>
-      </div>
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B1220]">
@@ -57,7 +81,7 @@ export default function Layout({ children }: LayoutProps) {
               />
             </Link>
           </div>
-          <div className="flex gap-4 sm:gap-6 md:gap-8">
+          <div className="flex gap-4 sm:gap-6 md:gap-8 items-center">
             <Link href="/" className="no-underline">
               <span 
                 className={`text-base ${pathname === '/' ? 'text-white' : 'text-white/80 hover:text-white'}`}
@@ -130,6 +154,9 @@ export default function Layout({ children }: LayoutProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <div className="flex gap-4 items-center">
+              <WalletMultiButton className="phantom-button" />
+            </div>
           </div>
         </div>
       </nav>
