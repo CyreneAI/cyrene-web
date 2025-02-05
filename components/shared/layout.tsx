@@ -4,11 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { useState, useEffect } from 'react';
-import bs58 from 'bs58';
-require('@solana/wallet-adapter-react-ui/styles.css');
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,7 +11,6 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
-  const { publicKey, signMessage, connected } = useWallet();
   const [signature, setSignature] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -26,40 +20,20 @@ export default function Layout({ children }: LayoutProps) {
     const handleWalletConnection = async () => {
       if (localStorage.getItem('signature') == null) {
         console.log("signature  ", signature);
-      if (publicKey && signMessage && connected) {
-        try {
-          // Store wallet address in localStorage
-          localStorage.setItem('walletAddress', publicKey.toString());
-          console.log('Wallet connected:', publicKey.toString());
-
-          // Sign message
-          const message = new TextEncoder().encode('Do you want to sign in with CyreneAI?');
-          const sig = await signMessage(message);
-          const signatureStr = bs58.encode(sig);
-          setSignature(signatureStr);
-          // Store signature
-          localStorage.setItem('signature', signatureStr);
-          console.log('Message signed:', signatureStr);
-        } catch (error) {
-          console.error('Error signing message:', error);
-        }
       }
     }
-    };
 
     handleWalletConnection();
-  }, [publicKey, signMessage, connected]);
+  }, [signature]);
 
   // Clear localStorage when wallet disconnects
   useEffect(() => {
-    if (publicKey == null || signMessage == undefined || !connected) {
-      console.log('Wallet connected or disconnected:', connected);
-      localStorage.removeItem('walletAddress');
+    if (signature == null) {
+      console.log('Wallet disconnected, localStorage cleared');
       localStorage.removeItem('signature');
       setSignature(null);
-      console.log('Wallet disconnected, localStorage cleared');
     }
-  }, [connected]);
+  }, [signature]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -148,18 +122,6 @@ export default function Layout({ children }: LayoutProps) {
                 Token
               </span>
             </Link>
-            <Link href="/deploy-agents" className="no-underline">
-              <span
-                className={`text-base ${
-                  pathname === "/deploy-agents"
-                    ? "text-white"
-                    : "text-white/80 hover:text-white"
-                }`}
-                style={{ fontFamily: "PingFang SC" }}
-              >
-                AI Agents
-              </span>
-            </Link>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -213,7 +175,6 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
               )}
             </div>
-            <WalletMultiButton className="phantom-button" />
           </div>
         </div>
       </nav>
