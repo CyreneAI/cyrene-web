@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-[#0F1A2E] to-[#0E2240]">
       {/* Cover Image */}
-      <div className="relative w-full h-[500px]">
+      {/* <div className="relative w-full h-[500px]">
         <Image
           src="/Cyrene cover_85 2.png"
           alt="Cyrene Cover"
@@ -42,7 +42,33 @@ export default function Layout({ children }: LayoutProps) {
             </h1>
           </div>
         </div>
-      </div>
+      </div> */}
+      {/* Cover Video */}
+<div className="relative w-full h-[500px]">
+  <video
+    src="/Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
+    autoPlay
+    loop
+    muted
+    playsInline
+    className="absolute inset-0 w-full h-full object-cover"
+  />
+  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0F1A2E]/90" />
+  <div className="absolute inset-0">
+    <div className="container mx-auto px-8 pt-24">
+      <h1 
+        className="text-5xl font-medium text-white tracking-tight max-w-2xl"
+        style={{ 
+          fontFamily: 'PingFang SC', 
+          textShadow: '0 0 20px rgba(79, 172, 254, 0.5)'
+        }}
+      >
+        Your Cosmic Guide to the Digital Frontier
+      </h1>
+    </div>
+  </div>
+</div>
+
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B1220]/95 backdrop-blur-sm">
