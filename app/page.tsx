@@ -34,7 +34,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+  const useMockData =  'true';
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current;
@@ -323,9 +323,9 @@ export default function Home() {
                     }`}
                   >
                     {isRecording ? (
-                      <MicOff className="w-8 h-8" />
-                    ) : (
                       <Mic className="w-8 h-8" />
+                    ) : (
+                      <MicOff className="w-8 h-8" />
                     )}
                   </button>
                 </motion.div>

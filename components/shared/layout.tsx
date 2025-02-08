@@ -80,7 +80,7 @@ export default function Layout ({ children }: LayoutProps) {
     </h1>
     <a
       href="#"
-      className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full shadow-lg transition-all duration-300 hover:bg-blue-600 hover:shadow-blue-500/50"
+      className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
     </a>
