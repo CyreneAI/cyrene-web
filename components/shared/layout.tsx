@@ -4,6 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { WalletModalButton } from '@solana/wallet-adapter-react-ui';
+import {
+ useWallet
+} from '@solana/wallet-adapter-react';
+import { PhantomWalletName } from '@solana/wallet-adapter-phantom'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+
 
 interface LayoutProps {
   children: React.ReactNode
@@ -11,29 +18,38 @@ interface LayoutProps {
 
 export default function Layout ({ children }: LayoutProps) {
   const pathname = usePathname()
-  const [signature, setSignature] = useState<string | null>(null)
+  // const [signature, setSignature] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Handle wallet connection and signing
+
+
   useEffect(() => {
-    const handleWalletConnection = async () => {
-      if (localStorage.getItem('signature') == null) {
-        console.log('signature  ', signature)
-      }
+    const storedAddress = localStorage.getItem('walletAddress');
+    if (storedAddress) {
+      setWalletAddress(storedAddress);
     }
+  }, []);
 
-    handleWalletConnection()
-  }, [signature])
-
-  // Clear localStorage when wallet disconnects
-  useEffect(() => {
-    if (signature == null) {
-      console.log('Wallet disconnected, localStorage cleared')
-      localStorage.removeItem('signature')
-      setSignature(null)
-    }
-  }, [signature])
+    // Handle wallet connection and signing
+    // useEffect(() => {
+    //   const handleWalletConnection = async () => {
+    //     if (localStorage.getItem('signature') == null) {
+    //       console.log('signature  ', signature)
+    //     }
+    //   }
+    //   handleWalletConnection()
+    // }, [signature])
+  
+    // // Clear localStorage when wallet disconnects
+    // useEffect(() => {
+    //   if (signature == null) {
+    //     console.log('Wallet disconnected, localStorage cleared')
+    //     localStorage.removeItem('signature')
+    //     setSignature(null)
+    //   }
+    // }, [signature])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -109,11 +125,12 @@ export default function Layout ({ children }: LayoutProps) {
               />
             </Link>
           </div>
+          
           <div className='flex gap-4 sm:gap-6 md:gap-8 items-center'>
             <Link href='/' className='no-underline'>
               <span
                 className={`text-sm sm:text-base ${
-                  pathname === '/'
+                  pathname === '/home'
                     ? 'text-white'
                     : 'text-white/80 hover:text-white'
                 }`}
@@ -197,6 +214,15 @@ export default function Layout ({ children }: LayoutProps) {
                     Erebrus App (Android)
                   </a>
                 </div>
+              )}
+            </div>
+            <div>
+              {walletAddress ? (
+                <WalletMultiButton />
+
+              ) : (
+
+                    <WalletModalButton />
               )}
             </div>
           </div>

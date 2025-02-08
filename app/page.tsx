@@ -6,6 +6,14 @@ import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Layout from "@/components/shared/layout";
 import VoiceManager from '@/utils/voiceUtils';
+import { useWallet } from '@solana/wallet-adapter-react';
+
+
+interface Message {
+  isUser: boolean;
+  text: string;
+  audio?: string | null;
+}
 
 // Mock responses for testing
 const mockResponses = [
@@ -14,12 +22,6 @@ const mockResponses = [
   "That's a great question! I specialize in natural language processing, voice synthesis, and understanding complex technical concepts. I can help explain difficult topics in simple terms.",
   "I'd be happy to help you with that. My knowledge spans across various domains including AI, machine learning, cybersecurity, and blockchain technology."
 ];
-
-interface Message {
-  isUser: boolean;
-  text: string;
-  audio?: string | null;
-}
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
@@ -33,8 +35,15 @@ export default function Home() {
   const voiceManager = useRef(new VoiceManager());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<string>("")
+  const { publicKey, disconnect } = useWallet();
+  const [walletAddress, setWalletAddress] = useState<string | null>(
+    localStorage.getItem('walletAddress')
+  );
 
-  const useMockData =  'true';
+
+
+  const useMockData =  process.env.NEXT_USE_DEV
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current;
@@ -44,10 +53,22 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (publicKey) {
+      const address = publicKey.toBase58();
+      localStorage.setItem('walletAddress', address);
+      setWalletAddress(address);
+      setUser(address)
+      
+    }
+  }, [publicKey]);
+
+  
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (text: string, forceVoiceMode?: boolean) => {
+  const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
     if (!text.trim() || isLoading) return;
 
     setIsLoading(true);
@@ -74,10 +95,9 @@ export default function Home() {
       } else {
         const formData = new FormData();
         formData.append('text', text);
-        formData.append('user', 'user');
+        formData.append('userId', user);
         formData.append('voice_mode', useVoiceMode.toString());
 
-        // const response = await fetch('https://ai.us01.erebrus.io/b450db11-332b-0fc2-a144-92824a34f699/message', {
         const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
@@ -102,6 +122,7 @@ export default function Home() {
       // Then generate voice if in voice mode
       if (useVoiceMode) {
         console.log('Voice mode active, generating voice for:', responseText);
+
         try {
           audioUrl = await voiceManager.current.generateVoice(responseText);
           console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
@@ -143,7 +164,7 @@ export default function Home() {
         setTranscription(text);
         // Force voice mode to be true for voice input
         const forceVoiceMode = true;
-        await handleSubmit(text, forceVoiceMode);
+        await handleSubmit(text, user, forceVoiceMode);
       },
       () => setIsRecording(false)
     );
@@ -186,7 +207,7 @@ export default function Home() {
           setTranscription(text);
           // Force voice mode to be true for first message
           const forceVoiceMode = true;
-          await handleSubmit(text, forceVoiceMode);
+          await handleSubmit(text, user, forceVoiceMode);
         },
         () => setIsRecording(false)
       );
@@ -238,6 +259,13 @@ export default function Home() {
                         transition={{ duration: 0.3 }}
                         className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                       >
+                          {!message.isUser  && (
+                            <img
+                              src='./CyreneAI token NEW_800 5.png'
+                              alt='Ge'
+                              className='w-16 h-16 rounded-lg object-cover mr-2'
+                            />
+                          )}
                         <div 
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
                             ${message.isUser 
@@ -245,6 +273,7 @@ export default function Home() {
                               : 'bg-white/5 border-white/10 rounded-tl-sm'
                             }`}
                         >
+                        
                           <div className="flex items-start gap-3">
                             {!message.isUser && message.audio && (
                               <button
@@ -349,28 +378,36 @@ export default function Home() {
             ) : null}
 
             {/* Input Form with Loading Indicator */}
-            <div className="w-full sticky bottom-0 bg-gradient-to-t from-[#0B1220] to-transparent pt-4 mb-32">
+            <div className="w-full sticky bottom-0  to-transparent pt-4 mb-32">
               <div className="relative">
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSubmit(inputValue);
-                }} className="relative w-full">
-                  <input
-                    type="text"
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit(inputValue, user);
+                  }}
+                  className="relative w-full"
+                >
+                  <textarea
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      e.target.style.height = "auto"; // Reset height first
+                      e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
+                    }}
                     placeholder={isVoiceMode ? "Listening..." : "Ask Cyrene..."}
                     disabled={isLoading || isRecording}
-                    className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
+                    rows={1} // Initial height
                   />
+                  
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button
                       type="button"
                       onClick={toggleVoiceMode}
                       className={`p-2 rounded-full transition-colors ${
                         isVoiceMode 
-                          ? 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30' 
-                          : 'hover:bg-white/10 text-white/40 hover:text-blue-500'
+                          ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30" 
+                          : "hover:bg-white/10 text-white/40 hover:text-blue-500"
                       }`}
                     >
                       {isVoiceMode ? <X className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -380,9 +417,11 @@ export default function Home() {
                       disabled={isLoading || !inputValue.trim()}
                       className="p-2 rounded-full hover:bg-white/10"
                     >
-                      <ArrowUp className={`w-5 h-5 transition-colors ${
-                        inputValue && !isLoading ? 'text-blue-500' : 'text-white/40'
-                      }`} />
+                      <ArrowUp 
+                        className={`w-5 h-5 transition-colors ${
+                          inputValue && !isLoading ? "text-blue-500" : "text-white/40"
+                        }`} 
+                      />
                     </button>
                   </div>
                 </form>
@@ -394,9 +433,9 @@ export default function Home() {
                     animate={{ opacity: 1 }}
                     className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 justify-center"
                   >
-                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </motion.div>
                 )}
               </div>
