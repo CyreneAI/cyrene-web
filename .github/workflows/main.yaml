@@ -19,12 +19,26 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Load Environment Variables from Secrets
+        run: |
+          {
+            echo "NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}"
+            echo "NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }}"
+            echo "NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }}"
+            echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}"
+          } >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry (GHCR)
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
 
       - name: Build Docker Image
         run: |
-          docker build -t ghcr.io/netsepio/cyrene-web:prod .
+          docker build \
+            --build-arg NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }} \
+            --build-arg NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }} \
+            --build-arg NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }} \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            -t ghcr.io/netsepio/cyrene-web:prod .
       
       - name: Push Docker Image to GHCR
         run: |
@@ -61,7 +75,12 @@ jobs:
             echo "🧹 Removing old images to free up space..."
             sudo docker image prune -f
 
-            echo "🐳 Running the new container..."
-            sudo docker run --name="cyrene-web" -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
+            echo "🐳 Running the new container with environment variables from secrets..."
+            sudo docker run --name="cyrene-web" \
+              -e NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }} \
+              -e NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }} \
+              -e NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }} \
+              -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+              -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
 
             echo "✅ Deployment complete!"
