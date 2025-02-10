@@ -19,7 +19,7 @@ interface LayoutProps {
 export default function Layout ({ children }: LayoutProps) {
   const pathname = usePathname()
   // const [signature, setSignature] = useState<string | null>(null)
-  const[ isAgentOpen,setIsAgentOpen]=useState(false);
+  // const[ isAgentOpen,setIsAgentOpen]=useState(false);
   const [isOpen, setIsOpen] = useState(false)
   const [isAgentOpen, setIsAgentOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)

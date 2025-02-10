@@ -1,0 +1,67 @@
+name: Build & Deploy to Prod
+
+on:
+  push:
+    branches:
+      - prod  # Runs only when code is pushed to the `prod` branch
+
+jobs:
+  # 1️⃣ Build & Push Docker Image to GHCR
+  build-and-push:
+    name: Build & Push to GHCR
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # Required to push to GHCR
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ghcr.io/netsepio/cyrene-web:prod .
+      
+      - name: Push Docker Image to GHCR
+        run: |
+          docker push ghcr.io/netsepio/cyrene-web:prod
+
+  # 2️⃣ Deploy to Production Server via SSH
+  deploy:
+    name: Deploy to Production
+    needs: build-and-push  # Ensures deployment runs only after a successful build & push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_REMOTE_SERVER_ADDRESS }}
+          username: ${{ secrets.PROD_SERVER_USERNAME }}
+          key: ${{ secrets.PROD_REMOTE_SERVER_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT }}
+          script: |
+            echo "📂 Navigating to home directory..."
+            cd ~
+
+            echo "🔑 Logging in to GitHub Container Registry (GHCR)..."
+            echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+            echo "🚀 Pulling the latest production image..."
+            sudo docker pull ghcr.io/netsepio/cyrene-web:prod
+
+            echo "🛑 Stopping and removing existing container (if running)..."
+            sudo docker stop cyrene-web || true
+            sudo docker rm cyrene-web || true
+
+            echo "🧹 Removing old images to free up space..."
+            sudo docker image prune -f
+
+            echo "🐳 Running the new container..."
+            sudo docker run --name="cyrene-web" -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
+
+            echo "✅ Deployment complete!"

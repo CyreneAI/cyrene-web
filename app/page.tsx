@@ -36,11 +36,18 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<string>("")
-  const { publicKey, disconnect } = useWallet();
-  const [walletAddress, setWalletAddress] = useState<string | null>(
-    localStorage.getItem('walletAddress')
-  );
+  const { publicKey } = useWallet();
 
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') { // Ensure this runs on client-side only
+      const storedWalletAddress = localStorage.getItem('walletAddress');
+      if (storedWalletAddress) {
+        setWalletAddress(storedWalletAddress);
+      }
+    }
+  }, []);
 
 
   const useMockData =  process.env.NEXT_USE_DEV
@@ -316,7 +323,7 @@ export default function Home() {
                         }`}
                       >
                           {!message.isUser  && (
-                            <img
+                            <Image
                               src='./CyreneAI token NEW_800 5.png'
                               alt='Ge'
                               className='w-16 h-16 rounded-lg object-cover mr-2'

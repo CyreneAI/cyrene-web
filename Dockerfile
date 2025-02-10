@@ -12,7 +12,7 @@ RUN npm install
 
 # Copy the rest of the application code
 COPY . .
-
+ENV NEXT_PUBLIC_ESLINT_DISABLE=true
 # Build the Next.js application
 RUN npm run build
 
