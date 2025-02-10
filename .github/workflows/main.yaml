@@ -34,10 +34,10 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }} \
-            --build-arg NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }} \
-            --build-arg NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }} \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            --build-arg NEXT_PUBLIC_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}" \
+            --build-arg NEXT_USE_DEV="${{ secrets.NEXT_USE_DEV }}" \
+            --build-arg NEXT_PUBLIC_TTS_API_URL="${{ secrets.NEXT_PUBLIC_TTS_API_URL }}"\
+            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" \
             -t ghcr.io/netsepio/cyrene-web:prod .
       
       - name: Push Docker Image to GHCR
