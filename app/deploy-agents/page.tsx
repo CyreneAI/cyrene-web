@@ -120,7 +120,7 @@ function AddAgentModal({ onClose, onSuccess }: AddAgentModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full border border-gray-700/50">
+      <div className="bg-gray-800 rounded-xl p-6 max-w-3xl w-full border border-gray-700/50">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-100">Add New Agent</h2>
           <button
