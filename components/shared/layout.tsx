@@ -4,6 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { WalletModalButton } from '@solana/wallet-adapter-react-ui';
+import {
+ useWallet
+} from '@solana/wallet-adapter-react';
+import { PhantomWalletName } from '@solana/wallet-adapter-phantom'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+
 
 interface LayoutProps {
   children: React.ReactNode
@@ -11,30 +18,40 @@ interface LayoutProps {
 
 export default function Layout ({ children }: LayoutProps) {
   const pathname = usePathname()
-  const [signature, setSignature] = useState<string | null>(null)
+  // const [signature, setSignature] = useState<string | null>(null)
+  const[ isAgentOpen,setIsAgentOpen]=useState(false);
   const [isOpen, setIsOpen] = useState(false)
   const [isAgentOpen, setIsAgentOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Handle wallet connection and signing
+
+
   useEffect(() => {
-    const handleWalletConnection = async () => {
-      if (localStorage.getItem('signature') == null) {
-        console.log('signature  ', signature)
-      }
+    const storedAddress = localStorage.getItem('walletAddress');
+    if (storedAddress) {
+      setWalletAddress(storedAddress);
     }
+  }, []);
 
-    handleWalletConnection()
-  }, [signature])
-
-  // Clear localStorage when wallet disconnects
-  useEffect(() => {
-    if (signature == null) {
-      console.log('Wallet disconnected, localStorage cleared')
-      localStorage.removeItem('signature')
-      setSignature(null)
-    }
-  }, [signature])
+    // Handle wallet connection and signing
+    // useEffect(() => {
+    //   const handleWalletConnection = async () => {
+    //     if (localStorage.getItem('signature') == null) {
+    //       console.log('signature  ', signature)
+    //     }
+    //   }
+    //   handleWalletConnection()
+    // }, [signature])
+  
+    // // Clear localStorage when wallet disconnects
+    // useEffect(() => {
+    //   if (signature == null) {
+    //     console.log('Wallet disconnected, localStorage cleared')
+    //     localStorage.removeItem('signature')
+    //     setSignature(null)
+    //   }
+    // }, [signature])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,7 +71,7 @@ export default function Layout ({ children }: LayoutProps) {
     <main className='relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F] overflow-x-hidden'>
       {/* Cover Image */}
       {/* Cover Video */}
- 
+
 
 
       {/* Navigation */}
@@ -71,11 +88,12 @@ export default function Layout ({ children }: LayoutProps) {
               />
             </Link>
           </div>
+          
           <div className='flex gap-4 sm:gap-6 md:gap-8 items-center'>
             <Link href='/' className='no-underline'>
               <span
                 className={`text-sm sm:text-base ${
-                  pathname === '/'
+                  pathname === '/home'
                     ? 'text-white'
                     : 'text-white/80 hover:text-white'
                 }`}
@@ -89,6 +107,41 @@ export default function Layout ({ children }: LayoutProps) {
                 onClick={() => setIsAgentOpen(!isAgentOpen)}
                 className={`text-2xl font-sans sm:text-bas  px-4 py-2 rounded-xl border-0 cursor-pointer ${
                   pathname === '/links'
+                    ? 'text-white'
+                    : 'text-white/80 hover:text-white'
+                }`}
+                // style={{ fontFamily: 'PingFang SC' }}
+              >
+                Agents
+              </button>
+              {isAgentOpen && (
+                <div className='absolute right-0 mt-2 px-2 py-1 bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl  z-[100]'>
+                  <Link
+                    href='/CyreneAI - The Future of Autonomous AI Agents.pdf'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Explore
+                  </Link>
+                  <Link
+                    href='/launch-agent'
+                    
+                    rel='noopener noreferrer'
+                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Launch
+                  </Link>
+
+                </div>
+              )}
+            </div>
+            {/* <Link href='/about' className='no-underline'>
+              <span
+                className={`text-sm sm:text-base ${
+                  pathname === '/about'
                     ? 'text-white'
                     : 'text-white/80 hover:text-white'
                 }`}
@@ -183,6 +236,15 @@ export default function Layout ({ children }: LayoutProps) {
                     Erebrus App (Android)
                   </a>
                 </div>
+              )}
+            </div>
+            <div>
+              {walletAddress ? (
+                <WalletMultiButton />
+
+              ) : (
+
+                    <WalletModalButton />
               )}
             </div>
           </div>
@@ -297,6 +359,7 @@ export default function Layout ({ children }: LayoutProps) {
           </div>
         </div>
       </footer>
+
     </main>
   )
 }

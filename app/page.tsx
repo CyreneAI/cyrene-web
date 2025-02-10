@@ -1,12 +1,19 @@
 'use client'
 
-import Image from 'next/image'
-import { motion } from 'framer-motion'
-import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import Layout from '@/components/shared/layout'
-import VoiceManager from '@/utils/voiceUtils'
-import Link from 'next/link'
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import Layout from "@/components/shared/layout";
+import VoiceManager from '@/utils/voiceUtils';
+import { useWallet } from '@solana/wallet-adapter-react';
+
+
+interface Message {
+  isUser: boolean;
+  text: string;
+  audio?: string | null;
+}
 
 // Mock responses for testing
 const mockResponses = [
@@ -14,44 +21,55 @@ const mockResponses = [
   "I'm a multi-talented AI assistant with expertise in cybersecurity, blockchain, and decentralized systems. I can help with technical questions, provide guidance on various topics, and even engage in natural conversations with voice responses.",
   "That's a great question! I specialize in natural language processing, voice synthesis, and understanding complex technical concepts. I can help explain difficult topics in simple terms.",
   "I'd be happy to help you with that. My knowledge spans across various domains including AI, machine learning, cybersecurity, and blockchain technology."
-]
+];
 
-interface Message {
-  isUser: boolean
-  text: string
-  audio?: string | null
-}
+export default function Home() {
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isPlayingAudio, setIsPlayingAudio] = useState<{[key: number]: boolean}>({});
+  const audioRefs = useRef<{[key: number]: HTMLAudioElement | null}>({});
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcription, setTranscription] = useState("");
+  const voiceManager = useRef(new VoiceManager());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<string>("")
+  const { publicKey, disconnect } = useWallet();
+  const [walletAddress, setWalletAddress] = useState<string | null>(
+    localStorage.getItem('walletAddress')
+  );
 
-export default function Home () {
-  const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isPlayingAudio, setIsPlayingAudio] = useState<{
-    [key: number]: boolean
-  }>({})
-  const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({})
-  const [isVoiceMode, setIsVoiceMode] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [transcription, setTranscription] = useState('')
-  const voiceManager = useRef(new VoiceManager())
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
-  const useMockData = 'true'
+
+  const useMockData =  process.env.NEXT_USE_DEV
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
     if (container) {
       container.scrollTop = container.scrollHeight
     }
-  }
+  };
+
+  useEffect(() => {
+    if (publicKey) {
+      const address = publicKey.toBase58();
+      localStorage.setItem('walletAddress', address);
+      setWalletAddress(address);
+      setUser(address)
+      
+    }
+  }, [publicKey]);
+
+  
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  const handleSubmit = async (text: string, forceVoiceMode?: boolean) => {
-    if (!text.trim() || isLoading) return
+  const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
+    if (!text.trim() || isLoading) return;
 
     setIsLoading(true)
     setTranscription('')
@@ -79,21 +97,15 @@ export default function Home () {
         responseText = mockResponses[randomIndex]
         await new Promise(resolve => setTimeout(resolve, 1000))
       } else {
-        const formData = new FormData()
-        formData.append('text', text)
-        formData.append('user', 'user')
-        formData.append('voice_mode', useVoiceMode.toString())
+        const formData = new FormData();
+        formData.append('text', text);
+        formData.append('userId', user);
+        formData.append('voice_mode', useVoiceMode.toString());
 
-        // const response = await fetch('https://ai.us01.erebrus.io/b450db11-332b-0fc2-a144-92824a34f699/message', {
-        const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL
-        console.log(
-          'Message API URL:',
-          messageApiUrl,
-          'Voice Mode:',
-          useVoiceMode
-        )
-        if (!messageApiUrl) throw new Error('Message API URL not configured')
-
+        const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
+        console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
+        if (!messageApiUrl) throw new Error('Message API URL not configured');
+        
         const response = await fetch(`${messageApiUrl}/message`, {
           method: 'POST',
           body: formData
@@ -115,7 +127,8 @@ export default function Home () {
 
       // Then generate voice if in voice mode
       if (useVoiceMode) {
-        console.log('Voice mode active, generating voice for:', responseText)
+        console.log('Voice mode active, generating voice for:', responseText);
+
         try {
           audioUrl = await voiceManager.current.generateVoice(responseText)
           console.log(
@@ -164,8 +177,8 @@ export default function Home () {
       async text => {
         setTranscription(text)
         // Force voice mode to be true for voice input
-        const forceVoiceMode = true
-        await handleSubmit(text, forceVoiceMode)
+        const forceVoiceMode = true;
+        await handleSubmit(text, user, forceVoiceMode);
       },
       () => setIsRecording(false)
     )
@@ -207,8 +220,8 @@ export default function Home () {
         async text => {
           setTranscription(text)
           // Force voice mode to be true for first message
-          const forceVoiceMode = true
-          await handleSubmit(text, forceVoiceMode)
+          const forceVoiceMode = true;
+          await handleSubmit(text, user, forceVoiceMode);
         },
         () => setIsRecording(false)
       )
@@ -217,7 +230,7 @@ export default function Home () {
 
   return (
     <Layout>
-           <div className="relative w-full h-[500px] md:h-[742px]">
+            <div className="relative w-full h-[500px] md:h-[742px]">
   {/* Background Video */}
   <video
     src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
@@ -242,12 +255,12 @@ export default function Home () {
     >
       Journey with Cyrene into the Agentic Future
     </h1>
-    <Link
-      href="/deploy-agents"
+    <a
+      href="#"
       className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
-    </Link>
+    </a>
   </div>
 
   {/* Bottom Text with Semi-Transparent Gradient */}
@@ -257,7 +270,7 @@ export default function Home () {
     </p>
   </div>
 </div>
-      <div className='container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32'>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -302,15 +315,14 @@ export default function Home () {
                           message.isUser ? 'justify-end' : 'justify-start'
                         }`}
                       >
-                        {/* Image placed outside the text */}
-    {!message.isUser  && (
-      <Image
-        src='./CyreneAI token NEW_800 5.png'
-        alt='Ge'
-        className='w-16 h-16 rounded-lg object-cover mr-2'
-      />
-    )}
-                        <div
+                          {!message.isUser  && (
+                            <img
+                              src='./CyreneAI token NEW_800 5.png'
+                              alt='Ge'
+                              className='w-16 h-16 rounded-lg object-cover mr-2'
+                            />
+                          )}
+                        <div 
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
                             ${
                               message.isUser
@@ -318,7 +330,8 @@ export default function Home () {
                                 : 'bg-white/5 border-white/10 rounded-tl-sm'
                             }`}
                         >
-                          <div className='flex items-start gap-3'>
+                        
+                          <div className="flex items-start gap-3">
                             {!message.isUser && message.audio && (
                               <button
                                 onClick={() => toggleAudio(index)}
@@ -429,36 +442,36 @@ export default function Home () {
             ) : null}
 
             {/* Input Form with Loading Indicator */}
-            <div className='w-full sticky bottom-0  pt-4 mb-32'>
-              <div className='relative'>
+            <div className="w-full sticky bottom-0  to-transparent pt-4 mb-32">
+              <div className="relative">
                 <form
-                  onSubmit={e => {
-                    e.preventDefault()
-                    handleSubmit(inputValue)
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit(inputValue, user);
                   }}
-                  className='relative w-full'
+                  className="relative w-full"
                 >
                   <textarea
                     value={inputValue}
-                    onChange={e => {
-                      setInputValue(e.target.value)
-                      e.target.style.height = 'auto' // Reset height first
-                      e.target.style.height = `${e.target.scrollHeight}px` // Expand dynamically
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      e.target.style.height = "auto"; // Reset height first
+                      e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
                     }}
-                    placeholder={isVoiceMode ? 'Listening...' : 'Ask Cyrene...'}
+                    placeholder={isVoiceMode ? "Listening..." : "Ask Cyrene..."}
                     disabled={isLoading || isRecording}
-                    className='w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden'
+                    className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
                     rows={1} // Initial height
                   />
-
-                  <div className='absolute right-4 top-1/2 -translate-y-1/2 flex gap-3'>
+                  
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button
                       type='button'
                       onClick={toggleVoiceMode}
                       className={`p-2 rounded-full transition-colors ${
-                        isVoiceMode
-                          ? 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30'
-                          : 'hover:bg-white/10 text-white/40 hover:text-blue-500'
+                        isVoiceMode 
+                          ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30" 
+                          : "hover:bg-white/10 text-white/40 hover:text-blue-500"
                       }`}
                     >
                       {isVoiceMode ? (
@@ -472,12 +485,10 @@ export default function Home () {
                       disabled={isLoading || !inputValue.trim()}
                       className='p-2 rounded-full hover:bg-white/10'
                     >
-                      <ArrowUp
+                      <ArrowUp 
                         className={`w-5 h-5 transition-colors ${
-                          inputValue && !isLoading
-                            ? 'text-blue-500'
-                            : 'text-white/40'
-                        }`}
+                          inputValue && !isLoading ? "text-blue-500" : "text-white/40"
+                        }`} 
                       />
                     </button>
                   </div>
@@ -490,18 +501,9 @@ export default function Home () {
                     animate={{ opacity: 1 }}
                     className='absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 justify-center'
                   >
-                    <div
-                      className='w-2 h-2 bg-blue-500/50 rounded-full animate-bounce'
-                      style={{ animationDelay: '0ms' }}
-                    />
-                    <div
-                      className='w-2 h-2 bg-blue-500/50 rounded-full animate-bounce'
-                      style={{ animationDelay: '150ms' }}
-                    />
-                    <div
-                      className='w-2 h-2 bg-blue-500/50 rounded-full animate-bounce'
-                      style={{ animationDelay: '300ms' }}
-                    />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </motion.div>
                 )}
               </div>

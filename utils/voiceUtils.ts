@@ -86,16 +86,30 @@ class VoiceManager {
     this.isListening = false;
   }
 
+  
   async generateVoice(text: string): Promise<string | null> {
+    
+    const apiUrl = process.env.NEXT_PUBLIC_TTS_API_URL ?? "";
+    if (!apiUrl) {
+      console.error("TTS API URL is not set");
+      return null;
+    }
     try {
-      const response = await fetch('/api/tts', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ 
+            "model": "kokoro",
+            "input": text,
+            "voice": "af",
+            "response_format": "mp3",
+            "speed": 1,
+            "stream": true,
+            "return_download_link": false
+        }),
       });
-
       if (!response.ok) {
         console.error('TTS API error:', response.status, response.statusText);
         throw new Error('Failed to generate voice');
