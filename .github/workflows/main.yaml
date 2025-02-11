@@ -26,6 +26,10 @@ jobs:
             echo "NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }}"
             echo "NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }}"
             echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}"
+            echo "NEXT_PUBLIC_AGENT_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}"
+            echo "NEXT_PUBLIC_CYRENE_AI=${{ secrets.NEXT_PUBLIC_CYRENE_AI }}"
+            echo "NEXT_PUBLIC_OPENAI_API_KEY=${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}"
+            echo "NEXT_modelProvider=${{ secrets.NEXT_modelProvider }}"
           } >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry (GHCR)
@@ -38,6 +42,10 @@ jobs:
             --build-arg NEXT_USE_DEV="${{ secrets.NEXT_USE_DEV }}" \
             --build-arg NEXT_PUBLIC_TTS_API_URL="${{ secrets.NEXT_PUBLIC_TTS_API_URL }}"\
             --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" \
+            --build-arg NEXT_PUBLIC_AGENT_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}"\
+            --build-arg NEXT_PUBLIC_CYRENE_AI="${{ secrets.NEXT_PUBLIC_CYRENE_AI }}"\
+            --build-arg NEXT_PUBLIC_OPENAI_API_KEY="${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}"\
+            --build-arg NEXT_modelProvider="${{ secrets.NEXT_modelProvider }}"\
             -t ghcr.io/netsepio/cyrene-web:prod .
       
       - name: Push Docker Image to GHCR
@@ -81,6 +89,10 @@ jobs:
               -e NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }} \
               -e NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }} \
               -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+              -e NEXT_PUBLIC_AGENT_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }} \
+              -e NEXT_PUBLIC_CYRENE_AI=${{ secrets.NEXT_PUBLIC_CYRENE_AI }} \
+              -e NEXT_PUBLIC_OPENAI_API_KEY=${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }} \
+              -e NEXT_modelProvider=${{ secrets.NEXT_modelProvider }} \
               -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
 
             echo "✅ Deployment complete!"
