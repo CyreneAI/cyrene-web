@@ -23,6 +23,8 @@ export default function Layout ({ children }: LayoutProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const agentDropdownRef = useRef(null);
+  const connectDropdownRef = useRef(null);
 
 
 
@@ -52,6 +54,29 @@ export default function Layout ({ children }: LayoutProps) {
     //   }
     // }, [signature])
 
+   
+  
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          agentDropdownRef.current &&
+          !agentDropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsAgentOpen(false);
+        }
+        if (
+          connectDropdownRef.current &&
+          !connectDropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+    
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+    
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -68,167 +93,66 @@ export default function Layout ({ children }: LayoutProps) {
 
   return (
     <main className='relative min-h-screen bg-gradient-to-b from-[#0B1220] to-[#0A1A2F] overflow-x-hidden'>
-      {/* Cover Image */}
-      {/* Cover Video */}
 
+<nav className='fixed top-0 left-0 right-0 z-50 w-full bg-[#0B1220]/90 backdrop-blur-md'>
+      <div className='container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center'>
+        {/* Logo */}
+        <Link href='/' className='no-underline'>
+          <Image
+            src='/CyreneAI_logo-text.png'
+            alt='Cyrene AI'
+            width={250}
+            height={77}
+            className='object-contain cursor-pointer w-[180px] sm:w-[160px] md:w-[220px]'
+          />
+        </Link>
 
-
-      {/* Navigation */}
-      <nav className='fixed top-0 left-0 right-0 z-50  w-full'>
-        <div className='container mx-auto px-6 sm:px-6 lg:px-8 py-4 sm:py-4 flex justify-between items-center'>
-          <div className='flex items-center'>
-            <Link href='/' className='no-underline'>
-              <Image
-                src='/CyreneAI_logo-text.png'
-                alt='Cyrene AI'
-                width={250}
-                height={77}
-                className='object-contain cursor-pointer w-[250px] h-[77px] sm:w-[160px] sm:h-[40px] md:w-[250px] md:h-[77px]'
-              />
-            </Link>
-          </div>
+        {/* Navigation Links */}
+        <div className='flex gap-6 items-center text-white text-base sm:text-sm'>
+          <Link href='/' className={`no-underline ${pathname === '/home' ? 'text-white' : 'text-white/80 hover:text-white'}`}>Home</Link>
           
-          <div className='flex gap-4 sm:gap-6 md:gap-8 items-center'>
-            <Link href='/' className='no-underline'>
-              <span
-                className={`text-sm sm:text-base ${
-                  pathname === '/home'
-                    ? 'text-white'
-                    : 'text-white/80 hover:text-white'
-                }`}
-                style={{ fontFamily: 'PingFang SC' }}
-              >
-                Home
-              </span>
-            </Link>
-            <div className='relative' ref={dropdownRef}>
-              <button
-                onClick={() => setIsAgentOpen(!isAgentOpen)}
-                className={`text-2xl font-sans sm:text-bas  px-4 py-2 rounded-xl border-0 cursor-pointer ${
-                  pathname === '/links'
-                    ? 'text-white'
-                    : 'text-white/80 hover:text-white'
-                }`}
-                // style={{ fontFamily: 'PingFang SC' }}
-              >
-                Agents
-              </button>
-              {isAgentOpen && (
-                <div className='absolute right-0 mt-2 px-2 py-1 bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl  z-[100]'>
-                  <Link
-                    href='/CyreneAI - The Future of Autonomous AI Agents.pdf'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    Explore
-                  </Link>
-                  <Link
-                    href='/launch-agent'
-                    
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    Launch
-                  </Link>
-
-                </div>
-              )}
-            </div>
-            {/* <Link href='/about' className='no-underline'>
-              <span
-                className={`text-sm sm:text-base ${
-                  pathname === '/about'
-                    ? 'text-white'
-                    : 'text-white/80 hover:text-white'
-                }`}
-                style={{ fontFamily: 'PingFang SC' }}
-              >
-                About
-              </span>
-            </Link>
-            <Link href='/token' className='no-underline'>
-              <span
-                className={`text-sm sm:text-base ${
-                  pathname === '/token'
-                    ? 'text-white'
-                    : 'text-white/80 hover:text-white'
-                }`}
-                style={{ fontFamily: 'PingFang SC' }}
-              >
-                Token
-              </span>
-            </Link> */}
-            <div className='relative' ref={dropdownRef}>
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`text-2xl font-sans sm:text-base bg-[#0162FF] px-4 py-2 rounded-xl border-0 cursor-pointer ${
-                  pathname === '/links'
-                    ? 'text-white'
-                    : 'text-white/80 hover:text-white'
-                }`}
-                // style={{ fontFamily: 'PingFang SC' }}
-              >
-                Connect
-              </button>
-              {isOpen && (
-                <div className='absolute right-0 mt-2 min-w-[16rem] bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl p-1 z-[100]'>
-                  <a
-                    href='/CyreneAI - The Future of Autonomous AI Agents.pdf'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    Tech Overview (PDF)
-                  </a>
-                  <a
-                    href='https://twitter.com/CyreneAI'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    X (Twitter)
-                  </a>
-                  <a
-                    href='https://testflight.apple.com/join/BvdARC75'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    Erebrus App (iOS*)
-                  </a>
-                  <a
-                    href='https://play.google.com/store/apps/details?id=com.erebrus.app'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
-                    style={{ fontFamily: 'PingFang SC' }}
-                  >
-                    Erebrus App (Android)
-                  </a>
-                </div>
-              )}
-            </div>
-            <div>
-              {walletAddress ? (
-                <WalletMultiButton />
-
-              ) : (
-
-                    <WalletModalButton />
-              )}
-            </div>
+          {/* Agents Dropdown */}
+          <div className='relative' ref={agentDropdownRef}>
+            <button
+              onClick={() => setIsAgentOpen(!isAgentOpen)}
+              className='px-4 py-2 rounded-lg text-white/80 hover:text-white transition-all'
+            >
+              Agents
+            </button>
+            {isAgentOpen && (
+              <div className='absolute right-0 mt-2 w-40 bg-[#0B1220]/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-50'>
+                <Link href='/CyreneAI - The Future of Autonomous AI Agents.pdf' target='_blank' rel='noopener noreferrer' className='block px-3 py-2 rounded-md hover:bg-white/10'>Explore</Link>
+                <Link href='/launch-agent' className='block px-3 py-2 rounded-md hover:bg-white/10'>Launch</Link>
+              </div>
+            )}
           </div>
+
+          {/* Connect Dropdown */}
+          <div className='relative' ref={connectDropdownRef}>
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className='px-4 py-2 rounded-lg text-white/80 hover:text-white transition-all'
+            >
+              Connect
+            </button>
+            {isOpen && (
+              <div className='absolute right-0 mt-2 min-w-[16rem] bg-[#0B1220]/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-50'>
+                <a href='/CyreneAI - The Future of Autonomous AI Agents.pdf' target='_blank' rel='noopener noreferrer' className='block px-3 py-2 rounded-md hover:bg-white/10'>Tech Overview (PDF)</a>
+                <a href='https://twitter.com/CyreneAI' target='_blank' rel='noopener noreferrer' className='block px-3 py-2 rounded-md hover:bg-white/10'>X (Twitter)</a>
+                <a href='https://testflight.apple.com/join/BvdARC75' target='_blank' rel='noopener noreferrer' className='block px-3 py-2 rounded-md hover:bg-white/10'>Erebrus App (iOS)</a>
+                <a href='https://play.google.com/store/apps/details?id=com.erebrus.app' target='_blank' rel='noopener noreferrer' className='block px-3 py-2 rounded-md hover:bg-white/10'>Erebrus App (Android)</a>
+              </div>
+            )}
+          </div>
+
+          {/* Wallet Button */}
+          <div>{walletAddress ? <WalletMultiButton /> : <WalletModalButton />}</div>
         </div>
-      </nav>
+      </div>
+    </nav>
 
       {/* Main Content */}
-      <div className='relative min-h-[calc(100vh-800px)]'>{children}</div>
+      <div className='relative min-h-[calc(100vh-800px)] '>{children}</div>
 
       {/* Always here for you text */}
       <div className='container mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8 md:mb-12'>
