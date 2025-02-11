@@ -19,6 +19,7 @@ interface LayoutProps {
 export default function Layout ({ children }: LayoutProps) {
   const pathname = usePathname()
   // const [signature, setSignature] = useState<string | null>(null)
+  const[ isAgentOpen,setIsAgentOpen]=useState(false);
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -94,12 +95,12 @@ export default function Layout ({ children }: LayoutProps) {
     >
       Journey with Cyrene into the Agentic Future
     </h1>
-    <Link
+    <a
       href="/deploy-agents"
       className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
-    </Link>
+    </a>
   </div>
 
   {/* Bottom Text with Semi-Transparent Gradient */}
@@ -139,6 +140,42 @@ export default function Layout ({ children }: LayoutProps) {
                 Home
               </span>
             </Link>
+            <div className='relative' ref={dropdownRef}>
+              <button
+                onClick={() => setIsAgentOpen(!isAgentOpen)}
+                className={`text-2xl font-sans sm:text-bas  px-4 py-2 rounded-xl border-0 cursor-pointer ${
+                  pathname === '/links'
+                    ? 'text-white'
+                    : 'text-white/80 hover:text-white'
+                }`}
+                // style={{ fontFamily: 'PingFang SC' }}
+              >
+                Agents
+              </button>
+              {isAgentOpen && (
+                <div className='absolute right-0 mt-2 px-2 py-1 bg-[#0B1220]/95 backdrop-blur-sm border border-white/10 rounded-xl  z-[100]'>
+                  <Link
+                    href='/CyreneAI - The Future of Autonomous AI Agents.pdf'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Explore
+                  </Link>
+                  <Link
+                    href='/launch-agent'
+                    
+                    rel='noopener noreferrer'
+                    className='block w-full py-2 px-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg no-underline transition-colors'
+                    style={{ fontFamily: 'PingFang SC' }}
+                  >
+                    Launch
+                  </Link>
+
+                </div>
+              )}
+            </div>
             {/* <Link href='/about' className='no-underline'>
               <span
                 className={`text-sm sm:text-base ${
@@ -246,7 +283,7 @@ export default function Layout ({ children }: LayoutProps) {
       </div>
 
       {/* Footer */}
-      <footer className='relative h-[400px] sm:h-[350px] md:h-[400px] overflow-hidden'>
+      <footer className='relative h-[50px] sm:h-[350px] md:h-[500px] overflow-hidden'>
         <Image
           src='/footer_zoom_out_85.jpg'
           alt='Cosmic Portal'
@@ -256,10 +293,46 @@ export default function Layout ({ children }: LayoutProps) {
           quality={100}
         />
         <div className='absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent'>
-          <div className='h-full container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col'>
-            <div className='mt-auto pb-8'>
+          <div className='h-full  container mx-auto !px-24 sm:px-6 lg:px-8 flex flex-col'>
+            <div className='mt-16 pb-8 gap-10'>
+              <div className='flex flex-col sm:flex-row justify-between items-center gap-10 sm:gap-0'>
+                <div className='grid grid-cols-2  sm:flex gap-16 sm:gap-24 w-full sm:w-auto place-items-top'>
+                  <div className='font-sans'>
+                  <a
+                    href='#'
+                    className='text-base font-600 sm:text-lg md:text-2xl text-white hover:text-white no-underline text-center'
+                  >
+                    About
+                  </a>
+                  <ul className='text-white/70 gap-4 mt-4 font-400'>
+                    <li className='py-2'>Mission</li>
+                    <li>Token</li>
+                  </ul>
+                  </div>
+                  <div>
+                  <a
+                    href='#'
+                    className='text-medium font-600 sm:text-lg md:text-2xl text-white hover:text-white no-underline text-center'
+                  >
+                    Integrations
+                  </a>
+                  <ul className='text-white/70 mt-4 font-400'>
+                    <li className='py-2'>Erebrus Android</li>
+                    <li className='py-2'>Erebrus iOS*</li>
+                    <li className='py-2'>CyreneAI on X</li>
+                    <li className='py-2'>CyreneAI on Discord</li>
+                  </ul>
+                  </div>
+
+                
+                </div>
+             
+              </div>
+            </div>
+            <div className='mt-auto  pb-8'>
               <div className='flex flex-col sm:flex-row justify-between items-center gap-8 sm:gap-0'>
-                <div className='grid grid-cols-2 gap-6 sm:flex sm:gap-8 w-full sm:w-auto place-items-center'>
+                <div >
+                <div className='grid grid-cols-2 border-b-2 border-white/40 pb-4 gap-6 sm:flex sm:gap-8 w-full sm:w-auto place-items-center'>
                   <a
                     href='#'
                     className='text-base sm:text-lg md:text-xl text-white/70 hover:text-white no-underline text-center'
@@ -272,6 +345,10 @@ export default function Layout ({ children }: LayoutProps) {
                   >
                     Terms and Conditions
                   </a>
+                </div>
+                <div className='text-white/40 py-4 '>
+                © 2025 - CyreneAI. All rights reserved.
+                </div>
                 </div>
                 <div className='flex items-center gap-3 sm:gap-4'>
                   <span className='text-lg sm:text-xl md:text-2xl text-white/70'>
@@ -297,6 +374,7 @@ export default function Layout ({ children }: LayoutProps) {
           </div>
         </div>
       </footer>
+
     </main>
   )
 }

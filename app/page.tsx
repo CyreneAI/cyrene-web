@@ -260,6 +260,46 @@ export default function Home() {
 
   return (
     <Layout>
+            <div className="relative w-full h-[500px] md:h-[742px]">
+  {/* Background Video */}
+  <video
+    src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
+    autoPlay
+    loop
+    muted
+    playsInline
+    className="absolute inset-0 w-full h-full object-cover"
+  />
+
+  {/* Gradient Overlay for Readability */}
+  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0F1A2E]/90" />
+
+  {/* Centered Main Text (Responsive) */}
+  <div className="absolute inset-0 flex flex-col gap-8 items-center justify-center text-center px-4">
+    <h1
+      className="text-3xl sm:text-4xl md:text-[55px] font-light text-white tracking-tight max-w-full"
+      style={{
+        fontFamily: "DM Sans",
+        textShadow: "0 0 20px rgba(79, 172, 254, 0.5)"
+      }}
+    >
+      Journey with Cyrene into the Agentic Future
+    </h1>
+    <a
+      href="#"
+      className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
+    >
+      Launch Agent
+    </a>
+  </div>
+
+  {/* Bottom Text with Semi-Transparent Gradient */}
+  <div className="absolute bottom-0 w-full bg-gradient-to-r from-[#4C8AEC]/40 to-[#424F7F]/40 text-center py-4 sm:py-6 md:py-8">
+    <p className="text-lg sm:text-xl md:text-[24px] font-normal font-sans text-white">
+      Multi-Agent Platform and AI Coordination layer on secure network powered by NetSepio
+    </p>
+  </div>
+</div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
