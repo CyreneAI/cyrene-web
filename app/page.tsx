@@ -40,7 +40,12 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string | null>(
     localStorage.getItem('walletAddress')
   );
-
+  const [agent, setAgent] = useState(() => {
+    return {
+      id: localStorage.getItem("currentAgentId") || process.env.NEXT_CYRENE_AI,
+      name: localStorage.getItem("currentAgentName") || "cyrene",
+    };
+  });
 
 
   const useMockData =  process.env.NEXT_USE_DEV
@@ -53,16 +58,46 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const updateAgentFromLocalStorage = () => {
+      const id = localStorage.getItem("currentAgentId") || "";
+      const name = localStorage.getItem("currentAgentName") || "";
+      
+      if (id && name) {
+        setAgent({ id, name });
+      }
+    };
+  
+    // Call immediately when component mounts
+    updateAgentFromLocalStorage();
+  
+    // Add event listener for storage changes
+    window.addEventListener("storage", updateAgentFromLocalStorage);
+  
+    return () => {
+      window.removeEventListener("storage", updateAgentFromLocalStorage);
+    };
+  }, []);
+  
+  useEffect(() => {
     if (publicKey) {
       const address = publicKey.toBase58();
       localStorage.setItem('walletAddress', address);
+   
       setWalletAddress(address);
       setUser(address)
+     
       
     }
   }, [publicKey]);
 
+  useEffect(() => {
+    if(walletAddress){
+      console.log(walletAddress)
+    }
+
+  }, [walletAddress])
   
+
 
   useEffect(() => {
     scrollToBottom();
@@ -97,12 +132,21 @@ export default function Home() {
         formData.append('text', text);
         formData.append('userId', user);
         formData.append('voice_mode', useVoiceMode.toString());
+        let messageApiUrl = "";
 
-        const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
+        if (agent.name === "cyrene") {
+          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
+        } else {
+          messageApiUrl = process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL
+            ? `https://${agent.name}.${process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL}`
+            : "";
+        }
+        
+        console.log("Message API URL:", messageApiUrl,agent.id);
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
         
-        const response = await fetch(`${messageApiUrl}/message`, {
+        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
           method: 'POST',
           body: formData,
         });
@@ -230,7 +274,7 @@ export default function Home() {
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
           >
-            Hi, I&apos;m Cyrene
+            Hi, I&apos;m {agent.name}
           </h1>
 
           <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8">
@@ -394,7 +438,7 @@ export default function Home() {
                       e.target.style.height = "auto"; // Reset height first
                       e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
                     }}
-                    placeholder={isVoiceMode ? "Listening..." : "Ask Cyrene..."}
+                    placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
                     disabled={isLoading || isRecording}
                     className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
                     rows={1} // Initial height

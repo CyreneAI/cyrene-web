@@ -94,12 +94,12 @@ export default function Layout ({ children }: LayoutProps) {
     >
       Journey with Cyrene into the Agentic Future
     </h1>
-    <a
-      href="#"
+    <Link
+      href="/deploy-agents"
       className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
-    </a>
+    </Link>
   </div>
 
   {/* Bottom Text with Semi-Transparent Gradient */}
