@@ -42,7 +42,7 @@ export default function Home() {
   );
   const [agent, setAgent] = useState(() => {
     return {
-      id: localStorage.getItem("currentAgentId") || process.env.NEXT_CYRENE_AI,
+      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
       name: localStorage.getItem("currentAgentName") || "cyrene",
     };
   });
@@ -286,7 +286,7 @@ export default function Home() {
       Journey with Cyrene into the Agentic Future
     </h1>
     <a
-      href="#"
+      href="/launch-agent"
       className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
