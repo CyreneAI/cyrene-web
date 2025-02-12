@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       },
     })
   } catch (error) {
-    console.error('Error:', error);
+    // console.error('Error:', error);
     return NextResponse.json({ error: 'TTS generation failed' }, { status: 500 })
   }
 } 

@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import Navbar from "@/components/common/navbar";
+import Footer from "@/components/common/footer";
+import {Toaster} from "sonner"
+
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +26,6 @@ export const metadata: Metadata = {
     ],
   },
 };
-
 export default function RootLayout({
   children,
 }: {
@@ -29,18 +33,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" type="image/png" sizes="32x32" href="/CyreneAI_logo_square.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/CyreneAI_logo_square.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/CyreneAI_logo_square.png" />
-        <link rel="shortcut icon" href="/CyreneAI_logo_square.png" />
-      </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-gradient-to-b from-[#0B1220] to-[#0A1A2F]`}>
         <Providers>
-          
-          {children}
+          <Navbar />
+          <main className="flex-grow min-h-[calc(100vh-200px)] pb-96">
+            {children}
+          </main>
+          <Toaster richColors/>
+          <Footer />
         </Providers>
       </body>
     </html>
+
   );
 }

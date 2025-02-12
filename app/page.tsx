@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import Layout from "@/components/shared/layout";
 import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
 
@@ -43,7 +42,7 @@ export default function Home() {
   const [agent, setAgent] = useState(() => {
     return {
       id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: localStorage.getItem("currentAgentName") || "cyrene",
+      name: localStorage.getItem("currentAgentName") || "Cyrene",
     };
   });
 
@@ -90,12 +89,12 @@ export default function Home() {
     }
   }, [publicKey]);
 
-  useEffect(() => {
-    if(walletAddress){
-      console.log(walletAddress)
-    }
+  // useEffect(() => {
+  //   if(walletAddress){
+  //     console.log(walletAddress)
+  //   }
 
-  }, [walletAddress])
+  // }, [walletAddress])
   
 
 
@@ -120,7 +119,7 @@ export default function Home() {
       
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
-      console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
+      // console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
       
       // Get the message response
       if (useMockData) {
@@ -142,8 +141,8 @@ export default function Home() {
             : "";
         }
         
-        console.log("Message API URL:", messageApiUrl,agent.id);
-        console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
+        // console.log("Message API URL:", messageApiUrl,agent.id);
+        // console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
         
         const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
@@ -152,11 +151,11 @@ export default function Home() {
         });
 
         if (!response.ok) {
-          console.error('Response error:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
-          });
+          // console.error('Response error:', {
+          //   status: response.status,
+          //   statusText: response.statusText,
+          //   url: response.url
+          // });
           throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
@@ -165,13 +164,13 @@ export default function Home() {
 
       // Then generate voice if in voice mode
       if (useVoiceMode) {
-        console.log('Voice mode active, generating voice for:', responseText);
+        // console.log('Voice mode active, generating voice for:', responseText);
 
         try {
           audioUrl = await voiceManager.current.generateVoice(responseText);
-          console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
+          // console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
           if (audioUrl) {
-            console.log('Playing audio...');
+            // console.log('Playing audio...');
             const audio = new Audio(audioUrl);
             await audio.play().catch(err => console.error('Audio playback error:', err));
           } else {
@@ -187,7 +186,7 @@ export default function Home() {
         setMessages(prev => [...prev, { isUser: false, text: responseText, audio: audioUrl }]);
       }
     } catch (error) {
-      console.error('Error in handleSubmit:', error);
+      // console.error('Error in handleSubmit:', error);
       // Remove the user message if there was an error
       setMessages(prev => prev.filter((_, i) => i !== userMessageIndex));
     } finally {
@@ -259,8 +258,8 @@ export default function Home() {
   };
 
   return (
-    <Layout>
-            <div className="relative w-full h-[500px] md:h-[742px]">
+    <>
+  <div className="relative w-full h-[500px] md:h-[742px]">
   {/* Background Video */}
   <video
     src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
@@ -314,7 +313,7 @@ export default function Home() {
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
           >
-            Hi, I&apos;m {agent.name}
+            Hi, I'm {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
           </h1>
 
           <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8">
@@ -527,7 +526,19 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
-    </Layout>
+       {/* Always here for you text */}
+       <div className='container mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8 md:mb-12'>
+        <p
+          className='text-2xl sm:text-3xl md:text-4xl text-white/90'
+          style={{
+            fontFamily: 'PingFang SC',
+            textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
+          }}
+        >
+          Always here for you.
+        </p>
+      </div>
+    </>
   );
 }
 
