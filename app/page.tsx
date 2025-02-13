@@ -329,7 +329,7 @@ export default function Home() {
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
           >
-            Hi, I'm {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
+            Hi, I&apos;m {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
           </h1>
 
           <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
