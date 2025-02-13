@@ -8,13 +8,13 @@ import { WalletMultiButton, WalletModalButton } from '@solana/wallet-adapter-rea
 
 const Navbar = () => {
     const pathname = usePathname()
-    const[ isAgentOpen,setIsAgentOpen]=useState(false);
-    const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const [walletAddress, setWalletAddress] = useState<string | null>(null);
-    const agentDropdownRef = useRef(null);
-    const connectDropdownRef = useRef(null);
     const router = useRouter()
+    const agentDropdownRef = useRef<HTMLDivElement | null>(null);
+    const connectDropdownRef = useRef<HTMLDivElement | null>(null);
+    const [isAgentOpen, setIsAgentOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
   
     const handleHomeClick = () => {
