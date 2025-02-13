@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import Layout from "@/components/shared/layout";
 import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
 
@@ -36,18 +35,17 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<string>("")
-  const { publicKey } = useWallet();
-
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') { // Ensure this runs on client-side only
-      const storedWalletAddress = localStorage.getItem('walletAddress');
-      if (storedWalletAddress) {
-        setWalletAddress(storedWalletAddress);
-      }
-    }
-  }, []);
+  const { publicKey, disconnect } = useWallet();
+  const [walletAddress, setWalletAddress] = useState<string | null>(
+    localStorage.getItem('walletAddress')
+  );
+  const [agent, setAgent] = useState(() => {
+    return {
+      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
+      name: localStorage.getItem("currentAgentName") || "Cyrene",
+      image: localStorage.getItem("currentAgentImage") || '/cyrene_profile.png'
+    };
+  });
 
 
   const useMockData =  process.env.NEXT_USE_DEV
@@ -55,21 +53,52 @@ export default function Home() {
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
     if (container) {
-      container.scrollTop = container.scrollHeight
+      container.scrollTop = container.scrollHeight;
     }
   };
 
   useEffect(() => {
+    const updateAgentFromLocalStorage = () => {
+      const id = localStorage.getItem("currentAgentId") || "";
+      const name = localStorage.getItem("currentAgentName") || "";
+      const image = localStorage.getItem("currentAgentImage") || "";
+      
+      if (id && name && image) {
+        setAgent({ id, name ,image });
+      }
+    };
+  
+    // Call immediately when component mounts
+    updateAgentFromLocalStorage();
+  
+    // Add event listener for storage changes
+    window.addEventListener("storage", updateAgentFromLocalStorage);
+  
+    return () => {
+      window.removeEventListener("storage", updateAgentFromLocalStorage);
+    };
+  }, []);
+  
+  useEffect(() => {
     if (publicKey) {
       const address = publicKey.toBase58();
       localStorage.setItem('walletAddress', address);
+   
       setWalletAddress(address);
       setUser(address)
+     
       
     }
   }, [publicKey]);
 
+  // useEffect(() => {
+  //   if(walletAddress){
+  //     console.log(walletAddress)
+  //   }
+
+  // }, [walletAddress])
   
+
 
   useEffect(() => {
     scrollToBottom()
@@ -91,13 +120,9 @@ export default function Home() {
       let audioUrl: string | null = null
 
       // Use forced voice mode or current state
-      const useVoiceMode = forceVoiceMode || isVoiceMode
-      console.log('Voice mode status:', {
-        forced: forceVoiceMode,
-        current: isVoiceMode,
-        using: useVoiceMode
-      })
-
+      const useVoiceMode = forceVoiceMode || isVoiceMode;
+      // console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
+      
       // Get the message response
       if (useMockData) {
         const randomIndex = Math.floor(Math.random() * mockResponses.length)
@@ -108,25 +133,32 @@ export default function Home() {
         formData.append('text', text);
         formData.append('userId', user);
         formData.append('voice_mode', useVoiceMode.toString());
+        let messageApiUrl = "";
 
-        const messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL;
-        console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
+        if (agent.name === "cyrene") {
+          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
+        } else {
+          messageApiUrl = process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL
+            ? `https://${agent.name}.${process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL}`
+            : "";
+        }
+        
+        // console.log("Message API URL:", messageApiUrl,agent.id);
+        // console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
         
-        const response = await fetch(`${messageApiUrl}/message`, {
+        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
           method: 'POST',
           body: formData
         })
 
         if (!response.ok) {
-          console.error('Response error:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
-          })
-          throw new Error(
-            `Failed to send message: ${response.status} ${response.statusText}`
-          )
+          // console.error('Response error:', {
+          //   status: response.status,
+          //   statusText: response.statusText,
+          //   url: response.url
+          // });
+          throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
         const data = await response.json()
         responseText = data[0].text
@@ -134,20 +166,15 @@ export default function Home() {
 
       // Then generate voice if in voice mode
       if (useVoiceMode) {
-        console.log('Voice mode active, generating voice for:', responseText);
+        // console.log('Voice mode active, generating voice for:', responseText);
 
         try {
-          audioUrl = await voiceManager.current.generateVoice(responseText)
-          console.log(
-            'Voice generation result:',
-            audioUrl ? 'success' : 'failed'
-          )
+          audioUrl = await voiceManager.current.generateVoice(responseText);
+          // console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
           if (audioUrl) {
-            console.log('Playing audio...')
-            const audio = new Audio(audioUrl)
-            await audio
-              .play()
-              .catch(err => console.error('Audio playback error:', err))
+            // console.log('Playing audio...');
+            const audio = new Audio(audioUrl);
+            await audio.play().catch(err => console.error('Audio playback error:', err));
           } else {
             console.error('Voice generation returned null')
           }
@@ -164,7 +191,7 @@ export default function Home() {
         ])
       }
     } catch (error) {
-      console.error('Error in handleSubmit:', error)
+      // console.error('Error in handleSubmit:', error);
       // Remove the user message if there was an error
       setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
     } finally {
@@ -235,9 +262,20 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    const sectionId = localStorage.getItem('scrollToSection');
+    if (sectionId) {
+      const targetElement = document.getElementById(sectionId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth' });
+      }
+      localStorage.removeItem('scrollToSection'); // Cleanup after scrolling
+    }
+  }, []);
+
   return (
-    <Layout>
-            <div className="relative w-full h-[500px] md:h-[742px]">
+    <>
+  <div className="relative w-full h-[500px] md:h-[742px]">
   {/* Background Video */}
   <video
     src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
@@ -263,7 +301,7 @@ export default function Home() {
       Journey with Cyrene into the Agentic Future
     </h1>
     <a
-      href="#"
+      href="/launch-agent"
       className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
     >
       Launch Agent
@@ -277,7 +315,7 @@ export default function Home() {
     </p>
   </div>
 </div>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 " id="target-section" >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -291,12 +329,12 @@ export default function Home() {
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
           >
-            Hi, I&apos;m Cyrene
+            Hi, I'm {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
           </h1>
 
           <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
             <Image
-              src='/Cyrene profile cropped _85 1.png'
+              src={agent.image}
               alt='Cyrene AI'
               fill
               className='object-cover rounded-3xl'
@@ -324,9 +362,11 @@ export default function Home() {
                       >
                           {!message.isUser  && (
                             <Image
-                              src='./CyreneAI token NEW_800 5.png'
-                              alt='Ge'
-                              className='w-16 h-16 rounded-lg object-cover mr-2'
+                              src= {agent.image || '/cyrene_chat.png'}
+                              alt='cyrene_chat'
+                              className='w-14 h-14 rounded-lg object-cover mr-2'
+                              width={75} 
+                              height={77} 
                             />
                           )}
                         <div 
@@ -465,7 +505,7 @@ export default function Home() {
                       e.target.style.height = "auto"; // Reset height first
                       e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
                     }}
-                    placeholder={isVoiceMode ? "Listening..." : "Ask Cyrene..."}
+                    placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
                     disabled={isLoading || isRecording}
                     className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
                     rows={1} // Initial height
@@ -518,6 +558,18 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
-    </Layout>
-  )
+       {/* Always here for you text */}
+       <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
+        <p
+          className='text-2xl sm:text-3xl md:text-4xl text-white/90'
+          style={{
+            fontFamily: 'PingFang SC',
+            textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
+          }}
+        >
+          Always here for you.
+        </p>
+      </div>
+    </>
+  );
 }

@@ -59,7 +59,7 @@ class VoiceManager {
 
   startListening(onResult: (text: string) => void, onEnd: () => void): void {
     if (!this.recognition) {
-      console.error('Speech recognition not supported');
+      // console.error('Speech recognition not supported');
       return;
     }
 
@@ -91,7 +91,7 @@ class VoiceManager {
     
     const apiUrl = process.env.NEXT_PUBLIC_TTS_API_URL ?? "";
     if (!apiUrl) {
-      console.error("TTS API URL is not set");
+      // console.error("TTS API URL is not set");
       return null;
     }
     try {
@@ -111,14 +111,14 @@ class VoiceManager {
         }),
       });
       if (!response.ok) {
-        console.error('TTS API error:', response.status, response.statusText);
+        // console.error('TTS API error:', response.status, response.statusText);
         throw new Error('Failed to generate voice');
       }
       
       const audioBlob = await response.blob();
       return URL.createObjectURL(audioBlob);
     } catch (error) {
-      console.error('Error generating voice:', error);
+      // console.error('Error generating voice:', error);
       return null;
     }
   }

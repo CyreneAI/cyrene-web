@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Layout from "@/components/shared/layout";
 
 export default function Token() {
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -29,6 +28,8 @@ export default function Token() {
               alt="Cyrene Token"
               fill
               className="object-contain"
+              width={800}
+              height={500}
             />
           </div>
 
@@ -121,6 +122,8 @@ export default function Token() {
                 alt="Cyrene Token"
                 fill
                 className="object-contain"
+                width={800}
+                height={500}
               />
             </div>
             <p 
@@ -135,6 +138,6 @@ export default function Token() {
           </div>
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 } 

@@ -1,8 +1,7 @@
-import Layout from "@/components/shared/layout";
 
 export default function TermsPage() {
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto bg-black/80 rounded-2xl p-8 backdrop-blur-md border border-white/10">
           <h1 className="text-3xl font-semibold text-white mb-8">Terms and Conditions</h1>
@@ -29,6 +28,6 @@ export default function TermsPage() {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 } 

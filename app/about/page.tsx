@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Layout from "@/components/shared/layout";
 
 export default function About() {
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -33,7 +32,7 @@ export default function About() {
 
           <div className="relative w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72">
             <Image
-              src="/Cyrene profile cropped _85 1.png"
+              src="/cyrene_profile.png"
               alt="Cyrene AI"
               fill
               className="object-cover rounded-3xl"
@@ -57,6 +56,6 @@ export default function About() {
           </div>
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 } 

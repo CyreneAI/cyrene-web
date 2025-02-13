@@ -9,6 +9,11 @@ export default {
   ],
   theme: {
   	extend: {
+
+		fontFamily:{
+			poppins: ["Poppins", "sans-serif"],
+			dmSans: ["DM Sans", "sans-serif"],
+		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
