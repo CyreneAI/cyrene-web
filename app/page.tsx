@@ -527,7 +527,7 @@ export default function Home() {
         </motion.div>
       </div>
        {/* Always here for you text */}
-       <div className='container mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8 md:mb-12'>
+       <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
         <p
           className='text-2xl sm:text-3xl md:text-4xl text-white/90'
           style={{
