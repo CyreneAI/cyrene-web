@@ -71,12 +71,14 @@ export default function Test() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const bioInputRef =  useRef<HTMLInputElement | null>(null);
-  const loreInputRef =  useRef<HTMLInputElement | null>(null);
-  const knowledgeInputRef =  useRef<HTMLInputElement | null>(null);
+  const knowledgeInputRef = useRef<HTMLInputElement>(null);
+  const loreInputRef = useRef<HTMLInputElement>(null);
+  const bioInputRef = useRef<HTMLInputElement>(null);
 
-  const triggerFileInput = (inputRef:React.RefObject<HTMLInputElement>) => {
-    inputRef.current.click();
+  const triggerFileInput = (inputRef: React.RefObject<HTMLInputElement | null>) => {
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
   };
 
   // Handle file selection

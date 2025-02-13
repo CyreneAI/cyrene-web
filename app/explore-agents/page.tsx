@@ -18,8 +18,8 @@ interface Agent {
   status: 'active' | 'paused' | 'stopped';
   clients: string[];
   port: string;
-  image?: string; // Optional
-  description?: string; // Optional
+  image: string; // Optional
+  description: string; // Optional
 }
 
 
