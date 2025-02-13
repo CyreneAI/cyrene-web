@@ -36,14 +36,13 @@ export default function Home() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<string>("")
   const { publicKey, disconnect } = useWallet();
-  const [walletAddress, setWalletAddress] = useState<string | null>(
-    localStorage.getItem('walletAddress')
-  );
+
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [agent, setAgent] = useState(() => {
     return {
-      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: localStorage.getItem("currentAgentName") || "Cyrene",
-      image: localStorage.getItem("currentAgentImage") || '/cyrene_profile.png'
+      id: process.env.NEXT_PUBLIC_CYRENE_AI,
+      name: "Cyrene",
+      image:'/cyrene_profile.png'
     };
   });
 
@@ -58,15 +57,32 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const storedWalletAddress = localStorage.getItem("walletAddress");
+    if (storedWalletAddress) {
+      setWalletAddress(storedWalletAddress);
+    }
+  
+    const storedAgent = {
+      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
+      name: localStorage.getItem("currentAgentName") || "Cyrene",
+      image: localStorage.getItem("currentAgentImage") || "/cyrene_profile.png",
+    };
+    setAgent(storedAgent);
+  }, []);
+
+  useEffect(() => {
     const updateAgentFromLocalStorage = () => {
-      const id = localStorage.getItem("currentAgentId") || "";
-      const name = localStorage.getItem("currentAgentName") || "";
-      const image = localStorage.getItem("currentAgentImage") || "";
-      
-      if (id && name && image) {
-        setAgent({ id, name ,image });
+      if (typeof window !== "undefined") { // ✅ Ensure code runs only in the browser
+        const id = localStorage.getItem("currentAgentId") || "";
+        const name = localStorage.getItem("currentAgentName") || "";
+        const image = localStorage.getItem("currentAgentImage") || "";
+    
+        if (id && name && image) {
+          setAgent({ id, name, image });
+        }
       }
     };
+    
   
     // Call immediately when component mounts
     updateAgentFromLocalStorage();
@@ -86,7 +102,6 @@ export default function Home() {
    
       setWalletAddress(address);
       setUser(address)
-     
       
     }
   }, [publicKey]);
@@ -263,13 +278,13 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const sectionId = localStorage.getItem('scrollToSection');
+    const sectionId = localStorage.getItem("scrollToSection");
     if (sectionId) {
       const targetElement = document.getElementById(sectionId);
       if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth' });
+        targetElement.scrollIntoView({ behavior: "smooth" });
       }
-      localStorage.removeItem('scrollToSection'); // Cleanup after scrolling
+      localStorage.removeItem("scrollToSection");
     }
   }, []);
 
