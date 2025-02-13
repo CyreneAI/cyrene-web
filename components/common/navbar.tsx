@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname} from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { WalletMultiButton, WalletModalButton } from '@solana/wallet-adapter-react-ui';
 
 const Navbar = () => {
@@ -14,16 +14,16 @@ const Navbar = () => {
     const [walletAddress, setWalletAddress] = useState<string | null>(null);
     const agentDropdownRef = useRef(null);
     const connectDropdownRef = useRef(null);
+    const router = useRouter()
 
+  
     const handleHomeClick = () => {
-      localStorage.removeItem('currentAgentId');
-      localStorage.removeItem('currentAgentName');
-      localStorage.removeItem('currentAgentImage');
-      window.location.reload();
-      
+      localStorage.removeItem("currentAgentId");
+      localStorage.removeItem("currentAgentName");
+      localStorage.removeItem("currentAgentImage");
+      router.replace("/");
     };
-
-
+  
 
   useEffect(() => {
     const storedAddress = localStorage.getItem('walletAddress');
