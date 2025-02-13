@@ -1,11 +1,10 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Upload } from "lucide-react";
+import { Image as LucidImage, Upload } from "lucide-react";
+import Image  from "next/image";
 import { Ref, useRef, useState } from "react";
 import axios from 'axios';
 import { toast } from "sonner";
@@ -23,8 +22,37 @@ interface Agent {
   port:string;
 }
 
+interface AgentData {
+  name: string;
+  clients: string[];
+  oneLiner: string;
+  description: string;
+  bio: string[];
+  lore: string[];
+  knowledge: string[];
+  modelProvider: string;
+  messageExamples: { user: string; content: { text: string } }[][];
+  postExamples: any[]; // Define a proper structure if possible
+  topics: string[];
+  adjectives: string[];
+  plugins: string[];
+  style: {
+    all: string[];
+    chat: string[];
+    post: string[];
+  };
+  settings: {
+    secrets: {
+      OPENAI_API_KEY?: string;
+    };
+    voice: {
+      model: string;
+    };
+  };
+}
+
 const agentApi = {
-  async createAgent(agentData: Record<string, any>) {
+  async createAgent(agentData: AgentData) {
     try {
       const formData = new FormData();
       const characterBlob = new Blob([JSON.stringify(agentData)], { type: "application/json" });
@@ -218,10 +246,10 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                         {/* Preview Area */}
                         <div className="border p-6 w-1/3 flex flex-col items-center justify-center bg-[rgb(33,37,52)]  border-blue-500 rounded-sm">
                           {preview ? (
-                            <img src={preview} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                            <Image src={preview} alt="Preview" className="w-full h-full object-cover rounded-md" />
                           ) : (
                             <>
-                              <Image size={24} className="text-blue-500" />
+                              <LucidImage size={24} className="text-blue-500" />
                               <p>Preview after upload</p>
                             </>
                           )}

@@ -8,6 +8,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
 
@@ -173,7 +174,7 @@ export default function ExploreAgents() {
                     <Card className="bg-[#232C3C] text-white border border-white rounded-2xl group hover:scale-105 hover:shadow-blue-400 flex items-center gap-4 w-[400px] cursor-pointer">
                         {/* Image */}
                         <div className="w-64 h-40">
-                        <img src={agent.image} alt={agent.name} className={cn(
+                        <Image src={agent.image} alt={agent.name} className={cn(
                           "w-full h-full object-cover rounded-xl",
                            agent.name === "cyrene"&& "w-60 h-40"
                           )} />
