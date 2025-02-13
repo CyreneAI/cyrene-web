@@ -31,12 +31,13 @@ export default function About() {
           </div>
 
           <div className="relative w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72">
-            <Image
-              src="/cyrene_profile.png"
-              alt="Cyrene AI"
-              fill
-              className="object-cover rounded-3xl"
-            />
+              <Image
+                src="/cyrene_profile.png"
+                alt="Cyrene AI"
+                width={400}
+                height={400}
+                className="object-cover rounded-3xl"
+              />
           </div>
 
           <div className="w-full max-w-3xl">

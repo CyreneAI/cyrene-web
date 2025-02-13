@@ -32,7 +32,7 @@ interface AgentData {
   knowledge: string[];
   modelProvider: string;
   messageExamples: { user: string; content: { text: string } }[][];
-  postExamples: any[]; // Define a proper structure if possible
+  postExamples: string[]; 
   topics: string[];
   adjectives: string[];
   plugins: string[];
