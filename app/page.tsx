@@ -336,8 +336,9 @@ export default function Home() {
             <Image
               src={agent.image}
               alt='Cyrene AI'
-              fill
               className='object-cover rounded-3xl'
+              width={400}
+              height={400}
             />
           </div>
 
