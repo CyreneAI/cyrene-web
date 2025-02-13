@@ -28,6 +28,8 @@ export default function Token() {
               alt="Cyrene Token"
               fill
               className="object-contain"
+              width={800}
+              height={500}
             />
           </div>
 
@@ -120,6 +122,8 @@ export default function Token() {
                 alt="Cyrene Token"
                 fill
                 className="object-contain"
+                width={800}
+                height={500}
               />
             </div>
             <p 

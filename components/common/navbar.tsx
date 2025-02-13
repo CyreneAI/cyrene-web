@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname} from 'next/navigation';
 import { WalletMultiButton, WalletModalButton } from '@solana/wallet-adapter-react-ui';
 
 const Navbar = () => {
@@ -14,6 +14,14 @@ const Navbar = () => {
     const [walletAddress, setWalletAddress] = useState<string | null>(null);
     const agentDropdownRef = useRef(null);
     const connectDropdownRef = useRef(null);
+
+    const handleHomeClick = () => {
+      localStorage.removeItem('currentAgentId');
+      localStorage.removeItem('currentAgentName');
+      localStorage.removeItem('currentAgentImage');
+      window.location.reload();
+      
+    };
 
 
 
@@ -43,6 +51,7 @@ const Navbar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
   
 
 useEffect(() => {
@@ -64,21 +73,25 @@ useEffect(() => {
     <nav className='fixed top-0 left-0 right-0 z-50 w-full bg-[#0B1220]/90 backdrop-blur-md'>
       <div className='container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center'>
         {/* Logo */}
-        <Link href='/' className='no-underline'>
-          <Image
-            src='/CyreneAI_logo-text.png'
-            alt='Cyrene AI'
-            width={250}
-            height={77}
-            className='object-contain cursor-pointer w-[180px] sm:w-[160px] md:w-[220px]'
-          />
-        </Link>
+        <div onClick={handleHomeClick}>
+          <Link href="/" className="no-underline">
+            <Image
+              src="/CyreneAI_logo-text.png"
+              alt="Cyrene AI"
+              width={250}
+              height={77}
+              className="object-contain cursor-pointer w-[180px] sm:w-[160px] md:w-[220px]"
+            />
+          </Link>
+        </div>
 
         {/* Navigation Links */}
         <div className='flex gap-6 items-center text-white text-base sm:text-sm'>
-          <Link href='/' className={`no-underline ${pathname === '/home' ? 'text-white' : 'text-white/80 hover:text-white'}`}>
-            Home
-          </Link>
+          <div onClick={handleHomeClick}>
+            <Link href="/" className={`no-underline ${pathname === '/home' ? 'text-white' : 'text-white/80 hover:text-white'}`}>
+              Home
+            </Link>
+          </div>
 
           {/* Agents Dropdown */}
           <div className='relative' ref={agentDropdownRef}>

@@ -7,6 +7,7 @@ import Link from "next/link";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
+import { cn } from "@/lib/utils";
 
 const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
 
@@ -89,26 +90,56 @@ export default function ExploreAgents() {
           description:
             " Auren is here to guide you, bringing warmth and clarity to every customer interaction.",
         },
+        {
+          name: "Cyrene",
+          image: "cyrene_profile.png",
+          description:
+            " Cyrene cosmic presence from the Andromeda Galaxy, here to help you navigate technology and privacy with love and wisdom..",
+        },
       ];
 
-      const setChatAgent = (id:string,name:string)=>{
+      const setChatAgent = (id:string,name:string,image:string)=>{
         localStorage.setItem('currentAgentId', id);
         localStorage.setItem('currentAgentName',name );
+        localStorage.setItem('currentAgentImage',image);
+        localStorage.setItem('scrollToSection', 'target-section');
         router.push('/'); 
       }
 
       useEffect(() => {
         const fetchAgents = async () => {
           const fetchedAgents = await agentApi.getAgents();
+          const filteredMockAgents = mockAgents.filter(
+            (mock) => mock.image !== "cyrene_profile.png" && mock.image !== "elixia.png"
+          );
       
-          // Assign random image and description to each agent
+          // Assign images and descriptions based on conditions
           const enrichedAgents = fetchedAgents.map((agent) => {
-            const randomMockAgent = mockAgents[Math.floor(Math.random() * mockAgents.length)];
+            if (agent.name === "cyrene" ) {
+              const cyreneMock = mockAgents.find((mock) => mock.name === "Cyrene");
+              return {
+                ...agent,
+                image: "/cyrene_profile.png",
+                description: cyreneMock?.description || agent.description,
+              };
+            } else if (agent.name === "Elixia") {
+              const elixiaMock = mockAgents.find((mock) => mock.name === "Elixia");
+              return {
+                ...agent,
+                image: "/elixia.png",
+                description: elixiaMock?.description || agent.description,
+              };
+            } else {
+              // Assign random image and description for other agents
+              const randomMockAgent =
+              filteredMockAgents[Math.floor(Math.random() * filteredMockAgents.length)];
             return {
               ...agent,
               image: randomMockAgent.image,
               description: randomMockAgent.description,
             };
+          
+            }
           });
       
           setAgents(enrichedAgents);
@@ -142,7 +173,10 @@ export default function ExploreAgents() {
                     <Card className="bg-[#232C3C] text-white border border-white rounded-2xl group hover:scale-105 hover:shadow-blue-400 flex items-center gap-4 w-[400px] cursor-pointer">
                         {/* Image */}
                         <div className="w-64 h-40">
-                        <img src={agent.image} alt={agent.name} className="w-full h-full object-cover rounded-xl" />
+                        <img src={agent.image} alt={agent.name} className={cn(
+                          "w-full h-full object-cover rounded-xl",
+                           agent.name === "cyrene"&& "w-60 h-40"
+                          )} />
                         </div>
 
                         {/* Text Section */}
@@ -150,7 +184,7 @@ export default function ExploreAgents() {
                         <h1 className="text-lg font-bold">{agent.name}</h1>
                         <p className="text-sm text-gray-300">{agent.description}</p>
                         <button 
-                           onClick={() => setChatAgent(agent.id,agent.name)}
+                           onClick={() => setChatAgent(agent.id,agent.name,agent.image)}
                           className="bg-green-500 rounded-md mx-4 my-2 p-2 group-hover:scale-110">Chat</button>
                         </div>
                     </Card>

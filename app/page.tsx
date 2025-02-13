@@ -43,6 +43,7 @@ export default function Home() {
     return {
       id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
       name: localStorage.getItem("currentAgentName") || "Cyrene",
+      image: localStorage.getItem("currentAgentImage") || '/cyrene_profile.png'
     };
   });
 
@@ -60,9 +61,10 @@ export default function Home() {
     const updateAgentFromLocalStorage = () => {
       const id = localStorage.getItem("currentAgentId") || "";
       const name = localStorage.getItem("currentAgentName") || "";
+      const image = localStorage.getItem("currentAgentImage") || "";
       
-      if (id && name) {
-        setAgent({ id, name });
+      if (id && name && image) {
+        setAgent({ id, name ,image });
       }
     };
   
@@ -260,6 +262,17 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    const sectionId = localStorage.getItem('scrollToSection');
+    if (sectionId) {
+      const targetElement = document.getElementById(sectionId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth' });
+      }
+      localStorage.removeItem('scrollToSection'); // Cleanup after scrolling
+    }
+  }, []);
+
   return (
     <>
   <div className="relative w-full h-[500px] md:h-[742px]">
@@ -302,7 +315,7 @@ export default function Home() {
     </p>
   </div>
 </div>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 " id="target-section" >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -321,7 +334,7 @@ export default function Home() {
 
           <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
             <Image
-              src='/Cyrene profile cropped _85 1.png'
+              src={agent.image}
               alt='Cyrene AI'
               fill
               className='object-cover rounded-3xl'
@@ -349,9 +362,11 @@ export default function Home() {
                       >
                           {!message.isUser  && (
                             <Image
-                              src='./CyreneAI token NEW_800 5.png'
-                              alt='Ge'
-                              className='w-16 h-16 rounded-lg object-cover mr-2'
+                              src= {agent.image || '/cyrene_chat.png'}
+                              alt='cyrene_chat'
+                              className='w-14 h-14 rounded-lg object-cover mr-2'
+                              width={75} 
+                              height={77} 
                             />
                           )}
                         <div 

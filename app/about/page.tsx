@@ -32,7 +32,7 @@ export default function About() {
 
           <div className="relative w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72">
             <Image
-              src="/Cyrene profile cropped _85 1.png"
+              src="/cyrene_profile.png"
               alt="Cyrene AI"
               fill
               className="object-cover rounded-3xl"
