@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -50,7 +50,7 @@ export default function Home() {
   const useMockData =  process.env.NEXT_USE_DEV
 
   const scrollToBottom = () => {
-    const container = messagesContainerRef.current;
+    const container = messagesContainerRef.current
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
@@ -99,33 +99,33 @@ export default function Home() {
 
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom()
+  }, [messages])
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
     if (!text.trim() || isLoading) return;
 
-    setIsLoading(true);
-    setTranscription("");
+    setIsLoading(true)
+    setTranscription('')
 
     // Immediately show user message
-    const userMessageIndex = messages.length;
-    setMessages(prev => [...prev, { isUser: true, text }]);
-    setInputValue('');
+    const userMessageIndex = messages.length
+    setMessages(prev => [...prev, { isUser: true, text }])
+    setInputValue('')
 
     try {
-      let responseText: string;
-      let audioUrl: string | null = null;
-      
+      let responseText: string
+      let audioUrl: string | null = null
+
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
       // console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
       
       // Get the message response
       if (useMockData) {
-        const randomIndex = Math.floor(Math.random() * mockResponses.length);
-        responseText = mockResponses[randomIndex];
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const randomIndex = Math.floor(Math.random() * mockResponses.length)
+        responseText = mockResponses[randomIndex]
+        await new Promise(resolve => setTimeout(resolve, 1000))
       } else {
         const formData = new FormData();
         formData.append('text', text);
@@ -147,8 +147,8 @@ export default function Home() {
         
         const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
           method: 'POST',
-          body: formData,
-        });
+          body: formData
+        })
 
         if (!response.ok) {
           // console.error('Response error:', {
@@ -158,8 +158,8 @@ export default function Home() {
           // });
           throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json();
-        responseText = data[0].text;
+        const data = await response.json()
+        responseText = data[0].text
       }
 
       // Then generate voice if in voice mode
@@ -174,88 +174,91 @@ export default function Home() {
             const audio = new Audio(audioUrl);
             await audio.play().catch(err => console.error('Audio playback error:', err));
           } else {
-            console.error('Voice generation returned null');
+            console.error('Voice generation returned null')
           }
         } catch (error) {
-          console.error('Voice generation error:', error);
+          console.error('Voice generation error:', error)
         }
       }
 
       // Add AI response
       if (!useVoiceMode || audioUrl) {
-        setMessages(prev => [...prev, { isUser: false, text: responseText, audio: audioUrl }]);
+        setMessages(prev => [
+          ...prev,
+          { isUser: false, text: responseText, audio: audioUrl }
+        ])
       }
     } catch (error) {
       // console.error('Error in handleSubmit:', error);
       // Remove the user message if there was an error
-      setMessages(prev => prev.filter((_, i) => i !== userMessageIndex));
+      setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleVoiceInput = () => {
     if (isRecording) {
-      voiceManager.current.stopListening();
-      setIsRecording(false);
-      return;
+      voiceManager.current.stopListening()
+      setIsRecording(false)
+      return
     }
 
-    setIsRecording(true);
+    setIsRecording(true)
     voiceManager.current.startListening(
-      async (text) => {
-        setTranscription(text);
+      async text => {
+        setTranscription(text)
         // Force voice mode to be true for voice input
         const forceVoiceMode = true;
         await handleSubmit(text, user, forceVoiceMode);
       },
       () => setIsRecording(false)
-    );
-  };
+    )
+  }
 
   const exitVoiceMode = () => {
-    setIsVoiceMode(false);
-    setIsRecording(false);
-    voiceManager.current.stopListening();
-  };
+    setIsVoiceMode(false)
+    setIsRecording(false)
+    voiceManager.current.stopListening()
+  }
 
   const toggleAudio = (index: number) => {
-    const audio = audioRefs.current[index];
-    if (!audio) return;
+    const audio = audioRefs.current[index]
+    if (!audio) return
 
     if (isPlayingAudio[index]) {
-      audio.pause();
-      setIsPlayingAudio(prev => ({ ...prev, [index]: false }));
+      audio.pause()
+      setIsPlayingAudio(prev => ({ ...prev, [index]: false }))
     } else {
-      audio.play();
-      setIsPlayingAudio(prev => ({ ...prev, [index]: true }));
+      audio.play()
+      setIsPlayingAudio(prev => ({ ...prev, [index]: true }))
     }
-  };
+  }
 
   const toggleVoiceMode = async () => {
     if (isVoiceMode) {
-      exitVoiceMode();
+      exitVoiceMode()
     } else {
       // Set voice mode first
-      await new Promise<void>((resolve) => {
-        setIsVoiceMode(true);
-        setInputValue('');
-        resolve();
-      });
-      
+      await new Promise<void>(resolve => {
+        setIsVoiceMode(true)
+        setInputValue('')
+        resolve()
+      })
+
       // Start listening after state is updated
-      setIsRecording(true);
+      setIsRecording(true)
       voiceManager.current.startListening(
-        async (text) => {
-          setTranscription(text);
+        async text => {
+          setTranscription(text)
           // Force voice mode to be true for first message
           const forceVoiceMode = true;
           await handleSubmit(text, user, forceVoiceMode);
         },
         () => setIsRecording(false)
-      );
+      )
     }
-  };
+  }
 
   return (
     <>
@@ -304,11 +307,11 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center"
+          className='flex flex-col items-center'
         >
-          <h1 
-            className="text-3xl sm:text-4xl md:text-5xl text-white font-medium mb-12 sm:mb-16"
-            style={{ 
+          <h1
+            className='text-3xl sm:text-4xl md:text-5xl text-white font-medium mb-12 sm:mb-16'
+            style={{
               fontFamily: 'PingFang SC',
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
@@ -316,34 +319,36 @@ export default function Home() {
             Hi, I'm {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
           </h1>
 
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8">
+          <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
             <Image
-              src="/Cyrene profile cropped _85 1.png"
-              alt="Cyrene AI"
+              src='/Cyrene profile cropped _85 1.png'
+              alt='Cyrene AI'
               fill
-              className="object-cover rounded-3xl"
+              className='object-cover rounded-3xl'
             />
           </div>
 
-          <div className="w-full max-w-xl flex flex-col items-center">
+          <div className='w-full max-w-xl flex flex-col items-center'>
             {/* Messages List */}
-            <div className="w-full flex-1 min-h-0">
+            <div className='w-full flex-1 min-h-0'>
               {messages.length > 0 && (
-                <div 
+                <div
                   ref={messagesContainerRef}
-                  className="w-full max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20 pr-2 mb-6"
+                  className='w-full max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20 pr-2 mb-6'
                 >
-                  <div className="w-full space-y-4">
+                  <div className='w-full space-y-4'>
                     {messages.map((message, index) => (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${
+                          message.isUser ? 'justify-end' : 'justify-start'
+                        }`}
                       >
                           {!message.isUser  && (
-                            <img
+                            <Image
                               src='./CyreneAI token NEW_800 5.png'
                               alt='Ge'
                               className='w-16 h-16 rounded-lg object-cover mr-2'
@@ -351,9 +356,10 @@ export default function Home() {
                           )}
                         <div 
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
-                            ${message.isUser 
-                              ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm' 
-                              : 'bg-white/5 border-white/10 rounded-tl-sm'
+                            ${
+                              message.isUser
+                                ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm'
+                                : 'bg-white/5 border-white/10 rounded-tl-sm'
                             }`}
                         >
                         
@@ -362,28 +368,35 @@ export default function Home() {
                               <button
                                 onClick={() => toggleAudio(index)}
                                 className={`mt-1 transition-colors ${
-                                  isPlayingAudio[index] ? 'text-blue-400' : 'text-white/60 hover:text-white/90'
+                                  isPlayingAudio[index]
+                                    ? 'text-blue-400'
+                                    : 'text-white/60 hover:text-white/90'
                                 }`}
                               >
                                 {isPlayingAudio[index] ? (
-                                  <VolumeX className="w-5 h-5" />
+                                  <VolumeX className='w-5 h-5' />
                                 ) : (
-                                  <Volume2 className="w-5 h-5" />
+                                  <Volume2 className='w-5 h-5' />
                                 )}
                               </button>
                             )}
-                            <p className="text-white/90 text-sm sm:text-base flex-1">
+                            <p className='text-white/90 text-sm sm:text-base flex-1'>
                               {message.text}
                             </p>
                           </div>
                           {message.audio && (
                             <audio
-                              ref={(el) => {
-                                if (el) audioRefs.current[index] = el;
+                              ref={el => {
+                                if (el) audioRefs.current[index] = el
                               }}
                               src={message.audio}
-                              onEnded={() => setIsPlayingAudio(prev => ({ ...prev, [index]: false }))}
-                              className="hidden"
+                              onEnded={() =>
+                                setIsPlayingAudio(prev => ({
+                                  ...prev,
+                                  [index]: false
+                                }))
+                              }
+                              className='hidden'
                             />
                           )}
                         </div>
@@ -397,47 +410,47 @@ export default function Home() {
 
             {/* Voice Mode UI */}
             {isVoiceMode ? (
-              <div className="w-full flex flex-col items-center gap-6 mb-6">
+              <div className='w-full flex flex-col items-center gap-6 mb-6'>
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="relative w-32 h-32 flex items-center justify-center"
+                  className='relative w-32 h-32 flex items-center justify-center'
                 >
                   <motion.div
                     animate={{
                       scale: isRecording ? [1, 1.2, 1] : 1,
-                      opacity: isRecording ? [0.2, 0.5, 0.2] : 0.2,
+                      opacity: isRecording ? [0.2, 0.5, 0.2] : 0.2
                     }}
                     transition={{
                       repeat: isRecording ? Infinity : 0,
-                      duration: 1.5,
+                      duration: 1.5
                     }}
-                    className="absolute inset-0 bg-blue-500 rounded-full"
+                    className='absolute inset-0 bg-blue-500 rounded-full'
                   />
                   <motion.div
                     animate={{
                       scale: isRecording ? [1, 1.1, 1] : 1,
-                      opacity: isRecording ? [0.15, 0.3, 0.15] : 0.15,
+                      opacity: isRecording ? [0.15, 0.3, 0.15] : 0.15
                     }}
                     transition={{
                       repeat: isRecording ? Infinity : 0,
                       duration: 1.5,
-                      delay: 0.2,
+                      delay: 0.2
                     }}
-                    className="absolute inset-2 bg-blue-500 rounded-full"
+                    className='absolute inset-2 bg-blue-500 rounded-full'
                   />
                   <button
                     onClick={handleVoiceInput}
                     className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${
-                      isRecording 
-                        ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110' 
+                      isRecording
+                        ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110'
                         : 'bg-white/5 text-white/60 hover:text-blue-500 hover:bg-white/10'
                     }`}
                   >
                     {isRecording ? (
-                      <Mic className="w-8 h-8" />
+                      <Mic className='w-8 h-8' />
                     ) : (
-                      <MicOff className="w-8 h-8" />
+                      <MicOff className='w-8 h-8' />
                     )}
                   </button>
                 </motion.div>
@@ -445,16 +458,16 @@ export default function Home() {
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-white/60 text-sm text-center max-w-md"
+                    className='text-white/60 text-sm text-center max-w-md'
                   >
                     {transcription}
                   </motion.p>
                 )}
                 <button
                   onClick={exitVoiceMode}
-                  className="text-white/40 hover:text-white/60 transition-colors flex items-center gap-2"
+                  className='text-white/40 hover:text-white/60 transition-colors flex items-center gap-2'
                 >
-                  <X className="w-4 h-4" />
+                  <X className='w-4 h-4' />
                   <span>Exit Voice Mode</span>
                 </button>
               </div>
@@ -485,7 +498,7 @@ export default function Home() {
                   
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button
-                      type="button"
+                      type='button'
                       onClick={toggleVoiceMode}
                       className={`p-2 rounded-full transition-colors ${
                         isVoiceMode 
@@ -493,12 +506,16 @@ export default function Home() {
                           : "hover:bg-white/10 text-white/40 hover:text-blue-500"
                       }`}
                     >
-                      {isVoiceMode ? <X className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                      {isVoiceMode ? (
+                        <X className='w-5 h-5' />
+                      ) : (
+                        <Mic className='w-5 h-5' />
+                      )}
                     </button>
-                    <button 
-                      type="submit"
+                    <button
+                      type='submit'
                       disabled={isLoading || !inputValue.trim()}
-                      className="p-2 rounded-full hover:bg-white/10"
+                      className='p-2 rounded-full hover:bg-white/10'
                     >
                       <ArrowUp 
                         className={`w-5 h-5 transition-colors ${
@@ -514,7 +531,7 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 justify-center"
+                    className='absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 justify-center'
                   >
                     <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -541,4 +558,3 @@ export default function Home() {
     </>
   );
 }
-
