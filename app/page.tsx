@@ -63,7 +63,7 @@ export default function Home() {
     }
   
     const cyrene = {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI,
+      id: process.env.NEXT_PUBLIC_CYRENE_AI || "",
       name: "cyrene",
       image: "/cyrene_profile.png",
     };
