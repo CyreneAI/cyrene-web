@@ -38,16 +38,10 @@ export default function Home() {
   const [user, setUser] = useState<string>("")
   const { publicKey, disconnect } = useWallet();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [agent, setAgent] = useState(() => {
-    return {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: "cyrene",
-      image:'/cyrene_profile.png'
-    };
-  });
-
-
-  const useMockData =  process.env.NEXT_USE_DEV
+  const agent = {
+    name: "cyrene",
+    image: "/cyrene_profile.png"
+  };
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
@@ -61,13 +55,6 @@ export default function Home() {
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
     }
-  
-    const cyrene = {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI || "",
-      name: "cyrene",
-      image: "/cyrene_profile.png",
-    };
-    setAgent(cyrene);
   }, []);
 
   
@@ -79,7 +66,6 @@ export default function Home() {
       setUser(address)
     }
   }, [publicKey]);
-
 
 
   useEffect(() => {
@@ -106,41 +92,27 @@ export default function Home() {
       console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
       
       // Get the message response
-      if (useMockData) {
-        const randomIndex = Math.floor(Math.random() * mockResponses.length)
-        responseText = mockResponses[randomIndex]
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      } else {
         const formData = new FormData();
         formData.append('text', text);
         formData.append('userId', user);
         formData.append('voice_mode', useVoiceMode.toString());
-        let messageApiUrl = "";
 
         if (agent.name === "cyrene") {
-          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
-        } 
-        console.log("Message API URL:", messageApiUrl,agent.id);
-        console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
-        if (!messageApiUrl) throw new Error('Message API URL not configured');
-        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
-          method: 'POST',
-          body: formData
-        })
-
-        if (!response.ok) {
-          console.error('Response error:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
-          });
-          throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json()
-        responseText = data[0].text
-      }
-
-      // Then generate voice if in voice mode
+          const response = await fetch(`/api/chatCyrene`, {
+            method: 'POST',
+            body: formData
+          })
+          if (!response.ok) {
+            console.error('Response error:', {
+              status: response.status,
+              statusText: response.statusText,
+              url: response.url
+            });
+            throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
+          }
+          const data = await response.json()
+          responseText = data[0].text
+            // Then generate voice if in voice mode
       if (useVoiceMode) {
         console.log('Voice mode active, generating voice for:', responseText);
 
@@ -166,6 +138,8 @@ export default function Home() {
           { isUser: false, text: responseText, audio: audioUrl }
         ])
       }
+        } 
+        
     } catch (error) {
       console.error('Error in handleSubmit:', error);
    

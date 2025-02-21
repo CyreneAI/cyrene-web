@@ -25,15 +25,13 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}" \
-            --build-arg NEXT_USE_DEV="${{ secrets.NEXT_USE_DEV }}" \
-            --build-arg NEXT_PUBLIC_TTS_API_URL="${{ secrets.NEXT_PUBLIC_TTS_API_URL }}" \
-            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" \
-            --build-arg NEXT_PUBLIC_AGENT_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}" \
-            --build-arg NEXT_PUBLIC_CYRENE_AI="${{ secrets.NEXT_PUBLIC_CYRENE_AI }}" \
-            --build-arg NEXT_PUBLIC_OPENAI_API_KEY="${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}" \
-            --build-arg NEXT_modelProvider="${{ secrets.NEXT_modelProvider }}" \
+            --build-arg API_BASE_URL="${{ secrets.API_BASE_URL }}" \
+            --build-arg MESSAGE_API_URL="${{ secrets.MESSAGE_API_URL }}" \
+            --build-arg CYRENE_AI_ID="${{ secrets.CYRENE_AI_ID }}" \
+            --build-arg TTS_API_URL="${{ secrets.TTS_API_URL }}" \
+            --build-arg MODEL_PROVIDER="${{ secrets.MODEL_PROVIDER }}" \
             -t ghcr.io/netsepio/cyrene-web:prod .
+
 
       - name: Push Docker Image to GHCR
         run: docker push ghcr.io/netsepio/cyrene-web:prod
@@ -71,14 +69,11 @@ jobs:
 
             echo "📄 Creating environment file..."
             cat <<EOF > .env
-            NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}
-            NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }}
-            NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_AGENT_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}
-            NEXT_PUBLIC_CYRENE_AI=${{ secrets.NEXT_PUBLIC_CYRENE_AI }}
-            NEXT_PUBLIC_OPENAI_API_KEY=${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
-            NEXT_modelProvider=${{ secrets.NEXT_modelProvider }}
+            API_BASE_URL=${{ secrets.API_BASE_URL }}
+            MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
+            CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
+            TTS_API_URL=${{ secrets.TTS_API_URL }}
+            MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
             EOF
 
             echo "🐳 Running the new container..."
