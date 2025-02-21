@@ -22,6 +22,10 @@ jobs:
       - name: Log in to GitHub Container Registry (GHCR)
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
 
+      - name: Decode and Create .env File
+        run: |
+          echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 --decode > .env
+
       - name: Build Docker Image
         run: |
           docker build \
@@ -69,17 +73,8 @@ jobs:
             echo "🧹 Removing old images to free up space..."
             docker system prune -f
 
-            echo "📄 Creating environment file..."
-            cat <<EOF > .env
-            NEXT_PUBLIC_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}
-            NEXT_USE_DEV=${{ secrets.NEXT_USE_DEV }}
-            NEXT_PUBLIC_TTS_API_URL=${{ secrets.NEXT_PUBLIC_TTS_API_URL }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_AGENT_MESSAGE_API_URL=${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}
-            NEXT_PUBLIC_CYRENE_AI=${{ secrets.NEXT_PUBLIC_CYRENE_AI }}
-            NEXT_PUBLIC_OPENAI_API_KEY=${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
-            NEXT_modelProvider=${{ secrets.NEXT_modelProvider }}
-            EOF
+            echo "📄 Decoding and creating environment file..."
+            echo "${{ secrets.ENV_FILE }}" | base64 --decode > .env
 
             echo "🐳 Running the new container..."
             docker run --name cyrene-web --env-file .env --restart=always -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
