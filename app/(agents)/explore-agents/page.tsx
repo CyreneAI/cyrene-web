@@ -44,13 +44,13 @@ export default function ExploreAgents() {
 
 
 
-      const setChatAgent = (id:string,name:string,image:string)=>{
-        localStorage.setItem('currentAgentId', id);
-        localStorage.setItem('currentAgentName',name );
-        localStorage.setItem('currentAgentImage',image);
-        localStorage.setItem('scrollToSection', 'target-section');
-        router.push('/'); 
-      }
+  const setChatAgent = (id:string,name:string,image:string)=>{
+    localStorage.setItem('currentAgentId', id);
+    localStorage.setItem('currentAgentName',name );
+    localStorage.setItem('currentAgentImage',image);
+    localStorage.setItem('scrollToSection', 'target-section');
+    router.push(`/explore-agents/chat/${id}`); 
+  }
 
       const mockAgents = useMemo(() => [
         {

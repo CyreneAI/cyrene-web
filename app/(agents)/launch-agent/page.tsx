@@ -43,7 +43,7 @@ interface AgentData {
   };
   settings: {
     secrets: {
-      OPENAI_API_KEY?: string;
+      OPENAI_API_KEY: string;
     };
     voice: {
       model: string;
@@ -171,7 +171,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     },
     settings: {
       secrets: {
-        OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+        OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
       },
       voice: {
         model: "en_US-male-medium",
@@ -246,7 +246,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                         {/* Preview Area */}
                         <div className="border p-6 w-1/3 flex flex-col items-center justify-center bg-[rgb(33,37,52)]  border-blue-500 rounded-sm">
                           {preview ? (
-                            <Image src={preview} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                            <Image src={preview} alt="Preview" width={40} height={40} className="w-full h-full object-cover rounded-md" />
                           ) : (
                             <>
                               <LucidImage size={24} className="text-blue-500" />
@@ -305,7 +305,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                           onChange={(e) => handleFileUpload(e, setBio)}
                           className="hidden"
                         />
-                        <button className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
+                        <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
                       </div>
                   </div>
 
@@ -332,7 +332,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                           onChange={(e) => handleFileUpload(e, setLore)}
                           className="hidden"
                         />
-                        <button className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
+                        <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
                       </div>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -358,7 +358,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                         onChange={(e) => handleFileUpload(e, setKnowledge)}
                         className="hidden"
                       />
-                      <button className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
+                      <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
                     </div>
                   </div>
                 </div>

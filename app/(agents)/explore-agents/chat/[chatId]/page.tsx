@@ -1,12 +1,17 @@
+
+
+
 'use client'
 
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Textarea } from "@/components/ui/textarea";
+import axios from "axios";
 
 
 interface Message {
@@ -14,6 +19,34 @@ interface Message {
   text: string;
   audio?: string | null;
 }
+
+const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
+
+interface Agent {
+  id: string;
+  name: string;
+  domain: string;
+  status: 'active' | 'paused' | 'stopped';
+  clients: string[];
+  port: string;
+  image: string; 
+  description: string;
+}
+
+
+const agentApi = {
+  async getAgent(id: string): Promise<Agent | null> { 
+    try {
+      const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io/${id}`);
+
+      return response.data.agent || null; 
+    } catch (error) {
+      console.error("Failed to fetch agent:", error);
+      return null; 
+    }
+  },
+};
+
 
 // Mock responses for testing
 const mockResponses = [
@@ -23,7 +56,7 @@ const mockResponses = [
   "I'd be happy to help you with that. My knowledge spans across various domains including AI, machine learning, cybersecurity, and blockchain technology."
 ];
 
-export default function Home() {
+export default function Page() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,16 +71,43 @@ export default function Home() {
   const [user, setUser] = useState<string>("")
   const { publicKey, disconnect } = useWallet();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [agent, setAgent] = useState(() => {
-    return {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: "cyrene",
-      image:'/cyrene_profile.png'
-    };
-  });
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const { chatId } = useParams<{ chatId: string }>(); 
 
+  const mockAgents = useMemo(() => [
+    { name: "Orion", image: "/orion.png" },
+    { name: "Elixia", image: "/elixia.png" },
+    { name: "Solis", image: "/solis.png" },
+    { name: "Auren", image: "/auren.png" },
+    { name: "Cyrene", image: "/cyrene_profile.png" }, // Cyrene's fixed image
+  ], []);
+
+const agentId = chatId || ""; 
 
   const useMockData =  process.env.NEXT_USE_DEV
+
+
+ 
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (agentId) {
+        const fetchedAgent = await agentApi.getAgent(agentId);
+  
+        if (fetchedAgent) {
+          // If the agent is "Cyrene", assign its specific image
+          const isCyrene = fetchedAgent.name.toLowerCase() === "cyrene";
+          const randomImage = isCyrene
+            ? "/cyrene_profile.png"
+            : mockAgents[Math.floor(Math.random() * (mockAgents.length - 1))].image; // Exclude Cyrene
+  
+          setAgent({ ...fetchedAgent, image: randomImage });
+        }
+      }
+    };
+  
+    fetchAgent();
+  }, [agentId, mockAgents]); 
+  
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
@@ -61,16 +121,8 @@ export default function Home() {
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
     }
-  
-    const cyrene = {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: "cyrene",
-      image: "/cyrene_profile.png",
-    };
-    setAgent(cyrene);
   }, []);
 
-  
   useEffect(() => {
     if (publicKey) {
       const address = publicKey.toBase58();
@@ -117,13 +169,15 @@ export default function Home() {
         formData.append('voice_mode', useVoiceMode.toString());
         let messageApiUrl = "";
 
-        if (agent.name === "cyrene") {
+        if (agent?.name === "cyrene") {
           messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
-        } 
-        console.log("Message API URL:", messageApiUrl,agent.id);
+        }else{
+          messageApiUrl = `https://${agent?.domain}`
+        }
+        console.log("Message API URL:", messageApiUrl,agent?.id);
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
-        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
+        const response = await fetch(`${messageApiUrl}/${agent?.id}/message`, {
           method: 'POST',
           body: formData
         })
@@ -240,46 +294,6 @@ export default function Home() {
 
   return (
     <>
-  <div className="relative w-full h-[500px] md:h-[742px]">
-  {/* Background Video */}
-  <video
-    src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
-    autoPlay
-    loop
-    muted
-    playsInline
-    className="absolute inset-0 w-full h-full object-cover"
-  />
-
-  {/* Gradient Overlay for Readability */}
-  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0F1A2E]/90" />
-
-  {/* Centered Main Text (Responsive) */}
-  <div className="absolute inset-0 flex flex-col gap-8 items-center justify-center text-center px-4">
-    <h1
-      className="text-3xl sm:text-4xl md:text-[55px] font-light text-white tracking-tight max-w-full"
-      style={{
-        fontFamily: "DM Sans",
-        textShadow: "0 0 20px rgba(79, 172, 254, 0.5)"
-      }}
-    >
-      Journey with Cyrene into the Agentic Future
-    </h1>
-    <a
-      href="/launch-agent"
-      className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
-    >
-      Launch Agent
-    </a>
-  </div>
-
-  {/* Bottom Text with Semi-Transparent Gradient */}
-  <div className="absolute bottom-0 w-full bg-gradient-to-r from-[#4C8AEC]/40 to-[#424F7F]/40 text-center py-4 sm:py-6 md:py-8">
-    <p className="text-lg sm:text-xl md:text-[24px] font-normal font-sans text-white">
-      Multi-Agent Platform and AI Coordination layer on secure network powered by NetSepio
-    </p>
-  </div>
-</div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 " id="target-section" >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -294,17 +308,18 @@ export default function Home() {
               textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
             }}
           >
-            Hi, I&apos;m {agent.name.charAt(0).toUpperCase() + agent.name.slice(1)}
+           Hi, I&apos;m {agent?.name ? agent.name.charAt(0).toUpperCase() + agent.name.slice(1) : "Cyrene"}
           </h1>
 
           <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
             <Image
-              src={agent.image}
-              alt='Cyrene AI'
-              className='object-cover rounded-3xl'
+              src={agent?.image ?? "/cyrene_profile.png"} // Fallback image
+              alt={agent?.name ?? "Cyrene"}
+              className="object-cover rounded-3xl"
               width={400}
               height={400}
             />
+
           </div>
 
           <div className='w-full max-w-xl flex flex-col items-center'>
@@ -328,7 +343,7 @@ export default function Home() {
                       >
                           {!message.isUser  && (
                             <Image
-                              src= {agent.image || '/cyrene_chat.png'}
+                              src= {agent?.image || '/cyrene_chat.png'}
                               alt='cyrene_chat'
                               className='w-14 h-14 rounded-lg object-cover mr-2'
                               width={75} 
@@ -480,7 +495,7 @@ export default function Home() {
                             }
                           }
                         }}
-                        placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
+                        placeholder={isVoiceMode ? "Listening..." : `Ask ${agent?.name}...`}
                         disabled={isLoading || isRecording}
                         className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
                         rows={1} // Initial height
