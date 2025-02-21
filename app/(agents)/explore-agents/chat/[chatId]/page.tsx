@@ -20,7 +20,6 @@ interface Message {
   audio?: string | null;
 }
 
-const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
 
 interface Agent {
   id: string;
@@ -37,9 +36,9 @@ interface Agent {
 const agentApi = {
   async getAgent(id: string): Promise<Agent | null> { 
     try {
-      const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io/${id}`);
-
-      return response.data.agent || null; 
+      const response = await axios.get(`/api/getAgent?id=${id}`);
+      console.log(response.data)
+      return response.data || null; 
     } catch (error) {
       console.error("Failed to fetch agent:", error);
       return null; 

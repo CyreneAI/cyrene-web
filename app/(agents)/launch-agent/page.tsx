@@ -5,22 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Image as LucidImage, Upload } from "lucide-react";
 import Image  from "next/image";
-import { Ref, useRef, useState } from "react";
+import {useRef, useState } from "react";
 import axios from 'axios';
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-
-const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
-
-interface Agent {
-  id: string;
-  name: string;
-  domain: string;
-  status: 'active' | 'paused' | 'stopped';
-  clients: string[];
-  port:string;
-}
 
 interface AgentData {
   name: string;
@@ -30,7 +19,6 @@ interface AgentData {
   bio: string[];
   lore: string[];
   knowledge: string[];
-  modelProvider: string;
   messageExamples: { user: string; content: { text: string } }[][];
   postExamples: string[]; 
   topics: string[];
@@ -41,50 +29,25 @@ interface AgentData {
     chat: string[];
     post: string[];
   };
-  settings: {
-    secrets: {
-      OPENAI_API_KEY: string;
-    };
-    voice: {
-      model: string;
-    };
-  };
 }
 
 const agentApi = {
   async createAgent(agentData: AgentData) {
     try {
-      const formData = new FormData();
-      const characterBlob = new Blob([JSON.stringify(agentData)], { type: "application/json" });
-
-      formData.append("character_file", characterBlob, "agent.character.json");
-      formData.append("domain", "us01.erebrus.io");
-      formData.append("docker_url", "ghcr.io/netsepio/cyrene");
-
-      // console.log("Sending FormData:", [...formData.entries()]);
-
-      const response = await axios.post(`${API_BASE_URL}/agents/us01.erebrus.io`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await axios.post('/api/createAgent', agentData, {
+        headers: {
+          'Content-Type': 'application/json', // Correct header for sending FormData
+        },
       });
-
-      // console.log("API Response:", response.data);
-      return response.data;
+      return response.data; // Return the response from the backend
     } catch (error) {
-      // console.error("API Error:");
-      throw error;
-    }
-  },
-
-  async getAgents(): Promise<Agent[]> {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io`);
-      return response.data.agents || [];
-    } catch (error) {
-      // console.error("Failed to fetch agents:", error);
-      return [];
+      console.error("API Error:", error); // Log any errors
+      throw error; 
     }
   },
 };
+
+
 
 export default function Test() {
 
@@ -98,7 +61,7 @@ export default function Test() {
   const [knowledge, setKnowledge] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-
+  const [openAiKey, setOpenAiKey] = useState<string>("");
   const knowledgeInputRef = useRef<HTMLInputElement>(null);
   const loreInputRef = useRef<HTMLInputElement>(null);
   const bioInputRef = useRef<HTMLInputElement>(null);
@@ -147,7 +110,6 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     bio: bio.split("\n"),
     lore: lore.split("\n"),
     knowledge: knowledge.split("\n"),
-    modelProvider: "openai",
     messageExamples: [
       [
         {
@@ -168,14 +130,6 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       all: [""],
       chat: [""],
       post: [""],
-    },
-    settings: {
-      secrets: {
-        OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
-      },
-      voice: {
-        model: "en_US-male-medium",
-      },
     },
   };
 
@@ -202,7 +156,6 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
    
   }
 };
-
 
 
 

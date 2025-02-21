@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-const API_BASE_URL ='https://gateway.erebrus.io/api/v1.0';
 
 interface Agent {
   id: string;
@@ -27,7 +26,7 @@ interface Agent {
 const agentApi = {
   async getAgents(): Promise<Agent[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io`);
+      const response = await axios.get('/api/getAgents');
       return response.data.agents || [];
     } catch (error) {
       // console.error("Failed to fetch agents:", error);
