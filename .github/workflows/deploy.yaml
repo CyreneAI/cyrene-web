@@ -24,20 +24,11 @@ jobs:
 
       - name: Decode and Create .env File
         run: |
-          echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 --decode > .env
+          echo "${{ secrets.ENV_FILE }}" | base64 --decode > .env
 
       - name: Build Docker Image
         run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_MESSAGE_API_URL }}" \
-            --build-arg NEXT_USE_DEV="${{ secrets.NEXT_USE_DEV }}" \
-            --build-arg NEXT_PUBLIC_TTS_API_URL="${{ secrets.NEXT_PUBLIC_TTS_API_URL }}" \
-            --build-arg NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}" \
-            --build-arg NEXT_PUBLIC_AGENT_MESSAGE_API_URL="${{ secrets.NEXT_PUBLIC_AGENT_MESSAGE_API_URL }}" \
-            --build-arg NEXT_PUBLIC_CYRENE_AI="${{ secrets.NEXT_PUBLIC_CYRENE_AI }}" \
-            --build-arg NEXT_PUBLIC_OPENAI_API_KEY="${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}" \
-            --build-arg NEXT_modelProvider="${{ secrets.NEXT_modelProvider }}" \
-            -t ghcr.io/netsepio/cyrene-web:prod .
+          docker build -t ghcr.io/netsepio/cyrene-web:prod .
 
       - name: Push Docker Image to GHCR
         run: docker push ghcr.io/netsepio/cyrene-web:prod
