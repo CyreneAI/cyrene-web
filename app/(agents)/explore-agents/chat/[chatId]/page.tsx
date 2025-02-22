@@ -12,6 +12,8 @@ import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 
 interface Message {
@@ -37,14 +39,17 @@ const agentApi = {
   async getAgent(id: string): Promise<Agent | null> { 
     try {
       const response = await axios.get(`/api/getAgent?id=${id}`);
-      console.log(response.data)
-      return response.data || null; 
+      if (!response.data) {
+        return null;
+      }
+      return response.data; 
     } catch (error) {
-      console.error("Failed to fetch agent:", error);
       return null; 
     }
   },
 };
+
+
 
 
 // Mock responses for testing
@@ -72,6 +77,7 @@ export default function Page() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const { chatId } = useParams<{ chatId: string }>(); 
+  const router = useRouter()
 
   const mockAgents = useMemo(() => [
     { name: "Orion", image: "/orion.png" },
@@ -91,9 +97,12 @@ const agentId = chatId || "";
     const fetchAgent = async () => {
       if (agentId) {
         const fetchedAgent = await agentApi.getAgent(agentId);
+        if (!fetchedAgent) {
+          toast.error("Invalid agent ID!");
+          router.push("/explore-agents");
+        }
   
         if (fetchedAgent) {
-          // If the agent is "Cyrene", assign its specific image
           const isCyrene = fetchedAgent.name.toLowerCase() === "cyrene";
           const randomImage = isCyrene
             ? "/cyrene_profile.png"
@@ -105,7 +114,7 @@ const agentId = chatId || "";
     };
   
     fetchAgent();
-  }, [agentId, mockAgents]); 
+  }, [agentId, mockAgents,router]); 
   
 
   const scrollToBottom = () => {
