@@ -30,6 +30,7 @@ jobs:
             --build-arg CYRENE_AI_ID="${{ secrets.CYRENE_AI_ID }}" \
             --build-arg TTS_API_URL="${{ secrets.TTS_API_URL }}" \
             --build-arg MODEL_PROVIDER="${{ secrets.MODEL_PROVIDER }}" \
+            --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             -t ghcr.io/netsepio/cyrene-web:prod .
 
 
@@ -74,6 +75,7 @@ jobs:
             CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
             TTS_API_URL=${{ secrets.TTS_API_URL }}
             MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             EOF
 
             echo "🐳 Running the new container..."
