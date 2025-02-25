@@ -6,7 +6,6 @@ import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Textarea } from "@/components/ui/textarea";
 
 
 interface Message {
@@ -37,11 +36,18 @@ export default function Home() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<string>("")
   const { publicKey, disconnect } = useWallet();
+
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const agent = {
-    name: "cyrene",
-    image: "/cyrene_profile.png"
-  };
+  const [agent, setAgent] = useState(() => {
+    return {
+      id: process.env.NEXT_PUBLIC_CYRENE_AI,
+      name: "Cyrene",
+      image:'/cyrene_profile.png'
+    };
+  });
+
+
+  const useMockData =  process.env.NEXT_USE_DEV
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
@@ -55,17 +61,58 @@ export default function Home() {
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
     }
+  
+    const storedAgent = {
+      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
+      name: localStorage.getItem("currentAgentName") || "Cyrene",
+      image: localStorage.getItem("currentAgentImage") || "/cyrene_profile.png",
+    };
+    setAgent(storedAgent);
   }, []);
 
+  useEffect(() => {
+    const updateAgentFromLocalStorage = () => {
+      if (typeof window !== "undefined") { // ✅ Ensure code runs only in the browser
+        const id = localStorage.getItem("currentAgentId") || "";
+        const name = localStorage.getItem("currentAgentName") || "";
+        const image = localStorage.getItem("currentAgentImage") || "";
+    
+        if (id && name && image) {
+          setAgent({ id, name, image });
+        }
+      }
+    };
+    
+  
+    // Call immediately when component mounts
+    updateAgentFromLocalStorage();
+  
+    // Add event listener for storage changes
+    window.addEventListener("storage", updateAgentFromLocalStorage);
+  
+    return () => {
+      window.removeEventListener("storage", updateAgentFromLocalStorage);
+    };
+  }, []);
   
   useEffect(() => {
     if (publicKey) {
       const address = publicKey.toBase58();
       localStorage.setItem('walletAddress', address);
+   
       setWalletAddress(address);
       setUser(address)
+      
     }
   }, [publicKey]);
+
+  // useEffect(() => {
+  //   if(walletAddress){
+  //     console.log(walletAddress)
+  //   }
+
+  // }, [walletAddress])
+  
 
 
   useEffect(() => {
@@ -73,11 +120,11 @@ export default function Home() {
   }, [messages])
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
-
-    console.log("clicked")
     if (!text.trim() || isLoading) return;
+
     setIsLoading(true)
     setTranscription('')
+
     // Immediately show user message
     const userMessageIndex = messages.length
     setMessages(prev => [...prev, { isUser: true, text }])
@@ -89,38 +136,58 @@ export default function Home() {
 
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
-      console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
+      // console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
       
       // Get the message response
+      if (useMockData) {
+        const randomIndex = Math.floor(Math.random() * mockResponses.length)
+        responseText = mockResponses[randomIndex]
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } else {
         const formData = new FormData();
         formData.append('text', text);
         formData.append('userId', user);
         formData.append('voice_mode', useVoiceMode.toString());
+        let messageApiUrl = "";
 
         if (agent.name === "cyrene") {
-          const response = await fetch(`/api/chatCyrene`, {
-            method: 'POST',
-            body: formData
-          })
-          if (!response.ok) {
-            console.error('Response error:', {
-              status: response.status,
-              statusText: response.statusText,
-              url: response.url
-            });
-            throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
-          }
-          const data = await response.json()
-          responseText = data[0].text
-            // Then generate voice if in voice mode
+          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
+        } else {
+          messageApiUrl = process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL
+            ? `https://${agent.name}.${process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL}`
+            : "";
+        }
+        
+        // console.log("Message API URL:", messageApiUrl,agent.id);
+        // console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
+        if (!messageApiUrl) throw new Error('Message API URL not configured');
+        
+        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          // console.error('Response error:', {
+          //   status: response.status,
+          //   statusText: response.statusText,
+          //   url: response.url
+          // });
+          throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json()
+        responseText = data[0].text
+      }
+
+      // Then generate voice if in voice mode
       if (useVoiceMode) {
-        console.log('Voice mode active, generating voice for:', responseText);
+        // console.log('Voice mode active, generating voice for:', responseText);
 
         try {
           audioUrl = await voiceManager.current.generateVoice(responseText);
-          console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
+          // console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
           if (audioUrl) {
-            console.log('Playing audio...');
+            // console.log('Playing audio...');
             const audio = new Audio(audioUrl);
             await audio.play().catch(err => console.error('Audio playback error:', err));
           } else {
@@ -138,11 +205,9 @@ export default function Home() {
           { isUser: false, text: responseText, audio: audioUrl }
         ])
       }
-        } 
-        
     } catch (error) {
-      console.error('Error in handleSubmit:', error);
-   
+      // console.error('Error in handleSubmit:', error);
+      // Remove the user message if there was an error
       setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
     } finally {
       setIsLoading(false)
@@ -211,6 +276,17 @@ export default function Home() {
       )
     }
   }
+
+  useEffect(() => {
+    const sectionId = localStorage.getItem("scrollToSection");
+    if (sectionId) {
+      const targetElement = document.getElementById(sectionId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth" });
+      }
+      localStorage.removeItem("scrollToSection");
+    }
+  }, []);
 
   return (
     <>
@@ -438,28 +514,18 @@ export default function Home() {
                   }}
                   className="relative w-full"
                 >
-                 <Textarea
-                        value={inputValue}
-                        onChange={(e) => {
-                          setInputValue(e.target.value);
-                          e.target.style.height = "auto"; // Reset height first
-                          e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault(); // Prevent new line
-                            if (inputValue.trim()) {
-                              handleSubmit(inputValue, user); // Submit form
-                              setInputValue(""); // Clear input after submit
-                            }
-                          }
-                        }}
-                        placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
-                        disabled={isLoading || isRecording}
-                        className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
-                        rows={1} // Initial height
-                      />
-
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      e.target.style.height = "auto"; // Reset height first
+                      e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
+                    }}
+                    placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
+                    disabled={isLoading || isRecording}
+                    className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
+                    rows={1} // Initial height
+                  />
                   
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button

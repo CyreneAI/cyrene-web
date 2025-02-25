@@ -83,16 +83,21 @@ body {
 
 .wallet-adapter-button {
   font-size: 1rem !important; /* text-2xl */
-  font-family: 'PingFang SC' !important; /* font-sans */
+  /* font-sans */
   background-color: #0162FF !important; /* bg-[#0162FF] */
-  border-radius: 0.75rem !important; /* rounded-xl */
-  line-height:calc(2/1.5);
+  border-radius: 2rem !important; /* rounded-xl */
+  /* line-height:calc(2/1.5); */
   padding: 0.3cm 0.5cm
 }
 
 /* Small screens (sm:text-base) */
 @media (max-width: 640px) {
   .wallet-adapter-button {
-    font-size: 1.5rem !important; /* sm:text-base */
+    font-size: 0.9rem !important;
+    padding: 0.2cm 0.3cm !important; 
+    line-height: normal !important;/* sm:text-base */
+    height: min-content !important;
+    width: max-content !important; 
+    margin-left: -0.5rem !important;
   }
 }
