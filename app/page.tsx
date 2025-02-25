@@ -6,6 +6,7 @@ import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import VoiceManager from '@/utils/voiceUtils';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { Textarea } from "@/components/ui/textarea";
 
 
 interface Message {
@@ -26,8 +27,8 @@ export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState<{[key: number]: boolean}>({});
-  const audioRefs = useRef<{[key: number]: HTMLAudioElement | null}>({});
+  const [isPlayingAudio, setIsPlayingAudio] = useState<{ [key: number]: boolean }>({});
+  const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
@@ -38,16 +39,16 @@ export default function Home() {
   const { publicKey, disconnect } = useWallet();
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [agent, setAgent] = useState(() => {
-    return {
-      id: process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: "Cyrene",
-      image:'/cyrene_profile.png'
-    };
-  });
+  const agent = {
+    name: "cyrene",
+    image: "/cyrene_profile.png"
+  };
 
 
-  const useMockData =  process.env.NEXT_USE_DEV
+
+
+
+
 
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
@@ -61,65 +62,30 @@ export default function Home() {
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
     }
-  
-    const storedAgent = {
-      id: localStorage.getItem("currentAgentId") || process.env.NEXT_PUBLIC_CYRENE_AI,
-      name: localStorage.getItem("currentAgentName") || "Cyrene",
-      image: localStorage.getItem("currentAgentImage") || "/cyrene_profile.png",
-    };
-    setAgent(storedAgent);
+
+
   }, []);
 
-  useEffect(() => {
-    const updateAgentFromLocalStorage = () => {
-      if (typeof window !== "undefined") { // ✅ Ensure code runs only in the browser
-        const id = localStorage.getItem("currentAgentId") || "";
-        const name = localStorage.getItem("currentAgentName") || "";
-        const image = localStorage.getItem("currentAgentImage") || "";
-    
-        if (id && name && image) {
-          setAgent({ id, name, image });
-        }
-      }
-    };
-    
-  
-    // Call immediately when component mounts
-    updateAgentFromLocalStorage();
-  
-    // Add event listener for storage changes
-    window.addEventListener("storage", updateAgentFromLocalStorage);
-  
-    return () => {
-      window.removeEventListener("storage", updateAgentFromLocalStorage);
-    };
-  }, []);
-  
+
+
   useEffect(() => {
     if (publicKey) {
       const address = publicKey.toBase58();
       localStorage.setItem('walletAddress', address);
-   
+
       setWalletAddress(address);
       setUser(address)
-      
+
     }
   }, [publicKey]);
-
-  // useEffect(() => {
-  //   if(walletAddress){
-  //     console.log(walletAddress)
-  //   }
-
-  // }, [walletAddress])
-  
-
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
+
+    console.log("clicked")
     if (!text.trim() || isLoading) return;
 
     setIsLoading(true)
@@ -136,78 +102,68 @@ export default function Home() {
 
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
-      // console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
-      
-      // Get the message response
-      if (useMockData) {
-        const randomIndex = Math.floor(Math.random() * mockResponses.length)
-        responseText = mockResponses[randomIndex]
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      } else {
-        const formData = new FormData();
-        formData.append('text', text);
-        formData.append('userId', user);
-        formData.append('voice_mode', useVoiceMode.toString());
-        let messageApiUrl = "";
+      console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
 
-        if (agent.name === "cyrene") {
-          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
-        } else {
-          messageApiUrl = process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL
-            ? `https://${agent.name}.${process.env.NEXT_PUBLIC_AGENT_MESSAGE_API_URL}`
-            : "";
-        }
-        
-        // console.log("Message API URL:", messageApiUrl,agent.id);
-        // console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
-        if (!messageApiUrl) throw new Error('Message API URL not configured');
-        
-        const response = await fetch(`${messageApiUrl}/${agent.id}/message`, {
+      // Get the message response
+
+
+
+
+
+      const formData = new FormData();
+      formData.append('text', text);
+      formData.append('userId', user);
+      formData.append('voice_mode', useVoiceMode.toString());
+
+
+      if (agent.name === "cyrene") {
+        const response = await fetch(`/api/chatCyrene`, {
           method: 'POST',
           body: formData
         })
-
         if (!response.ok) {
-          // console.error('Response error:', {
-          //   status: response.status,
-          //   statusText: response.statusText,
-          //   url: response.url
-          // });
+          console.error('Response error:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url
+          });
           throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
         const data = await response.json()
         responseText = data[0].text
-      }
+        // Then generate voice if in voice mode
 
-      // Then generate voice if in voice mode
-      if (useVoiceMode) {
-        // console.log('Voice mode active, generating voice for:', responseText);
 
-        try {
-          audioUrl = await voiceManager.current.generateVoice(responseText);
-          // console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
-          if (audioUrl) {
-            // console.log('Playing audio...');
-            const audio = new Audio(audioUrl);
-            await audio.play().catch(err => console.error('Audio playback error:', err));
-          } else {
-            console.error('Voice generation returned null')
+        if (useVoiceMode) {
+          console.log('Voice mode active, generating voice for:', responseText);
+
+          try {
+            audioUrl = await voiceManager.current.generateVoice(responseText);
+            console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
+            if (audioUrl) {
+              console.log('Playing audio...');
+              const audio = new Audio(audioUrl);
+              await audio.play().catch(err => console.error('Audio playback error:', err));
+            } else {
+              console.error('Voice generation returned null')
+            }
+          } catch (error) {
+            console.error('Voice generation error:', error)
           }
-        } catch (error) {
-          console.error('Voice generation error:', error)
+        }
+
+        // Add AI response
+        if (!useVoiceMode || audioUrl) {
+          setMessages(prev => [
+            ...prev,
+            { isUser: false, text: responseText, audio: audioUrl }
+          ])
         }
       }
 
-      // Add AI response
-      if (!useVoiceMode || audioUrl) {
-        setMessages(prev => [
-          ...prev,
-          { isUser: false, text: responseText, audio: audioUrl }
-        ])
-      }
     } catch (error) {
-      // console.error('Error in handleSubmit:', error);
-      // Remove the user message if there was an error
+      console.error('Error in handleSubmit:', error);
+
       setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
     } finally {
       setIsLoading(false)
@@ -277,59 +233,59 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    const sectionId = localStorage.getItem("scrollToSection");
-    if (sectionId) {
-      const targetElement = document.getElementById(sectionId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: "smooth" });
-      }
-      localStorage.removeItem("scrollToSection");
-    }
-  }, []);
+
+
+
+
+
+
+
+
+
+
 
   return (
     <>
-  <div className="relative w-full h-[500px] md:h-[742px]">
-  {/* Background Video */}
-  <video
-    src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
-    autoPlay
-    loop
-    muted
-    playsInline
-    className="absolute inset-0 w-full h-full object-cover"
-  />
+      <div className="relative w-full h-[500px] md:h-[742px]">
+        {/* Background Video */}
+        <video
+          src="Cyrene video hero for Topaz_apo8.mp4" // Place your video inside the "public" folder
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-  {/* Gradient Overlay for Readability */}
-  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0F1A2E]/90" />
+        {/* Gradient Overlay for Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0F1A2E]/90" />
 
-  {/* Centered Main Text (Responsive) */}
-  <div className="absolute inset-0 flex flex-col gap-8 items-center justify-center text-center px-4">
-    <h1
-      className="text-3xl sm:text-4xl md:text-[55px] font-light text-white tracking-tight max-w-full"
-      style={{
-        fontFamily: "DM Sans",
-        textShadow: "0 0 20px rgba(79, 172, 254, 0.5)"
-      }}
-    >
-      Journey with Cyrene into the Agentic Future
-    </h1>
-    <a
-      href="/launch-agent"
-      className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
-    >
-      Launch Agent
-    </a>
-  </div>
+        {/* Centered Main Text (Responsive) */}
+        <div className="absolute inset-0 flex flex-col gap-8 items-center justify-center text-center px-4">
+          <h1
+            className="text-3xl sm:text-4xl md:text-[55px] font-light text-white tracking-tight max-w-full"
+            style={{
+              fontFamily: "DM Sans",
+              textShadow: "0 0 20px rgba(79, 172, 254, 0.5)"
+            }}
+          >
+            Journey with Cyrene into the Agentic Future
+          </h1>
+          <a
+            href="/launch-agent"
+            className="px-6 py-3 text-lg md:text-xl font-medium text-black bg-white rounded-full border-white shadow-lg transition-all duration-300 "
+          >
+            Launch Agent
+          </a>
+        </div>
 
-  {/* Bottom Text with Semi-Transparent Gradient */}
-  <div className="absolute bottom-0 w-full bg-gradient-to-r from-[#4C8AEC]/40 to-[#424F7F]/40 text-center py-4 sm:py-6 md:py-8">
-    <p className="text-lg sm:text-xl md:text-[24px] font-normal font-sans text-white">
-      Multi-Agent Platform and AI Coordination layer on secure network powered by NetSepio
-    </p>
-  </div>
-</div>
+        {/* Bottom Text with Semi-Transparent Gradient */}
+        <div className="absolute bottom-0 w-full bg-gradient-to-r from-[#4C8AEC]/40 to-[#424F7F]/40 text-center py-4 sm:py-6 md:py-8">
+          <p className="text-lg sm:text-xl md:text-[24px] font-normal font-sans text-white">
+            Multi-Agent Platform and AI Coordination layer on secure network powered by NetSepio
+          </p>
+        </div>
+      </div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 " id="target-section" >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -372,37 +328,34 @@ export default function Home() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className={`flex ${
-                          message.isUser ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'
+                          }`}
                       >
-                          {!message.isUser  && (
-                            <Image
-                              src= {agent.image || '/cyrene_chat.png'}
-                              alt='cyrene_chat'
-                              className='w-14 h-14 rounded-lg object-cover mr-2'
-                              width={75} 
-                              height={77} 
-                            />
-                          )}
-                        <div 
+                        {!message.isUser && (
+                          <Image
+                            src={agent.image || '/cyrene_chat.png'}
+                            alt='cyrene_chat'
+                            className='w-14 h-14 rounded-lg object-cover mr-2'
+                            width={75}
+                            height={77}
+                          />
+                        )}
+                        <div
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
-                            ${
-                              message.isUser
-                                ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm'
-                                : 'bg-white/5 border-white/10 rounded-tl-sm'
+                            ${message.isUser
+                              ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm'
+                              : 'bg-white/5 border-white/10 rounded-tl-sm'
                             }`}
                         >
-                        
+
                           <div className="flex items-start gap-3">
                             {!message.isUser && message.audio && (
                               <button
                                 onClick={() => toggleAudio(index)}
-                                className={`mt-1 transition-colors ${
-                                  isPlayingAudio[index]
+                                className={`mt-1 transition-colors ${isPlayingAudio[index]
                                     ? 'text-blue-400'
                                     : 'text-white/60 hover:text-white/90'
-                                }`}
+                                  }`}
                               >
                                 {isPlayingAudio[index] ? (
                                   <VolumeX className='w-5 h-5' />
@@ -472,11 +425,10 @@ export default function Home() {
                   />
                   <button
                     onClick={handleVoiceInput}
-                    className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${
-                      isRecording
+                    className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
                         ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110'
                         : 'bg-white/5 text-white/60 hover:text-blue-500 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     {isRecording ? (
                       <Mic className='w-8 h-8' />
@@ -514,28 +466,37 @@ export default function Home() {
                   }}
                   className="relative w-full"
                 >
-                  <textarea
+                  <Textarea
                     value={inputValue}
                     onChange={(e) => {
                       setInputValue(e.target.value);
                       e.target.style.height = "auto"; // Reset height first
                       e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault(); // Prevent new line
+                        if (inputValue.trim()) {
+                          handleSubmit(inputValue, user); // Submit form
+                          setInputValue(""); // Clear input after submit
+                        }
+                      }
+                    }}
                     placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
                     disabled={isLoading || isRecording}
                     className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
                     rows={1} // Initial height
                   />
-                  
+
+
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button
                       type='button'
                       onClick={toggleVoiceMode}
-                      className={`p-2 rounded-full transition-colors ${
-                        isVoiceMode 
-                          ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30" 
+                      className={`p-2 rounded-full transition-colors ${isVoiceMode
+                          ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
                           : "hover:bg-white/10 text-white/40 hover:text-blue-500"
-                      }`}
+                        }`}
                     >
                       {isVoiceMode ? (
                         <X className='w-5 h-5' />
@@ -548,10 +509,9 @@ export default function Home() {
                       disabled={isLoading || !inputValue.trim()}
                       className='p-2 rounded-full hover:bg-white/10'
                     >
-                      <ArrowUp 
-                        className={`w-5 h-5 transition-colors ${
-                          inputValue && !isLoading ? "text-blue-500" : "text-white/40"
-                        }`} 
+                      <ArrowUp
+                        className={`w-5 h-5 transition-colors ${inputValue && !isLoading ? "text-blue-500" : "text-white/40"
+                          }`}
                       />
                     </button>
                   </div>
@@ -574,8 +534,8 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
-       {/* Always here for you text */}
-       <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
+      {/* Always here for you text */}
+      <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
         <p
           className='text-2xl sm:text-3xl md:text-4xl text-white/90'
           style={{
