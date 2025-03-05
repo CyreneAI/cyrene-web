@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: "CyreneAI",
     images: [
       {
-        url: "/share_descp.png", 
+        url: "/CyreneAI_share.png", 
         width: 1200,
         height: 630,
         alt: "Guiding Humanity to the Agentic Future",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     description: "CyreneAI is your cosmic guide and AI orchestrator on NetSepio's secure network. Chat with Cyrene, launch AI agents, and explore new frontiers in decentralized tech and elevated consciousness.",
     images: [
       {
-        url: "/share_descp.png", 
+        url: "/CyreneAI_share.png", 
         width: 1200,
         height: 630,
         alt: "Guiding Humanity to the Agentic Future",
