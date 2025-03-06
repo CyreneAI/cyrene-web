@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   images: {
     domains: ['robohash.org'], 
+    unoptimized: true,
   },
 };
 

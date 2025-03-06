@@ -8,7 +8,7 @@ export const UserAvatar = () => {
 
   useEffect(() => {
     const walletAddress = localStorage.getItem("walletAddress") || "default"
-    setAvatarUrl(`https://robohash.org/${walletAddress}?set=set4`)
+    setAvatarUrl(`robohash.org/${walletAddress}?set=set4`)
   }, [])
 
   if (!avatarUrl) return null
@@ -17,12 +17,13 @@ export const UserAvatar = () => {
     <div className="relative w-14 h-14 ml-2 mr-4">
       <div className="absolute inset-0 bg-white rounded-full" />
       <Image
-        src={avatarUrl}
+        src={`https://${avatarUrl}`}
         alt='user_avatar'
         className='rounded-full object-contain p-1'
         fill
         sizes="56px"
         priority
+        unoptimized
       />
     </div>
   )
