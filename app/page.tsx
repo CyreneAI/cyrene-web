@@ -551,7 +551,7 @@ export default function Home() {
             ) : null}
 
             {/* Input Form with Loading Indicator */}
-            <div className="w-full sticky bottom-0  to-transparent pt-4 mb-32">
+            <div className="w-full sticky bottom-0  to-transparent pt-4">
                             <div className="relative">
                               <form
                                 onSubmit={(e) => {
@@ -564,22 +564,24 @@ export default function Home() {
                                   value={inputValue}
                                   onChange={(e) => {
                                     setInputValue(e.target.value);
-                                    e.target.style.height = "auto"; // Reset height first
-                                    e.target.style.height = `${e.target.scrollHeight}px`; // Expand dynamically
+                                    e.target.style.height = "24px";
+                                    const newHeight = Math.min(e.target.scrollHeight, 150);
+                                    e.target.style.height = `${newHeight}px`;
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter" && !e.shiftKey) {
-                                      e.preventDefault(); // Prevent new line
+                                      e.preventDefault();
                                       if (inputValue.trim()) {
-                                        handleSubmit(inputValue, user); // Submit form
-                                        setInputValue(""); // Clear input after submit
+                                        handleSubmit(inputValue, user);
+                                        setInputValue("");
+                                        (e.target as HTMLTextAreaElement).style.height = "24px";
                                       }
                                     }
                                   }}
                                   placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
                                   disabled={isLoading || isRecording}
-                                  className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none overflow-hidden"
-                                  rows={1} // Initial height
+                                  className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none min-h-[24px] max-h-[150px] overflow-y-auto scrollbar-none"
+                                  rows={1}
                                 />
 
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
