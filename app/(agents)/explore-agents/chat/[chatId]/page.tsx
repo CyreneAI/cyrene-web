@@ -1,6 +1,3 @@
-
-
-
 'use client'
 
 import Image from "next/image";
@@ -14,14 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
+import { UserAvatar } from '@/components/user-avatar'
+import StarCanvas from "@/components/StarCanvas";
 
 interface Message {
   isUser: boolean;
   text: string;
   audio?: string | null;
 }
-
 
 interface Agent {
   id: string;
@@ -33,7 +30,6 @@ interface Agent {
   image: string; 
   description: string;
 }
-
 
 const agentApi = {
   async getAgent(id: string): Promise<Agent | null> { 
@@ -49,10 +45,6 @@ const agentApi = {
   },
 };
 
-
-
-
-// Mock responses for testing
 const mockResponses = [
   "Hello! I'm doing great, thank you for asking. I'm here to help you explore the fascinating world of AI and technology. What would you like to know?",
   "I'm a multi-talented AI assistant with expertise in cybersecurity, blockchain, and decentralized systems. I can help with technical questions, provide guidance on various topics, and even engage in natural conversations with voice responses.",
@@ -91,8 +83,6 @@ const agentId = chatId || "";
 
   const useMockData =  process.env.NEXT_USE_DEV
 
-
- 
   useEffect(() => {
     const fetchAgent = async () => {
       if (agentId) {
@@ -140,14 +130,11 @@ const agentId = chatId || "";
     }
   }, [publicKey]);
 
-
-
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
-
     console.log("clicked")
     if (!text.trim() || isLoading) return;
     setIsLoading(true)
@@ -177,11 +164,8 @@ const agentId = chatId || "";
         formData.append('voice_mode', useVoiceMode.toString());
         let messageApiUrl = "";
 
-        if (agent?.name === "cyrene") {
-          messageApiUrl = process.env.NEXT_PUBLIC_MESSAGE_API_URL || "";
-        }else{
           messageApiUrl = `https://${agent?.domain}`
-        }
+          
         console.log("Message API URL:", messageApiUrl,agent?.id);
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
@@ -302,35 +286,133 @@ const agentId = chatId || "";
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 " id="target-section" >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 mb-32 " id="target-section" >
+        <StarCanvas />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className='flex flex-col items-center'
         >
-          <h1
-            className='text-3xl sm:text-4xl md:text-5xl text-white font-medium mb-12 sm:mb-16'
-            style={{
-              fontFamily: 'PingFang SC',
-              textShadow: '0 0 20px rgba(79, 172, 254, 0.3)'
-            }}
-          >
-           Hi, I&apos;m {agent?.name ? agent.name.charAt(0).toUpperCase() + agent.name.slice(1) : "Cyrene"}
-          </h1>
-
-          <div className='relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8'>
-            <Image
-              src={agent?.image ?? "/cyrene_profile.png"} // Fallback image
-              alt={agent?.name ?? "Cyrene"}
-              className="object-cover rounded-3xl"
-              width={400}
-              height={400}
+          <div className='relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 mb-8'>
+            {/* Background glow effects */}
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.5, 0.3]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 blur-xl"
+            />
+            
+            {/* Middle layer glow */}
+            <motion.div
+              animate={{
+                scale: [1.1, 1.3, 1.1],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-lg"
             />
 
+            {/* Closer glow layer */}
+            <motion.div
+              animate={{
+                scale: [1.05, 1.2, 1.05],
+                opacity: [0.4, 0.6, 0.4]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.2
+              }}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/30 to-cyan-400/30 blur-md"
+            />
+
+            {/* Pulsing ring */}
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.5, 0.8, 0.5]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute inset-0 rounded-full border-2 border-blue-500/20"
+            />
+
+            {/* Main image container */}
+            <motion.div
+              animate={{
+                scale: [1, 1.02, 1],
+                rotate: [0, 1, 0],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="relative z-10"
+            >
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-pulse" />
+              <div className="relative rounded-full overflow-hidden border-2 border-white/10">
+                <Image
+                  src={agent?.image ?? "/cyrene_profile.png"}
+                  alt={agent?.name ?? "Cyrene"}
+                  className="object-cover rounded-full"
+                  width={400}
+                  height={400}
+                  priority
+                />
+                {/* Overlay shine effect */}
+                <motion.div
+                  animate={{
+                    opacity: [0.1, 0.3, 0.1],
+                    backgroundPosition: ['200% 200%', '-200% -200%']
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                  className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"
+                  style={{
+                    backgroundSize: '400% 400%'
+                  }}
+                />
+              </div>
+            </motion.div>
           </div>
 
-          <div className='w-full max-w-xl flex flex-col items-center'>
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className='text-3xl sm:text-4xl md:text-5xl font-medium mb-12 sm:mb-16'
+          >
+            <span 
+              className="bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent"
+              style={{
+                fontFamily: 'PingFang SC',
+              }}
+            >
+              Hi, I&apos;m {agent?.name ? agent.name.charAt(0).toUpperCase() + agent.name.slice(1) : "Cyrene"}
+            </span>
+          </motion.h1>
+
+          <div className='w-full max-w-xl flex flex-col items-center border border-white/10 rounded-2xl p-4 sm:p-5 backdrop-blur-lg'>
             {/* Messages List */}
             <div className='w-full flex-1 min-h-0'>
               {messages.length > 0 && (
@@ -345,28 +427,24 @@ const agentId = chatId || "";
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className={`flex ${
-                          message.isUser ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                       >
-                          {!message.isUser  && (
-                            <Image
-                              src= {agent?.image || '/cyrene_chat.png'}
-                              alt='cyrene_chat'
-                              className='w-14 h-14 rounded-lg object-cover mr-2'
-                              width={75} 
-                              height={77} 
-                            />
-                          )}
-                        <div 
+                        {!message.isUser && (
+                          <Image
+                            src={agent?.image || '/cyrene_chat.png'}
+                            alt='cyrene_chat'
+                            className='w-14 h-14 rounded-full object-cover mr-2'
+                            width={75}
+                            height={77}
+                          />
+                        )}
+                        <div
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
-                            ${
-                              message.isUser
-                                ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm'
-                                : 'bg-white/5 border-white/10 rounded-tl-sm'
+                            ${message.isUser
+                              ? 'bg-blue-500/20 border-blue-500/30 rounded-tr-sm'
+                              : 'bg-white/5 border-white/10 rounded-tl-sm'
                             }`}
                         >
-                        
                           <div className="flex items-start gap-3">
                             {!message.isUser && message.audio && (
                               <button
@@ -404,6 +482,7 @@ const agentId = chatId || "";
                             />
                           )}
                         </div>
+                        {message.isUser && <UserAvatar />}
                       </motion.div>
                     ))}
                     <div ref={messagesEndRef} />
@@ -478,7 +557,7 @@ const agentId = chatId || "";
             ) : null}
 
             {/* Input Form with Loading Indicator */}
-            <div className="w-full sticky bottom-0  to-transparent pt-4 mb-32">
+            <div className="w-full sticky bottom-0  to-transparent pt-4">
               <div className="relative">
                 <form
                   onSubmit={(e) => {

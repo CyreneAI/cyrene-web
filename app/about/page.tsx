@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import StarCanvas from "@/components/StarCanvas";
 
 export default function About() {
   return (
     <>
+      <StarCanvas />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

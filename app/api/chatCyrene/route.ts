@@ -7,6 +7,7 @@ const AGENT_ID = process.env.CYRENE_AI_ID;
 export async function POST(req: Request) {
   try {
     const messageData = await req.formData();  
+    console.log('messageData', `${MESSAGE_API_URL}/${AGENT_ID}/message`);
     const response = await axios.post(`${MESSAGE_API_URL}/${AGENT_ID}/message`, messageData, {
       headers: {
         'Content-Type': 'multipart/form-data', 

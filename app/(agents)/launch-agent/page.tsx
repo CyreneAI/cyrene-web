@@ -3,12 +3,15 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Image as LucidImage, Upload } from "lucide-react";
-import Image  from "next/image";
+// import { Image as LucidImage, Upload, FileUp, Sparkles } from "lucide-react";
+// import Image  from "next/image";
 import {useRef, useState } from "react";
 import axios from 'axios';
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { GlowButton } from "@/components/ui/glow-button";
+import StarCanvas from "@/components/StarCanvas";
 
 
 interface AgentData {
@@ -29,6 +32,12 @@ interface AgentData {
     chat: string[];
     post: string[];
   };
+}
+
+interface AgentConfig {
+  bio: string[];
+  lore: string[];
+  knowledge: string[];
 }
 
 const agentApi = {
@@ -56,9 +65,11 @@ export default function Test() {
   const [name, setName] = useState('');
   const [oneLiner, setOneLiner] = useState('');
   const [description, setDescription] = useState('');
-  const [bio, setBio] = useState('');
-  const [lore, setLore] = useState('');
-  const [knowledge, setKnowledge] = useState('');
+  const [characterInfo, setCharacterInfo] = useState({
+    bio: '',
+    lore: '',
+    knowledge: ''
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const [openAiKey, setOpenAiKey] = useState<string>("");
@@ -82,12 +93,22 @@ export default function Test() {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, setter: (value: string) => void) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setter(e.target?.result as string);
+        try {
+          const json: AgentConfig = JSON.parse(e.target?.result as string);
+          setCharacterInfo({
+            bio: json.bio.join('\n'),
+            lore: json.lore.join('\n'),
+            knowledge: json.knowledge.join('\n')
+          });
+          toast.success("Character information loaded successfully!");
+        } catch (error) {
+          toast.error("Invalid JSON file format");
+        }
       };
       reader.readAsText(file);
     }
@@ -102,14 +123,19 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     return;
   }
 
+  if (!isValidName(name)) {
+    toast.error("Invalid agent name format");
+    return;
+  }
+
   const agentData = {
     name,
     clients: [],
     oneLiner,
     description,
-    bio: bio.split("\n"),
-    lore: lore.split("\n"),
-    knowledge: knowledge.split("\n"),
+    bio: characterInfo.bio.split("\n"),
+    lore: characterInfo.lore.split("\n"),
+    knowledge: characterInfo.knowledge.split("\n"),
     messageExamples: [
       [
         {
@@ -135,197 +161,202 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
   setIsSubmitting(true);
   try {
-      toast.promise(agentApi.createAgent(agentData), {
-      loading: "Launching Agent...",
-      success: () => {
-        toast.success("Agent Launched! Click here to explore.", {
-          duration: 4000,
-          action: {
-            label: "Go Now",
-            onClick: () => router.push("/explore-agents"),
-          },
-        });
-        return "Agent Launched successfully!";
+    const response = await agentApi.createAgent(agentData);
+    
+    // Show success message with navigation link
+    toast.success("Agent Created Successfully!", {
+      duration: 4000,
+      action: {
+        label: "Chat Now",
+        onClick: () => router.push(`/explore-agents/chat/${response.agent.id}`),
       },
-      error: "Failed to create agent",
     });
+
+    // Automatically navigate after a short delay
+    setTimeout(() => {
+      router.push(`/explore-agents/chat/${response.agent.id}`);
+    }, 2000);
+
   } catch (error) {
     toast.error("Failed to create agent");
   } finally {
     setIsSubmitting(false);
-   
   }
+};
+
+// Update validation function to disallow capital letters and underscores
+const isValidName = (name: string): boolean => {
+  const nameRegex = /^[a-z0-9][a-z0-9.-]*$/;
+  return nameRegex.test(name);
 };
 
 
 
     return (
-      <div className="text-white flex flex-col items-center justify-center py-40 mx-52">
-        <div className="flex flex-col gap-14 w-full px-10">
-            {/* Title */}
-            <h1 className="text-3xl font-bold flex justify-center items-center">
-                Launch Agent
-            </h1>
-            <form onSubmit={handleSubmit} className="flex flex-col  gap-36">
-            <div className="flex flex-col gap-10 mx-32">
-              <h1 className="text-2xl font-semibold relative after:content-[''] after:block after:w-52 after:h-[2px] after:bg-blue-500 after:mt-1">
+      <div className="min-h-screen pt-32  text-white py-20">
+        <StarCanvas />
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-16"
+          >
+            Launch Your Agent
+          </motion.h1>
+
+          <form onSubmit={handleSubmit} className="space-y-24">
+            {/* Basic Information Section */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-[rgba(33,37,52,0.5)] backdrop-blur-xl rounded-2xl p-10 border border-blue-500/20"
+            >
+              <h2 className="text-3xl font-semibold mb-10 relative">
                 Basic Information
-              </h1>
+                <span className="absolute bottom-0 left-0 w-64 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></span>
+              </h2>
 
-                <div className="flex flex-col gap-6 w-full max-w-2xl space-y-6">
-                  <div className="flex flex-col gap-2">
-                    <Label>Name:</Label>
-                    <Input placeholder="Agent Name" className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700" 
-                     value={name} onChange={(e) => setName(e.target.value)}
-                    />
-
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label>Upload Image:</Label>
-                      <div className="flex space-x-4 ">
-                        {/* Upload Area */}
-                        <label className="border-2 border-dashed p-6 w-full flex flex-col items-center justify-center cursor-pointer bg-[rgb(33,37,52)] border-blue-500 rounded-sm">
-                          <Upload size={24} className="text-blue-500" />
-                          <p>Drag file here to upload or Choose File</p>
-                          <p className="text-sm text-gray-400">Recommended size 1024 x 1024 px</p>
-                          <input 
-                            type="file" 
-                            accept="image/*, .ico" 
-                            className="hidden" 
-                            onChange={handleFileChange}
-                          />
-                        </label>
-
-                        {/* Preview Area */}
-                        <div className="border p-6 w-1/3 flex flex-col items-center justify-center bg-[rgb(33,37,52)]  border-blue-500 rounded-sm">
-                          {preview ? (
-                            <Image src={preview} alt="Preview" width={40} height={40} className="w-full h-full object-cover rounded-md" />
-                          ) : (
-                            <>
-                              <LucidImage size={24} className="text-blue-500" />
-                              <p>Preview after upload</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label>One Liner:</Label>
-                    <Input placeholder="Write agent one liner" className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700" 
-                    value={oneLiner} onChange={(e) => setOneLiner(e.target.value)}
-                    />
-                    <p className="text-sm text-muted-foreground">Max 90 characters with spaces</p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label>Description:</Label>
-                    <Textarea 
-                      placeholder="Write agent description" 
-                      className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700 min-h-32 resize-none"
-                      value={description} onChange={(e) => setDescription(e.target.value)}
-                      
-                    />
-                    <p className="text-sm text-muted-foreground">Max 300 characters with spaces</p>
-                  </div>
+              <div className="space-y-8">
+                <div>
+                  <Label className="text-lg mb-2 text-blue-300">Name</Label>
+                  <Input 
+                    placeholder="Agent Name" 
+                    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all" 
+                    value={name} 
+                    onChange={(e) => {
+                      const newValue = e.target.value.toLowerCase(); // Force lowercase
+                      if (newValue === '' || isValidName(newValue)) {
+                        setName(newValue);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (name && !isValidName(name)) {
+                        toast.error("Name must start with a lowercase letter or number and can only contain lowercase letters, numbers, dots, and hyphens");
+                      }
+                    }}
+                  />
+                  <p className="text-sm text-blue-300/70 mt-2">
+                    Must start with a lowercase letter or number. Can contain lowercase letters, numbers, dots, and hyphens.
+                  </p>
                 </div>
-            </div>
+{/* 
+                <div>
+                  <Label className="text-lg mb-2 text-blue-300">Upload Image</Label>
+                  <div className="grid grid-cols-3 gap-6">
+                    <label className="col-span-2 border-2 border-dashed p-8 flex flex-col items-center justify-center cursor-pointer bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl hover:border-blue-500 transition-all group">
+                      <Upload size={32} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                      <p className="mt-4 text-center">Drag file here to upload or Choose File</p>
+                      <p className="text-sm text-blue-300/70">Recommended size 1024 x 1024 px</p>
+                      <input type="file" accept="image/*, .ico" className="hidden" onChange={handleFileChange} />
+                    </label>
 
-            <div className="flex flex-col gap-10 mx-32">
-              <h1 className="text-2xl font-semibold relative after:content-[''] after:block after:w-64 after:h-[2px] after:bg-blue-500 after:mt-1">
-                Character Information
-              </h1>
-                <div className="flex flex-col gap-6 w-full max-w-2xl space-y-6">
-                  <div className="flex flex-col gap-2">
-                    <Label>Bio:</Label>
-                    <Textarea 
-                      placeholder="Add agent Bio" 
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700 min-h-32 resize-none"
-                    />
-                    <div className="flex space-x-2">
-                        <button
-                        type="button"
-                          className="bg-blue-600 px-4 py-2 rounded-lg"
-                          onClick={() => triggerFileInput(bioInputRef)}
-                        >
-                          Add
-                        </button>
-                        <input
-                          type="file"
-                          accept=".txt"
-                          ref={bioInputRef}
-                          onChange={(e) => handleFileUpload(e, setBio)}
-                          className="hidden"
-                        />
-                        <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
-                      </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label>Lore:</Label>
-                    <Textarea 
-                      value={lore}
-                      placeholder="Add your own lore"
-                      onChange={(e) => setLore(e.target.value)}
-                      className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700 min-h-32 resize-none"
-                    />
-                     <div className="flex space-x-2 mt-4">
-                        <button
-                          className="bg-blue-600 px-4 py-2 rounded-lg"
-                          onClick={() => triggerFileInput(loreInputRef)}
-                          type="button"
-                        >
-                          Add
-                        </button>
-                        <input
-                          type="file"
-                          accept=".txt"
-                          ref={loreInputRef}
-                          onChange={(e) => handleFileUpload(e, setLore)}
-                          className="hidden"
-                        />
-                        <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
-                      </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label>Knowledge:</Label>
-                    <Textarea 
-                      value={knowledge}
-                      placeholder="Add your own knowledge"
-                      onChange={(e) => setKnowledge(e.target.value)}
-                      className="bg-[rgb(33,37,52)] border-none ring-1 ring-blue-500 focus-visible:ring-1 focus-visible:ring-blue-700 min-h-32 resize-none"
-                    />
-                    <div className="flex space-x-2 mt-4">
-                      <button
-                        className="bg-blue-600 px-4 py-2 rounded-lg"
-                        onClick={() => triggerFileInput(knowledgeInputRef)}
-                        type="button"
-                      >
-                        Add
-                      </button>
-                      <input
-                        type="file"
-                        accept=".txt"
-                        ref={knowledgeInputRef}
-                        onChange={(e) => handleFileUpload(e, setKnowledge)}
-                        className="hidden"
-                      />
-                      <button type="button" className="bg-blue-600 px-4 py-2 rounded-lg">Generate from AI</button>
+                    <div className="border p-8 flex flex-col items-center justify-center bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl">
+                      {preview ? (
+                        <Image src={preview} alt="Preview" width={100} height={100} className="rounded-lg shadow-lg" />
+                      ) : (
+                        <>
+                          <LucidImage size={32} className="text-blue-400" />
+                          <p className="mt-4 text-center text-blue-300/70">Preview</p>
+                        </>
+                      )}
                     </div>
                   </div>
+                </div> */}
+
+                <div>
+                  <Label className="text-lg mb-2 text-blue-300">One Liner</Label>
+                  <Input 
+                    placeholder="Write agent one liner" 
+                    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all" 
+                    value={oneLiner} 
+                    onChange={(e) => setOneLiner(e.target.value)}
+                  />
+                  <p className="text-sm text-blue-300/70 mt-2">Max 90 characters with spaces</p>
                 </div>
-            </div>
-              <div className="mx-32">
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className=" px-4 py-2 bg-green-500 text-white rounded-lg"
-                >
-                 {isSubmitting ? 'Launching...' : 'Launch Agent'}
-                </button>
+
+                <div>
+                  <Label className="text-lg mb-2 text-blue-300">Description</Label>
+                  <Textarea 
+                    placeholder="Write agent description" 
+                    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all min-h-32" 
+                    value={description} 
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                  <p className="text-sm text-blue-300/70 mt-2">Max 300 characters with spaces</p>
+                </div>
               </div>
-            </form>
+            </motion.div>
+
+            {/* Character Information Section */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-[rgba(33,37,52,0.5)] backdrop-blur-xl rounded-2xl p-10 border border-purple-500/20"
+            >
+              <h2 className="text-3xl font-semibold mb-10 relative">
+                Character Information
+                <span className="absolute bottom-0 left-0 w-80 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></span>
+              </h2>
+
+              <div className="flex gap-4 mb-8">
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="character-file"
+                  />
+                  <GlowButton
+                    type="button"
+                    onClick={() => document.getElementById('character-file')?.click()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-2 whitespace-nowrap"
+                  >
+                    Upload Character File
+                  </GlowButton>
+                </div>
+                <GlowButton 
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2 whitespace-nowrap"
+                  onClick={() => {
+                    toast.info("AI generation coming soon!");
+                  }}
+                >
+                  <span>Generate with AI</span>
+                </GlowButton>
+              </div>
+
+              {['bio', 'lore', 'knowledge'].map((field) => (
+                <div key={field} className="mb-10">
+                  <Label className="text-lg mb-2 text-purple-300 capitalize">{field}</Label>
+                  <Textarea 
+                    placeholder={`Add agent ${field}`}
+                    value={characterInfo[field as keyof typeof characterInfo]}
+                    onChange={(e) => setCharacterInfo(prev => ({
+                      ...prev,
+                      [field]: e.target.value
+                    }))}
+                    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-purple-500/30 focus-visible:ring-2 focus-visible:ring-purple-500 transition-all min-h-32"
+                  />
+                </div>
+              ))}
+            </motion.div>
+
+            <div className="flex justify-center">
+              <GlowButton 
+                type="submit" 
+                disabled={isSubmitting}
+                className="px-12 py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Creating Agent...</span>
+                  </div>
+                ) : 'Launch Agent'}
+              </GlowButton>
+            </div>
+          </form>
         </div>
       </div>
     );

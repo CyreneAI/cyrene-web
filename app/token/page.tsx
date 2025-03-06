@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import StarCanvas from "@/components/StarCanvas";
 
 export default function Token() {
   return (
     <>
+      <StarCanvas />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -26,7 +28,6 @@ export default function Token() {
             <Image
               src="/CyreneAI token NEW_800 5.png"
               alt="Cyrene Token"
-              fill
               className="object-contain"
               width={800}
               height={500}
@@ -101,8 +102,8 @@ export default function Token() {
               <Image
                 src="/product_timeline.png"
                 alt="Product Timeline"
-                fill
                 className="object-contain"
+                fill
               />
             </div>
           </div>
@@ -120,7 +121,6 @@ export default function Token() {
               <Image
                 src="/CyreneAI token NEW_800 5.png"
                 alt="Cyrene Token"
-                fill
                 className="object-contain"
                 width={800}
                 height={500}

@@ -60,7 +60,22 @@ export default {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
-  		}
+  		},
+		keyframes: {
+			twinkle: {
+			  '0%, 100%': {
+				opacity: '1',
+				transform: 'translateY(0)',
+			  },
+			  '50%': {
+				opacity: '0.5',
+				transform: 'translateY(-1px)',
+			  }
+			}
+		  },
+		  animation: {
+			'twinkle': 'twinkle 8s linear infinite',
+		  }
   	}
   },
   plugins: [require("tailwindcss-animate")],
