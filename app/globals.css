@@ -249,3 +249,13 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(1, 98, 255, 0.7);
 }
+
+/* Add these styles to override any existing scrollbar styles */
+textarea::-webkit-scrollbar {
+  display: none;
+}
+
+textarea {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
