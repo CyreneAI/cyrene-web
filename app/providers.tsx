@@ -1,4 +1,5 @@
 'use client';
+import '@/app/wallet-adapter.css'
 
 import {
   ConnectionProvider,

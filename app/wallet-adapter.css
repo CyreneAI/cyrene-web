@@ -1,0 +1,143 @@
+/* Override wallet button styles */
+.wallet-adapter-button {
+    background: linear-gradient(45deg, rgba(1, 98, 255, 0.1), rgba(166, 63, 225, 0.1)) !important;
+    border: 1px solid rgba(1, 98, 255, 0.2) !important;
+    border-radius: 50px !important;
+    padding: 2px 20px !important;
+    color: white !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    height: auto !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.2s ease-in-out !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 2px !important;
+
+}
+
+.wallet-adapter-button:hover {
+    background: linear-gradient(45deg, rgba(1, 98, 255, 0.2), rgba(166, 63, 225, 0.2)) !important;
+    border-color: rgba(1, 98, 255, 0.4) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(1, 98, 255, 0.2) !important;
+}
+
+/* Modal styles */
+.wallet-adapter-modal-wrapper {
+    background: rgba(15, 17, 23, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(1, 98, 255, 0.1) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 50px -12px rgba(1, 98, 255, 0.25) !important;
+    padding: 24px !important;
+    max-width: 400px !important;
+}
+
+/* Welcome Message with Logo */
+.wallet-adapter-modal-wrapper::before {
+    content: "" !important;
+    display: block !important;
+    width: 180px !important;
+    height: 60px !important;
+    margin: 0 auto 20px auto !important;
+    background-image: url('/CyreneAI_logo-text.png') !important;
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    filter: drop-shadow(0 0 10px rgba(1, 98, 255, 0.3)) !important;
+}
+
+/* Subtitle text */
+.wallet-adapter-modal-wrapper::after {
+    content: "Connect a wallet on Solana to continue with CyreneAI" !important;
+    display: block !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    margin-bottom: 24px !important;
+    letter-spacing: 0.5px !important;
+}
+
+.wallet-adapter-modal-button-close {
+    background: rgba(1, 98, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    transition: all 0.2s ease-in-out !important;
+    border: none !important;
+}
+
+.wallet-adapter-modal-button-close:hover {
+    background: rgba(1, 98, 255, 0.2) !important;
+    transform: rotate(90deg) !important;
+}
+
+.wallet-adapter-modal-list-item {
+    background: rgba(1, 98, 255, 0.05) !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease-in-out !important;
+    border: 1px solid rgba(1, 98, 255, 0.1) !important;
+    margin: 8px 0 !important;
+    height: 52px !important;
+    padding: 0 16px !important;
+}
+
+.wallet-adapter-modal-list-item:hover {
+    background: rgba(1, 98, 255, 0.1) !important;
+    border-color: rgba(1, 98, 255, 0.2) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(1, 98, 255, 0.1) !important;
+}
+
+/* Connected wallet button */
+.wallet-adapter-button[data-connected="true"] {
+    background: linear-gradient(45deg, rgba(1, 98, 255, 0.1), rgba(166, 63, 225, 0.1)) !important;
+    border: 1px solid rgba(1, 98, 255, 0.2) !important;
+}
+
+/* Additional Modal Styles */
+.wallet-adapter-modal-title {
+    color: #0162FF !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin-bottom: 20px !important;
+    text-align: center !important;
+    letter-spacing: 0.5px !important;
+}
+
+.wallet-adapter-modal-list-item-name {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: white !important;
+}
+
+.wallet-adapter-modal-list-item-icon {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.wallet-adapter-modal-list-item-icon-container {
+    padding: 0 !important;
+    margin-right: 12px !important;
+}
+
+/* Status text */
+.wallet-adapter-modal-list-item span:last-child {
+    color: #0162FF !important;
+    font-size: 13px !important;
+    opacity: 0.8 !important;
+    font-weight: 500 !important;
+}
+
+/* Animation for connected state */
+@keyframes connectedPulse {
+    0% { border-color: rgba(1, 98, 255, 0.2); }
+    50% { border-color: rgba(1, 98, 255, 0.4); }
+    100% { border-color: rgba(1, 98, 255, 0.2); }
+}
+
+.wallet-adapter-button[data-connected="true"] {
+    animation: connectedPulse 2s infinite !important;
+}
