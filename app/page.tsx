@@ -323,7 +323,8 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="text-lg md:text-xl text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300 max-w-6xl mb-8"
               >
-                Orchestrating <span className="font-bold text-2xl">multi-agent collaboration</span>, using <span className="font-bold text-2xl">locally hosted LLMs and GPUs</span>
+                Orchestrating <span className="font-bold text-2xl">multi-agent collaboration</span>, with  <span className="font-bold text-2xl">self-replicating, decentralized AI agents
+                </span>
                 <br/>Powered by a secured network layer by <span className="font-bold text-2xl">NetSepio</span>
               </motion.p>
               <motion.div
@@ -383,7 +384,7 @@ export default function Home() {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         className="text-gray-300 text-center md:text-left"
                       >
-                        Your guide to bridge the realms of technology and consciousness.
+                        Your guide to the realms of technology and consciousness.
                       </motion.p>
                     </div>
                   </motion.div>
@@ -747,7 +748,7 @@ export default function Home() {
                   Towards Digital, Agentic Future
                 </h2>
                 <p className="text-gray-400 max-w-2xl mx-auto">
-                  Private Agent Launchpad on Solana, managing a Multi-Agent Platform and AI Coordination layer on NetSepio&apos;s secure decentralized network.
+                AI agent launchpad managing a multi-agent platform and AI coordination layer on NetSepio's secure and decentralized network.
                 </p>
 
                 {/* Stats Section */}
