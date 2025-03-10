@@ -27,8 +27,10 @@ interface Agent {
   status: 'active' | 'paused' | 'stopped';
   clients: string[];
   port: string;
-  image: string; 
+  image: string;
   description: string;
+  avatar_img: string;
+  cover_img: string;
 }
 
 const agentApi = {
@@ -369,7 +371,7 @@ const agentId = chatId || "";
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-pulse" />
               <div className="relative rounded-full overflow-hidden border-2 border-white/10">
                 <Image
-                  src={agent?.image ?? "/cyrene_profile.png"}
+                  src={agent?.avatar_img ? `https://ipfs.erebrus.io/ipfs/${agent.avatar_img}` : "/cyrene_profile.png"}
                   alt={agent?.name ?? "Cyrene"}
                   className="object-cover rounded-full"
                   width={400}
@@ -430,13 +432,13 @@ const agentId = chatId || "";
                         className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                       >
                         {!message.isUser && (
-                          <Image
-                            src={agent?.image || '/cyrene_chat.png'}
-                            alt='cyrene_chat'
+                              <Image
+                            src={agent?.avatar_img ? `https://ipfs.erebrus.io/ipfs/${agent.avatar_img}` : '/cyrene_chat.png'}
+                                alt='cyrene_chat'
                             className='w-14 h-14 rounded-full object-cover mr-2'
-                            width={75}
-                            height={77}
-                          />
+                                width={75}
+                                height={77}
+                              />
                         )}
                         <div
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
