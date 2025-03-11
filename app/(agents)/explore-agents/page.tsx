@@ -75,7 +75,7 @@ const AgentCard = ({ agent, index, onChatClick }: {
       <Card className="relative w-full bg-transparent backdrop-blur-xl rounded-2xl overflow-hidden z-10 border-blue-900/50">
         <div className="relative w-full h-48">
           <Image 
-            src={agent.cover_img ? `https://ipfs.erebrus.io/ipfs/${agent.cover_img}` : "/Cyrene cover_85 2.png"} 
+            src={agent.cover_img ? `https://ipfs.erebrus.io/ipfs/${agent.cover_img}` : "/cyrene_cover_2-1-85.png"} 
             alt={`${agent.name} cover`} 
             fill
             className="object-cover opacity-80"
