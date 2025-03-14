@@ -21,6 +21,8 @@ interface Agent {
   port: string;
   image: string;
   description: string;
+  avatar_img: string;
+  cover_img: string;
 }
 
 const agentApi = {
@@ -70,27 +72,34 @@ const AgentCard = ({ agent, index, onChatClick }: {
         className="group-hover:opacity-100"
       />
       
-      <Card className="relative w-full bg-transparent
-                     backdrop-blur-xl rounded-2xl overflow-hidden z-10 border-blue-900/50">
-        <div className="relative h-48 overflow-hidden group">
+      <Card className="relative w-full bg-transparent backdrop-blur-xl rounded-2xl overflow-hidden z-10 border-blue-900/50">
+        <div className="relative w-full h-48">
           <Image 
-            src={agent.image} 
-            alt={agent.name} 
+            src={agent.cover_img ? `https://ipfs.erebrus.io/ipfs/${agent.cover_img}` : "/cyrene_cover_2-1-85.png"} 
+            alt={`${agent.name} cover`} 
             fill
-            className={cn(
-              "object-contain p-4 transition-transform duration-300 group-hover:scale-110",
-              agent.name === "cyrene" && "object-contain p-4"
-            )}
+            className="object-cover opacity-80"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
-          
-          
         </div>
 
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-white mb-2">{agent.name}</h2>
+        <div className="absolute left-1/2 -translate-x-1/2 top-20">
+          <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 border-gray-900 shadow-xl">
+            <Image 
+              src={agent.avatar_img ? `https://ipfs.erebrus.io/ipfs/${agent.avatar_img}` : agent.image} 
+              alt={agent.name} 
+              fill
+              className={cn(
+                "object-cover transition-transform duration-300 group-hover:scale-110",
+                agent.name === "cyrene" && "object-contain"
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="p-6 mt-20">
+          <h2 className="text-xl font-bold text-white mb-4 text-center">{agent.name}</h2>
           
-          <p className="text-gray-400 mb-4 line-clamp-2">{agent.description}</p>
+          {/* <p className="text-gray-400 mb-4 line-clamp-2 text-center">{agent.description}</p> */}
           
           <GlowButton
             onClick={onChatClick}
@@ -109,13 +118,14 @@ export default function ExploreAgents() {
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  const setChatAgent = (id:string,name:string,image:string)=>{
+  const setChatAgent = (id: string, name: string, avatar_img: string, cover_img: string) => {
     localStorage.setItem('currentAgentId', id);
-    localStorage.setItem('currentAgentName',name );
-    localStorage.setItem('currentAgentImage',image);
+    localStorage.setItem('currentAgentName', name);
+    localStorage.setItem('currentAgentImage', avatar_img ? `https://ipfs.erebrus.io/ipfs/${avatar_img}` : '');
+    localStorage.setItem('currentAgentCoverImage', cover_img ? `https://ipfs.erebrus.io/ipfs/${cover_img}` : '');
     localStorage.setItem('scrollToSection', 'target-section');
-    router.push(`/explore-agents/chat/${id}`); 
-  }
+    router.push(`/explore-agents/chat/${id}`);
+  };
 
   const mockAgents = useMemo(() => [
     {
@@ -276,7 +286,12 @@ export default function ExploreAgents() {
                   key={index}
                   agent={agent}
                   index={index}
-                  onChatClick={() => setChatAgent(agent.id, agent.name, agent.image)}
+                  onChatClick={() => setChatAgent(
+                    agent.id, 
+                    agent.name, 
+                    agent.avatar_img, 
+                    agent.cover_img
+                  )}
                 />
               ))}
             </motion.div>

@@ -3,8 +3,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-// import { Image as LucidImage, Upload, FileUp, Sparkles } from "lucide-react";
-// import Image  from "next/image";
+import { Image as LucidImage, Upload, FileUp, Sparkles } from "lucide-react";
+import Image  from "next/image";
 import {useRef, useState } from "react";
 import axios from 'axios';
 import { toast } from "sonner";
@@ -76,6 +76,10 @@ export default function Test() {
   const knowledgeInputRef = useRef<HTMLInputElement>(null);
   const loreInputRef = useRef<HTMLInputElement>(null);
   const bioInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [avatarHash, setAvatarHash] = useState<string>('');
+  const [coverHash, setCoverHash] = useState<string>('');
 
   const triggerFileInput = (inputRef: React.RefObject<HTMLInputElement | null>) => {
     if (inputRef.current) {
@@ -83,13 +87,49 @@ export default function Test() {
     }
   };
 
-  // Handle file selection
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadToIPFS = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('/api/ipfs', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.Hash;
+    } catch (error) {
+      console.error('IPFS upload error:', error);
+      toast.error('Failed to upload image to IPFS');
+      throw error;
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.onload = (e) => {
+        if (type === 'avatar') {
+          setAvatarPreview(e.target?.result as string);
+        } else {
+          setCoverPreview(e.target?.result as string);
+        }
+      };
       reader.readAsDataURL(file);
+
+      try {
+        const hash = await uploadToIPFS(file);
+        if (type === 'avatar') {
+          setAvatarHash(hash);
+          toast.success('Avatar image uploaded successfully');
+        } else {
+          setCoverHash(hash);
+          toast.success('Cover image uploaded successfully');
+        }
+      } catch (error) {
+        toast.error(`Failed to upload ${type} image`);
+      }
     }
   };
 
@@ -128,56 +168,68 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     return;
   }
 
-  const agentData = {
-    name,
-    clients: [],
-    oneLiner,
-    description,
-    bio: characterInfo.bio.split("\n"),
-    lore: characterInfo.lore.split("\n"),
-    knowledge: characterInfo.knowledge.split("\n"),
-    messageExamples: [
-      [
-        {
-          user: "{{user1}}",
-          content: { text: "What is your role?" },
-        },
-        {
-          user: name,
-          content: { text: "I am here to help you" },
-        },
-      ],
-    ],
-    postExamples: [],
-    topics: [],
-    adjectives: [""],
-    plugins: [],
-    style: {
-      all: [""],
-      chat: [""],
-      post: [""],
-    },
-  };
-
   setIsSubmitting(true);
   try {
-    const response = await agentApi.createAgent(agentData);
+    // Create form data for the API request
+    const formData = new FormData();
+    formData.append('character_file', JSON.stringify({
+      name,
+      clients: [],
+      oneLiner,
+      description,
+      bio: characterInfo.bio.split("\n"),
+      lore: characterInfo.lore.split("\n"),
+      knowledge: characterInfo.knowledge.split("\n"),
+      messageExamples: [
+        [
+          {
+            user: "{{user1}}",
+            content: { text: "What is your role?" },
+          },
+          {
+            user: name,
+            content: { text: "I am here to help you" },
+          },
+        ],
+      ],
+      postExamples: [],
+      topics: [],
+      adjectives: [""],
+      plugins: [],
+      style: {
+        all: [""],
+        chat: [""],
+        post: [""],
+      }
+    }));
+
+    formData.append('avatar_img', avatarHash);
+    formData.append('cover_img', coverHash);
+    formData.append('voice_model', ''); 
+    formData.append('domain', domain);
+
+    const response = await axios.post('/api/createAgent', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     
     // Show success message with navigation link
     toast.success("Agent Created Successfully!", {
       duration: 4000,
       action: {
         label: "Chat Now",
-        onClick: () => router.push(`/explore-agents/chat/${response.agent.id}`),
+        onClick: () => router.push(`/explore-agents/chat/${response.data.agent.id}`),
       },
     });
 
     // Automatically navigate after a short delay
     setTimeout(() => {
-      router.push(`/explore-agents/chat/${response.agent.id}`);
+      router.push(`/explore-agents/chat/${response.data.agent.id}`);
     }, 2000);
 
   } catch (error) {
+    console.error("API Error:", error);
     toast.error("Failed to create agent");
   } finally {
     setIsSubmitting(false);
@@ -239,29 +291,63 @@ const isValidName = (name: string): boolean => {
                     Must start with a lowercase letter or number. Can contain lowercase letters, numbers, dots, and hyphens.
                   </p>
                 </div>
-{/* 
+ 
                 <div>
-                  <Label className="text-lg mb-2 text-blue-300">Upload Image</Label>
-                  <div className="grid grid-cols-3 gap-6">
-                    <label className="col-span-2 border-2 border-dashed p-8 flex flex-col items-center justify-center cursor-pointer bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl hover:border-blue-500 transition-all group">
-                      <Upload size={32} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                      <p className="mt-4 text-center">Drag file here to upload or Choose File</p>
-                      <p className="text-sm text-blue-300/70">Recommended size 1024 x 1024 px</p>
-                      <input type="file" accept="image/*, .ico" className="hidden" onChange={handleFileChange} />
-                    </label>
+                  <Label className="text-lg mb-2 text-blue-300">Upload Images</Label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-blue-300 mb-2">Avatar Image</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className="col-span-1 border-2 border-dashed p-4 flex flex-col items-center justify-center cursor-pointer bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl hover:border-blue-500 transition-all group">
+                          <Upload size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                          <p className="mt-2 text-center text-sm">Upload Avatar</p>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, 'avatar')} 
+                          />
+                        </label>
+                        <div className="border p-4 flex flex-col items-center justify-center bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl">
+                          {avatarPreview ? (
+                            <Image src={avatarPreview} alt="Avatar Preview" width={64} height={64} className="rounded-lg shadow-lg" />
+                          ) : (
+                            <>
+                              <LucidImage size={24} className="text-blue-400" />
+                              <p className="mt-2 text-center text-sm text-blue-300/70">Preview</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                    <div className="border p-8 flex flex-col items-center justify-center bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl">
-                      {preview ? (
-                        <Image src={preview} alt="Preview" width={100} height={100} className="rounded-lg shadow-lg" />
-                      ) : (
-                        <>
-                          <LucidImage size={32} className="text-blue-400" />
-                          <p className="mt-4 text-center text-blue-300/70">Preview</p>
-                        </>
-                      )}
+                    <div>
+                      <p className="text-sm text-blue-300 mb-2">Cover Image</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <label className="col-span-1 border-2 border-dashed p-4 flex flex-col items-center justify-center cursor-pointer bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl hover:border-blue-500 transition-all group">
+                          <Upload size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                          <p className="mt-2 text-center text-sm">Upload Cover</p>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, 'cover')} 
+                          />
+                        </label>
+                        <div className="border p-4 flex flex-col items-center justify-center bg-[rgba(33,37,52,0.7)] border-blue-500/30 rounded-xl">
+                          {coverPreview ? (
+                            <Image src={coverPreview} alt="Cover Preview" width={64} height={64} className="rounded-lg shadow-lg" />
+                          ) : (
+                            <>
+                              <LucidImage size={24} className="text-blue-400" />
+                              <p className="mt-2 text-center text-sm text-blue-300/70">Preview</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div> */}
+                </div>
 
                 <div>
                   <Label className="text-lg mb-2 text-blue-300">One Liner</Label>

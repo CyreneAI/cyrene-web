@@ -637,7 +637,7 @@ export default function Home() {
           </div>
 
           {/* Animated Feature Sections */}
-          <div className="bg-transparent py-5">
+          <div className="bg-transparent pt-56 lg:pt-0 md:pt-0 py-5">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
