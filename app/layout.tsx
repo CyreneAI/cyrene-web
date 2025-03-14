@@ -13,8 +13,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cyreneai.com"),
-  title: "Cyrene AI",
-  description: "CyreneAI is your cosmic guide and AI orchestrator on NetSepio's secure network. Chat with Cyrene, launch AI agents, and explore new frontiers in decentralized tech and elevated consciousness.",
+  title: "CyreneAI",
+  description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
   icons: {
     icon: [
       { url: "/CyreneAI_logo_square.png", sizes: "32x32", type: "image/png" },
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "CyreneAI",
-    description: "CyreneAI is your cosmic guide and AI orchestrator on NetSepio's secure network. Chat with Cyrene, launch AI agents, and explore new frontiers in decentralized tech and elevated consciousness.",
+    description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
     url: "https://cyreneai.com/", 
     siteName: "CyreneAI",
     images: [
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CyreneAI",
-    description: "CyreneAI is your cosmic guide and AI orchestrator on NetSepio's secure network. Chat with Cyrene, launch AI agents, and explore new frontiers in decentralized tech and elevated consciousness.",
+    description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
     images: [
       {
         url: "/CyreneAI_share.png", 
