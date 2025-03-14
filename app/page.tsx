@@ -427,7 +427,7 @@ export default function Home() {
                               />
                               <div className="max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm bg-transparent border border-white/10 rounded-tl-sm">
                                 <p className='text-white/90 text-sm sm:text-base'>
-                                  Hello! I&apos;m Cyrene, your guide to bridging technology and consciousness. How can I assist you today?
+                                  Hello! I&apos;m Cyrene, your guide to elevating technology and consciousness. How can I assist you today?
                                 </p>
                               </div>
                             </motion.div>
