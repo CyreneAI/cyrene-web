@@ -33,7 +33,7 @@ ENV NEXT_PUBLIC_TTS_API_URL=${NEXT_PUBLIC_TTS_API_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build the Next.js application
-RUN pnpm run build
+RUN npm run build
 
 # Use a minimal base image for the final stage
 FROM node:20-alpine AS runner
