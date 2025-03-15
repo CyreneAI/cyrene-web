@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json()
+    const { text, voice } = await req.json();
     const ttsApiUrl = process.env.TTS_API_URL;
     if (!ttsApiUrl) throw new Error('TTS API URL not configured');
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         "model": "kokoro",
         "input": text,
-        "voice": "af_bella",
+        "voice": voice || "af_bella", 
         "response_format": "mp3",
         "download_format": "mp3",
         "speed": 1,
@@ -29,19 +29,19 @@ export async function POST(req: Request) {
           "optional_pluralization_normalization": true
         }
       }),
-    })
+    });
 
-    if (!response.ok) throw new Error('TTS API error')
+    if (!response.ok) throw new Error('TTS API error');
 
-    const audioBuffer = await response.arrayBuffer()
+    const audioBuffer = await response.arrayBuffer();
     return new NextResponse(audioBuffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioBuffer.byteLength.toString(),
       },
-    })
+    });
   } catch (error) {
     console.error('Error:', error);
-    return NextResponse.json({ error: 'TTS generation failed' }, { status: 500 })
+    return NextResponse.json({ error: 'TTS generation failed' }, { status: 500 });
   }
-} 
+}

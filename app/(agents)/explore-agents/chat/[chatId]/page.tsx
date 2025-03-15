@@ -31,6 +31,7 @@ interface Agent {
   description: string;
   avatar_img: string;
   cover_img: string;
+  voice_model: string;
 }
 
 const agentApi = {
@@ -191,9 +192,9 @@ const agentId = chatId || "";
       // Then generate voice if in voice mode
       if (useVoiceMode) {
         console.log('Voice mode active, generating voice for:', responseText);
-
+    
         try {
-          audioUrl = await voiceManager.current.generateVoice(responseText);
+          audioUrl = await voiceManager.current.generateVoice(responseText, agent?.voice_model || "af_bella");
           console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
           if (audioUrl) {
             console.log('Playing audio...');
