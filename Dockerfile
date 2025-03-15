@@ -11,7 +11,7 @@ COPY package.json package-lock.json ./
 RUN apk add --no-cache python3 make g++
 
 # Install dependencies
-RUN npm install
+RUN pnpm install
 
 # Copy the rest of the application code
 COPY . .
@@ -28,7 +28,7 @@ ENV NEXT_PUBLIC_TTS_API_URL=${NEXT_PUBLIC_TTS_API_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build the Next.js application
-RUN npm run build
+RUN pnpm run build
 
 # Use a minimal base image for the final stage
 FROM node:20-alpine AS runner
@@ -55,4 +55,4 @@ ENV NEXT_PUBLIC_TTS_API_URL=${NEXT_PUBLIC_TTS_API_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Use next start to run the app in production mode
-CMD ["npm", "run", "start"]
+CMD ["pnpm", "run", "start"]
