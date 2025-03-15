@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy package.json and package-lock.json first to leverage Docker cache
 COPY package.json package-lock.json ./
 
+# Install necessary build dependencies
+RUN apk add --no-cache python3 make g++
+
 # Install dependencies
 RUN npm install
 
