@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { WalletMultiButton, WalletModalButton } from '@solana/wallet-adapter-react-ui';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ const Navbar = () => {
   const router = useRouter();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const { publicKey, connected } = useWallet();
 
   const handleHomeClick = () => {
     localStorage.removeItem("currentAgentId");
@@ -23,9 +25,13 @@ const Navbar = () => {
   };
 
   useEffect(() => {
-    const storedAddress = localStorage.getItem('walletAddress');
-    if (storedAddress) {
-      setWalletAddress(storedAddress);
+    if (connected && publicKey) {
+      const address = publicKey.toString();
+      setWalletAddress(address);
+      localStorage.setItem('walletAddress', address);
+    } else {
+      setWalletAddress(null);
+      localStorage.removeItem('walletAddress');
     }
 
     // Trigger expansion animation after a delay
@@ -34,7 +40,7 @@ const Navbar = () => {
     }, 1000); // 1 second delay before expansion
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [connected, publicKey]);
 
   const navItems = [
     { path: '/', label: 'Home' },
