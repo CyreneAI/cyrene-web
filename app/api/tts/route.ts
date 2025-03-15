@@ -14,11 +14,20 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         "model": "kokoro",
         "input": text,
-        "voice": "af",
+        "voice": "af_bella",
         "response_format": "mp3",
+        "download_format": "mp3",
         "speed": 1,
         "stream": true,
-        "return_download_link": false
+        "return_download_link": false,
+        "lang_code": "a",
+        "normalization_options": {
+          "normalize": true,
+          "unit_normalization": false,
+          "url_normalization": true,
+          "email_normalization": true,
+          "optional_pluralization_normalization": true
+        }
       }),
     })
 
