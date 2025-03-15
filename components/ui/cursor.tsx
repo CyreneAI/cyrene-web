@@ -13,6 +13,7 @@ export const Cursor = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [trail, setTrail] = useState<TrailDot[]>([]);
   const [isPointer, setIsPointer] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   const updateTrail = useCallback((x: number, y: number) => {
     setTrail(prevTrail => {
@@ -51,18 +52,46 @@ export const Cursor = () => {
       
       const hoveredElement = document.elementFromPoint(e.clientX, e.clientY);
       const isClickable = hoveredElement?.matches('button, a, input, textarea, [role="button"]');
+      
+      // Check if hovering over any wallet adapter related elements
+      const isOverWalletModal = 
+        hoveredElement?.closest('.wallet-adapter-modal') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-wrapper') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-container') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-overlay') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-button-close') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-title') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-list') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-list-more') !== null ||
+        hoveredElement?.closest('.wallet-adapter-modal-list-more-icon') !== null;
+      
       setIsPointer(!!isClickable);
+      
+      // Hide custom cursor when over wallet modal elements
+      if (isOverWalletModal) {
+        setIsVisible(false);
+        document.body.style.cursor = 'auto'; // Restore default cursor
+      } else {
+        setIsVisible(true);
+        document.body.style.cursor = 'none'; // Hide default cursor
+      }
       
       cancelAnimationFrame(frameId);
       frameId = requestAnimationFrame(() => smoothMove(e.clientX, e.clientY));
     };
 
+    // Set initial cursor state
+    document.body.style.cursor = 'none';
+
     window.addEventListener('mousemove', onMouseMove);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       cancelAnimationFrame(frameId);
+      document.body.style.cursor = 'auto'; // Restore default cursor on unmount
     };
   }, [updateTrail]);
+
+  if (!isVisible) return null;
 
   return (
     <>
@@ -70,7 +99,7 @@ export const Cursor = () => {
       {trail.map((dot, index) => (
         <motion.div
           key={index}
-          className="fixed pointer-events-none z-[998]"
+          className="fixed pointer-events-none z-[99999]"
           style={{
             x: dot.x - (2 + index * 0.5), // Gradually increase size
             y: dot.y - (2 + index * 0.5),
@@ -87,7 +116,7 @@ export const Cursor = () => {
 
       {/* Main Cursor */}
       <motion.div
-        className="fixed pointer-events-none z-[999]"
+        className="fixed pointer-events-none z-[99999]"
         animate={{
           x: position.x - 4,
           y: position.y - 4,
@@ -109,7 +138,7 @@ export const Cursor = () => {
       
       {/* Cursor Ring */}
       <motion.div
-        className="fixed pointer-events-none z-[1000] mix-blend-difference"
+        className="fixed pointer-events-none z-[99999]"
         animate={{
           x: position.x - 16,
           y: position.y - 16,
