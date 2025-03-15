@@ -26,6 +26,7 @@ const mockResponses = [
 ];
 
 export default function Home() {
+  const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -178,19 +179,20 @@ export default function Home() {
 
         if (useVoiceMode) {
           console.log('Voice mode active, generating voice for:', responseText);
-
+        
           try {
-            audioUrl = await voiceManager.current.generateVoice(responseText);
+            // Pass the selected voice to generateVoice
+            audioUrl = await voiceManager.current.generateVoice(responseText, selectedVoice);
             console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
             if (audioUrl) {
               console.log('Playing audio...');
               const audio = new Audio(audioUrl);
               await audio.play().catch(err => console.error('Audio playback error:', err));
             } else {
-              console.error('Voice generation returned null')
+              console.error('Voice generation returned null');
             }
           } catch (error) {
-            console.error('Voice generation error:', error)
+            console.error('Voice generation error:', error);
           }
         }
 

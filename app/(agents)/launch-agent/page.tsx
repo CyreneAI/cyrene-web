@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { GlowButton } from "@/components/ui/glow-button";
 import StarCanvas from "@/components/StarCanvas";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
+import VoiceManager, { Voice } from "@/utils/voiceUtils";
 
 
 interface AgentData {
@@ -45,12 +48,12 @@ const agentApi = {
     try {
       const response = await axios.post('/api/createAgent', agentData, {
         headers: {
-          'Content-Type': 'application/json', // Correct header for sending FormData
+          'Content-Type': 'application/json', 
         },
       });
-      return response.data; // Return the response from the backend
+      return response.data; 
     } catch (error) {
-      console.error("API Error:", error); // Log any errors
+      console.error("API Error:", error); 
       throw error; 
     }
   },
@@ -59,6 +62,18 @@ const agentApi = {
 
 
 export default function Test() {
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
+  const voiceManager = useRef(new VoiceManager());
+
+  useEffect(() => {
+    const loadVoices = async () => {
+      const availableVoices = await voiceManager.current.fetchVoices();
+      setVoices(availableVoices);
+    };
+
+    loadVoices();
+  }, []);
 
   const [preview, setPreview] = useState<string | null>(null);
   const [domain, setDomain] = useState('');
@@ -205,7 +220,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
     formData.append('avatar_img', avatarHash);
     formData.append('cover_img', coverHash);
-    formData.append('voice_model', ''); 
+    formData.append('voice_model', selectedVoice);
     formData.append('domain', domain);
 
     const response = await axios.post('/api/createAgent', formData, {
@@ -370,6 +385,22 @@ const isValidName = (name: string): boolean => {
                   />
                   <p className="text-sm text-blue-300/70 mt-2">Max 300 characters with spaces</p>
                 </div>
+
+                <div>
+                <Label className="text-lg mb-2 text-blue-300">Voice</Label>
+                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+  <SelectTrigger className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all">
+    <SelectValue placeholder="Select a voice" />
+  </SelectTrigger>
+  <SelectContent className="bg-[rgba(33,37,52,0.9)] border border-blue-500/30 text-white ">
+    {voices.map((voice) => (
+      <SelectItem key={voice.id} value={voice.id} className="hover:bg-white">
+        {voice.name} ({voice.gender})
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+              </div>
               </div>
             </motion.div>
 
