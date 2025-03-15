@@ -8,10 +8,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install necessary build dependencies
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ linux-headers eudev-dev
 
-# Install dependencies
-RUN npm install
+# Create a symlink for python
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Install dependencies with --ignore-scripts to avoid native module builds
+RUN npm install --ignore-scripts
 
 # Copy the rest of the application code
 COPY . .
