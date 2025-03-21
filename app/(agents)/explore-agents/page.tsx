@@ -23,6 +23,7 @@ interface Agent {
   description: string;
   avatar_img: string;
   cover_img: string;
+  organization: string; // Add this field
 }
 
 const agentApi = {
@@ -132,36 +133,45 @@ export default function ExploreAgents() {
       name: "Orion",
       image: "/orion.png",
       description: "Orion gathers and delivers essential news, keeping businesses ahead of the curve.",
+      organization: "other",
     },
     {
       name: "Elixia",
       image: "/elixia.png",
       description: "Elixia posts creative content to drive engagement and build community.",
+      organization: "other",
     },
     {
       name: "Solis",
       image: "/solis.png",
       description: "Solis illuminates the path to success with data-driven clarity and strategic insight.",
+      organization: "other",
     },
     {
       name: "Auren",
       image: "/auren.png",
       description: "Auren is here to guide you, bringing warmth and clarity to every customer interaction.",
+      organization: "other",
     },
     {
       name: "Cyrene",
       image: "/cyrene_profile.png",
       description: "Cyrene cosmic presence from the Andromeda Galaxy, here to help you navigate technology and privacy with love and wisdom.",
+      organization: "cyrene",
     },
   ], []);
   
   const fetchAgents = useCallback(async () => {
     const fetchedAgents = await agentApi.getAgents();
+    
+    // Filter agents to only include those with organization 'cyrene'
+    const filteredFetchedAgents = fetchedAgents.filter((agent) => agent.organization === 'cyrene');
+
     const filteredMockAgents = mockAgents.filter(
       (mock) => mock.image !== "/cyrene_profile.png" && mock.image !== "/elixia.png"
     );
-  
-    const enrichedAgents = fetchedAgents.map((agent) => {
+
+    const enrichedAgents = filteredFetchedAgents.map((agent) => {
       if (agent.name === "cyrene") {
         const cyreneMock = mockAgents.find((mock) => mock.name === "Cyrene");
         return {
@@ -186,7 +196,7 @@ export default function ExploreAgents() {
         };
       }
     });
-  
+
     setAgents((prev) => {
       if (JSON.stringify(prev) === JSON.stringify(enrichedAgents)) return prev;
       return enrichedAgents;
@@ -309,10 +319,3 @@ export default function ExploreAgents() {
     </>
   );
 }
-
-
-
-
-
-
-  

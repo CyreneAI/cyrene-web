@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         "model": "kokoro",
-        "input": text,
+        "input": text ,
         "voice": voice || "af_bella", 
         "response_format": "mp3",
         "download_format": "mp3",

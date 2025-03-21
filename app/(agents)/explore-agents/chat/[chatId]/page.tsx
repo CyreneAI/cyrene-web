@@ -32,6 +32,7 @@ interface Agent {
   avatar_img: string;
   cover_img: string;
   voice_model: string;
+  organization: string;
 }
 
 const agentApi = {
@@ -75,11 +76,11 @@ export default function Page() {
   const router = useRouter()
 
   const mockAgents = useMemo(() => [
-    { name: "Orion", image: "/orion.png" },
-    { name: "Elixia", image: "/elixia.png" },
-    { name: "Solis", image: "/solis.png" },
-    { name: "Auren", image: "/auren.png" },
-    { name: "Cyrene", image: "/cyrene_profile.png" }, // Cyrene's fixed image
+    { name: "Orion", image: "/orion.png" , organization: "other"},
+    { name: "Elixia", image: "/elixia.png", organization: "other" },
+    { name: "Solis", image: "/solis.png", organization: "other" },
+    { name: "Auren", image: "/auren.png" , organization: "other"},
+    { name: "Cyrene", image: "/cyrene_profile.png" , organization: "cyrene"}, // Cyrene's fixed image
   ], []);
 
 const agentId = chatId || ""; 
