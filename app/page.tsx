@@ -26,6 +26,18 @@ const mockResponses = [
 ];
 
 export default function Home() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+useEffect(() => {
+  return () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  };
+}, []);
+
+
   const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -175,19 +187,26 @@ export default function Home() {
         }
         const data = await response.json()
         responseText = data[0].text
-        // Then generate voice if in voice mode
+        
 
         if (useVoiceMode) {
           console.log('Voice mode active, generating voice for:', responseText);
-        
           try {
-            // Pass the selected voice to generateVoice
+            
             audioUrl = await voiceManager.current.generateVoice(responseText, selectedVoice);
             console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
             if (audioUrl) {
               console.log('Playing audio...');
-              const audio = new Audio(audioUrl);
-              await audio.play().catch(err => console.error('Audio playback error:', err));
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+                audioRef.current.src = audioUrl;
+                await audioRef.current.play().catch((err) => console.error('Audio playback error:', err));
+              } else {
+                const audio = new Audio(audioUrl);
+                audioRef.current = audio;
+                await audio.play().catch((err) => console.error('Audio playback error:', err));
+              }
             } else {
               console.error('Voice generation returned null');
             }
@@ -238,19 +257,32 @@ export default function Home() {
     setIsRecording(false)
     voiceManager.current.stopListening()
   }
-
   const toggleAudio = (index: number) => {
-    const audio = audioRefs.current[index]
-    if (!audio) return
-
-    if (isPlayingAudio[index]) {
-      audio.pause()
-      setIsPlayingAudio(prev => ({ ...prev, [index]: false }))
+    const message = messages[index];
+  
+    if (!message.audio) return;
+  
+    if (audioRef.current) {
+      // If the same audio is already playing, pause it
+      if (isPlayingAudio[index]) {
+        audioRef.current.pause();
+        setIsPlayingAudio((prev) => ({ ...prev, [index]: false }));
+      } else {
+        // If a different audio is playing, stop it and play the new one
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = message.audio;
+        audioRef.current.play().catch((err) => console.error('Audio playback error:', err));
+        setIsPlayingAudio((prev) => ({ ...prev, [index]: true }));
+      }
     } else {
-      audio.play()
-      setIsPlayingAudio(prev => ({ ...prev, [index]: true }))
+      // Create a new audio element if it doesn't exist
+      const audio = new Audio(message.audio);
+      audioRef.current = audio;
+      audio.play().catch((err) => console.error('Audio playback error:', err));
+      setIsPlayingAudio((prev) => ({ ...prev, [index]: true }));
     }
-  }
+  };
 
   const toggleVoiceMode = async () => {
     if (isVoiceMode) {
@@ -461,22 +493,22 @@ export default function Home() {
                                   }
                                 > 
                                   <div className="flex items-start gap-3">
-                                    {!message.isUser && message.audio && (
-                                      <button
-                                        onClick={() => toggleAudio(index)}
-                                        className={`mt-1 transition-colors ${
-                                          isPlayingAudio[index]
-                                            ? 'text-blue-400'
-                                            : 'text-white/60 hover:text-white/90'
-                                        }`}
-                                      >
-                                        {isPlayingAudio[index] ? (
-                                          <VolumeX className='w-5 h-5' />
-                                        ) : (
-                                          <Volume2 className='w-5 h-5' />
-                                        )}
-                                      </button>
-                                    )}
+                                  {!message.isUser && message.audio && (
+  <button
+    onClick={() => toggleAudio(index)}
+    className={`mt-1 transition-colors ${
+      isPlayingAudio[index]
+        ? 'text-blue-400'
+        : 'text-white/60 hover:text-white/90'
+    }`}
+  >
+    {isPlayingAudio[index] ? (
+      <VolumeX className='w-5 h-5' />
+    ) : (
+      <Volume2 className='w-5 h-5' />
+    )}
+  </button>
+)}
                                     <p className='text-white/90 text-sm sm:text-base'>
                                       {message.text}
                                     </p>
