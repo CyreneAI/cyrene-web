@@ -2,7 +2,7 @@
 
 import { createAppKit } from '@reown/appkit/react';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
+import { SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { mainnet, arbitrum, solana, solanaTestnet, solanaDevnet } from '@reown/appkit/networks';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 
@@ -15,10 +15,10 @@ if (!projectId) {
 
 // 2. Create a metadata object
 const metadata = {
-  name: 'My Website',
-  description: 'My Website description',
-  url: 'https://mywebsite.com', // origin must match your domain & subdomain
-  icons: ['https://avatars.mywebsite.com/'],
+  name: 'CyreneAI',
+  description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
+  url: 'https://cyreneai.com/', // origin must match your domain & subdomain
+  icons: ['https://cyreneai.com/CyreneAI_logo-text.png'],
 };
 
 // 3. Set up Solana Adapter
