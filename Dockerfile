@@ -15,7 +15,7 @@ RUN apk add --no-cache python3 make g++ linux-headers eudev-dev
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install dependencies with --ignore-scripts to avoid native module builds
-RUN pnpm install --ignore-scripts
+RUN npm install --ignore-scripts
 
 
 # Copy the rest of the application code
@@ -33,7 +33,7 @@ ENV NEXT_PUBLIC_TTS_API_URL=${NEXT_PUBLIC_TTS_API_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build the Next.js application
-RUN pnpm run build
+RUN npm run build
 
 # Use a minimal base image for the final stage
 FROM node:20-alpine AS runner
@@ -61,5 +61,5 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Use next start to run the app in production mode
 
-CMD ["pnpm", "run", "start"]
+CMD ["npm", "run", "start"]
 
