@@ -6,12 +6,13 @@ import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import VoiceManager from '@/utils/voiceUtils';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useAppKitAccount } from '@reown/appkit/react'; // For Ethereum
+import { useWallet } from '@solana/wallet-adapter-react'; // For Solana
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { UserAvatar } from '@/components/user-avatar'
+import { UserAvatar } from '@/components/user-avatar';
 import StarCanvas from "@/components/StarCanvas";
 
 interface Message {
@@ -68,12 +69,18 @@ export default function Page() {
   const voiceManager = useRef(new VoiceManager());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<string>("")
-  const { publicKey, disconnect } = useWallet();
+  const [user, setUser] = useState<string>("");
+
+  // Ethereum wallet
+  const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount();
+
+  // Solana wallet
+  const { publicKey: solAddress, connected: isSolConnected } = useWallet();
+
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const { chatId } = useParams<{ chatId: string }>(); 
-  const router = useRouter()
+  const router = useRouter();
 
   const mockAgents = useMemo(() => [
     { name: "Orion", image: "/orion.png" , organization: "other"},
@@ -83,9 +90,8 @@ export default function Page() {
     { name: "Cyrene", image: "/cyrene_profile.png" , organization: "cyrene"}, // Cyrene's fixed image
   ], []);
 
-const agentId = chatId || ""; 
-
-  const useMockData =  process.env.NEXT_USE_DEV
+  const agentId = chatId || ""; 
+  const useMockData = process.env.NEXT_USE_DEV;
 
   useEffect(() => {
     const fetchAgent = async () => {
@@ -95,24 +101,23 @@ const agentId = chatId || "";
           toast.error("Invalid agent ID!");
           router.push("/explore-agents");
         }
-  
+
         if (fetchedAgent) {
           const isCyrene = fetchedAgent.name.toLowerCase() === "cyrene";
           const randomImage = isCyrene
             ? "/cyrene_profile.png"
             : mockAgents[Math.floor(Math.random() * (mockAgents.length - 1))].image; // Exclude Cyrene
-  
+
           setAgent({ ...fetchedAgent, image: randomImage });
         }
       }
     };
-  
+
     fetchAgent();
-  }, [agentId, mockAgents,router]); 
-  
+  }, [agentId, mockAgents, router]);
 
   const scrollToBottom = () => {
-    const container = messagesContainerRef.current
+    const container = messagesContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
@@ -126,41 +131,51 @@ const agentId = chatId || "";
   }, []);
 
   useEffect(() => {
-    if (publicKey) {
-      const address = publicKey.toBase58();
-      localStorage.setItem('walletAddress', address);
-      setWalletAddress(address);
-      setUser(address)
+    if (isEthConnected && ethAddress) {
+      setWalletAddress(ethAddress);
+      setUser(ethAddress);
+      localStorage.setItem('walletAddress', ethAddress);
+    } else if (isSolConnected && solAddress) {
+      const solAddressBase58 = solAddress.toBase58();
+      setWalletAddress(solAddressBase58);
+      setUser(solAddressBase58);
+      localStorage.setItem('walletAddress', solAddressBase58);
+    } else {
+      setWalletAddress(null);
+      setUser("");
+      localStorage.removeItem('walletAddress');
     }
-  }, [publicKey]);
+  }, [isEthConnected, isSolConnected, ethAddress, solAddress]);
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
-    console.log("clicked")
+    console.log("clicked");
     if (!text.trim() || isLoading) return;
-    setIsLoading(true)
-    setTranscription('')
+
+    setIsLoading(true);
+    setTranscription('');
+
     // Immediately show user message
-    const userMessageIndex = messages.length
-    setMessages(prev => [...prev, { isUser: true, text }])
-    setInputValue('')
+    const userMessageIndex = messages.length;
+    setMessages((prev) => [...prev, { isUser: true, text }]);
+    setInputValue('');
 
     try {
-      let responseText: string
-      let audioUrl: string | null = null
+      let responseText: string;
+      let audioUrl: string | null = null;
 
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
       console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
-      
+
       // Get the message response
       if (useMockData) {
-        const randomIndex = Math.floor(Math.random() * mockResponses.length)
-        responseText = mockResponses[randomIndex]
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        const randomIndex = Math.floor(Math.random() * mockResponses.length);
+        responseText = mockResponses[randomIndex];
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } else {
         const formData = new FormData();
         formData.append('text', text);
@@ -168,15 +183,15 @@ const agentId = chatId || "";
         formData.append('voice_mode', useVoiceMode.toString());
         let messageApiUrl = "";
 
-          messageApiUrl = `https://${agent?.domain}`
-          
-        console.log("Message API URL:", messageApiUrl,agent?.id);
+        messageApiUrl = `https://${agent?.domain}`;
+
+        console.log("Message API URL:", messageApiUrl, agent?.id);
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');
         const response = await fetch(`${messageApiUrl}/${agent?.id}/message`, {
           method: 'POST',
           body: formData
-        })
+        });
 
         if (!response.ok) {
           console.error('Response error:', {
@@ -186,111 +201,110 @@ const agentId = chatId || "";
           });
           throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json()
-        responseText = data[0].text
+        const data = await response.json();
+        responseText = data[0].text;
       }
 
       // Then generate voice if in voice mode
       if (useVoiceMode) {
         console.log('Voice mode active, generating voice for:', responseText);
-    
+
         try {
           audioUrl = await voiceManager.current.generateVoice(responseText, agent?.voice_model || "af_bella");
           console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
           if (audioUrl) {
             console.log('Playing audio...');
             const audio = new Audio(audioUrl);
-            await audio.play().catch(err => console.error('Audio playback error:', err));
+            await audio.play().catch((err) => console.error('Audio playback error:', err));
           } else {
-            console.error('Voice generation returned null')
+            console.error('Voice generation returned null');
           }
         } catch (error) {
-          console.error('Voice generation error:', error)
+          console.error('Voice generation error:', error);
         }
       }
 
       // Add AI response
       if (!useVoiceMode || audioUrl) {
-        setMessages(prev => [
+        setMessages((prev) => [
           ...prev,
           { isUser: false, text: responseText, audio: audioUrl }
-        ])
+        ]);
       }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-   
-      setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
+      setMessages((prev) => prev.filter((_, i) => i !== userMessageIndex));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleVoiceInput = () => {
     if (isRecording) {
-      voiceManager.current.stopListening()
-      setIsRecording(false)
-      return
+      voiceManager.current.stopListening();
+      setIsRecording(false);
+      return;
     }
 
-    setIsRecording(true)
+    setIsRecording(true);
     voiceManager.current.startListening(
-      async text => {
-        setTranscription(text)
+      async (text) => {
+        setTranscription(text);
         // Force voice mode to be true for voice input
         const forceVoiceMode = true;
         await handleSubmit(text, user, forceVoiceMode);
       },
       () => setIsRecording(false)
-    )
-  }
+    );
+  };
 
   const exitVoiceMode = () => {
-    setIsVoiceMode(false)
-    setIsRecording(false)
-    voiceManager.current.stopListening()
-  }
+    setIsVoiceMode(false);
+    setIsRecording(false);
+    voiceManager.current.stopListening();
+  };
 
   const toggleAudio = (index: number) => {
-    const audio = audioRefs.current[index]
-    if (!audio) return
+    const audio = audioRefs.current[index];
+    if (!audio) return;
 
     if (isPlayingAudio[index]) {
-      audio.pause()
-      setIsPlayingAudio(prev => ({ ...prev, [index]: false }))
+      audio.pause();
+      setIsPlayingAudio((prev) => ({ ...prev, [index]: false }));
     } else {
-      audio.play()
-      setIsPlayingAudio(prev => ({ ...prev, [index]: true }))
+      audio.play();
+      setIsPlayingAudio((prev) => ({ ...prev, [index]: true }));
     }
-  }
+  };
 
   const toggleVoiceMode = async () => {
     if (isVoiceMode) {
-      exitVoiceMode()
+      exitVoiceMode();
     } else {
       // Set voice mode first
-      await new Promise<void>(resolve => {
-        setIsVoiceMode(true)
-        setInputValue('')
-        resolve()
-      })
+      await new Promise<void>((resolve) => {
+        setIsVoiceMode(true);
+        setInputValue('');
+        resolve();
+      });
 
       // Start listening after state is updated
-      setIsRecording(true)
+      setIsRecording(true);
       voiceManager.current.startListening(
-        async text => {
-          setTranscription(text)
+        async (text) => {
+          setTranscription(text);
           // Force voice mode to be true for first message
           const forceVoiceMode = true;
           await handleSubmit(text, user, forceVoiceMode);
         },
         () => setIsRecording(false)
-      )
+      );
     }
-  }
+  };
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 mb-32 " id="target-section" >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-32 mb-32 " id="target-section">
         <StarCanvas />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -312,7 +326,7 @@ const agentId = chatId || "";
               }}
               className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 blur-xl"
             />
-            
+
             {/* Middle layer glow */}
             <motion.div
               animate={{
@@ -434,13 +448,13 @@ const agentId = chatId || "";
                         className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                       >
                         {!message.isUser && (
-                              <Image
+                          <Image
                             src={agent?.avatar_img ? `https://ipfs.erebrus.io/ipfs/${agent.avatar_img}` : '/cyrene_chat.png'}
-                                alt='cyrene_chat'
+                            alt='cyrene_chat'
                             className='w-14 h-14 rounded-full object-cover mr-2'
-                                width={75}
-                                height={77}
-                              />
+                            width={75}
+                            height={77}
+                          />
                         )}
                         <div
                           className={`max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm border
@@ -472,12 +486,12 @@ const agentId = chatId || "";
                           </div>
                           {message.audio && (
                             <audio
-                              ref={el => {
-                                if (el) audioRefs.current[index] = el
+                              ref={(el) => {
+                                if (el) audioRefs.current[index] = el;
                               }}
                               src={message.audio}
                               onEnded={() =>
-                                setIsPlayingAudio(prev => ({
+                                setIsPlayingAudio((prev) => ({
                                   ...prev,
                                   [index]: false
                                 }))
@@ -570,34 +584,33 @@ const agentId = chatId || "";
                   }}
                   className="relative w-full"
                 >
-                 <Textarea
-                        value={inputValue}
-                        onChange={(e) => {
-                          setInputValue(e.target.value);
-                          // Set initial height
-                          e.target.style.height = "24px";
-                          // Then set to scrollHeight
-                          const newHeight = Math.min(e.target.scrollHeight, 150);
-                          e.target.style.height = `${newHeight}px`;
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            if (inputValue.trim()) {
-                              handleSubmit(inputValue, user);
-                              setInputValue("");
-                              // Reset height after sending
-                              (e.target as HTMLTextAreaElement).style.height = "24px";
-                            }
-                          }
-                        }}
-                        placeholder={isVoiceMode ? "Listening..." : `Ask ${agent?.name}...`}
-                        disabled={isLoading || isRecording}
-                        className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none min-h-[24px] max-h-[150px] overflow-y-auto scrollbar-none"
-                        rows={1}
-                      />
+                  <Textarea
+                    value={inputValue}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      // Set initial height
+                      e.target.style.height = "24px";
+                      // Then set to scrollHeight
+                      const newHeight = Math.min(e.target.scrollHeight, 150);
+                      e.target.style.height = `${newHeight}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (inputValue.trim()) {
+                          handleSubmit(inputValue, user);
+                          setInputValue("");
+                          // Reset height after sending
+                          (e.target as HTMLTextAreaElement).style.height = "24px";
+                        }
+                      }
+                    }}
+                    placeholder={isVoiceMode ? "Listening..." : `Ask ${agent?.name}...`}
+                    disabled={isLoading || isRecording}
+                    className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none min-h-[24px] max-h-[150px] overflow-y-auto scrollbar-none"
+                    rows={1}
+                  />
 
-                  
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
                     <button
                       type='button'
@@ -645,8 +658,8 @@ const agentId = chatId || "";
           </div>
         </motion.div>
       </div>
-       {/* Always here for you text */}
-       <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
+      {/* Always here for you text */}
+      <div className='absolute mt-60 w-full text-center px-4 sm:px-6 lg:px-8'>
         <p
           className='text-2xl sm:text-3xl md:text-4xl text-white/90'
           style={{

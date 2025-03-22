@@ -1,14 +1,14 @@
 'use client'
 
 import Image from "next/image";
-import { motion} from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import VoiceManager from '@/utils/voiceUtils';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'; // Updated imports
 import { Textarea } from "@/components/ui/textarea";
 import StarCanvas from "@/components/StarCanvas";
-import { UserAvatar } from '@/components/user-avatar'
+import { UserAvatar } from '@/components/user-avatar';
 import { ChatStorage } from '@/app/utils/chat-storage';
 
 interface Message {
@@ -27,16 +27,15 @@ const mockResponses = [
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-useEffect(() => {
-  return () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-  };
-}, []);
 
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
   const [inputValue, setInputValue] = useState("");
@@ -56,15 +55,16 @@ useEffect(() => {
   const voiceManager = useRef(new VoiceManager());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<string>("")
-  const { publicKey, disconnect } = useWallet();
+  const [user, setUser] = useState<string>("");
+  const { address, isConnected } = useAppKitAccount(); // Updated wallet logic
+  const { switchNetwork } = useAppKitNetwork(); // For network switching
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const agent = {
     name: "cyrene",
     image: "/cyrene_profile.png"
   };
-  
+
   const [autoSlideIndex, setAutoSlideIndex] = useState(0);
 
   // Auto slide effect
@@ -112,7 +112,7 @@ useEffect(() => {
   ];
 
   const scrollToBottom = () => {
-    const container = messagesContainerRef.current
+    const container = messagesContainerRef.current;
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
@@ -126,18 +126,20 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (publicKey) {
-      const address = publicKey.toBase58();
-      localStorage.setItem('walletAddress', address);
-
+    if (isConnected && address) {
       setWalletAddress(address);
-      setUser(address)
+      setUser(address);
+      localStorage.setItem('walletAddress', address);
+    } else {
+      setWalletAddress(null);
+      setUser("");
+      localStorage.removeItem('walletAddress');
     }
-  }, [publicKey]);
+  }, [isConnected, address]);
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   // Add this effect to save messages whenever they change
   useEffect(() => {
@@ -147,20 +149,20 @@ useEffect(() => {
   }, [messages]);
 
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
-    console.log("clicked")
+    console.log("clicked");
     if (!text.trim() || isLoading) return;
 
-    setIsLoading(true)
-    setTranscription('')
+    setIsLoading(true);
+    setTranscription('');
 
     // Immediately show user message
-    const userMessageIndex = messages.length
-    setMessages(prev => [...prev, { isUser: true, text }])
-    setInputValue('')
+    const userMessageIndex = messages.length;
+    setMessages((prev) => [...prev, { isUser: true, text }]);
+    setInputValue('');
 
     try {
-      let responseText: string
-      let audioUrl: string | null = null
+      let responseText: string;
+      let audioUrl: string | null = null;
 
       // Use forced voice mode or current state
       const useVoiceMode = forceVoiceMode || isVoiceMode;
@@ -176,7 +178,7 @@ useEffect(() => {
         const response = await fetch(`/api/chatCyrene`, {
           method: 'POST',
           body: formData
-        })
+        });
         if (!response.ok) {
           console.error('Response error:', {
             status: response.status,
@@ -185,14 +187,12 @@ useEffect(() => {
           });
           throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json()
-        responseText = data[0].text
-        
+        const data = await response.json();
+        responseText = data[0].text;
 
         if (useVoiceMode) {
           console.log('Voice mode active, generating voice for:', responseText);
           try {
-            
             audioUrl = await voiceManager.current.generateVoice(responseText, selectedVoice);
             console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
             if (audioUrl) {
@@ -217,51 +217,50 @@ useEffect(() => {
 
         // Add AI response
         if (!useVoiceMode || audioUrl) {
-          setMessages(prev => [
+          setMessages((prev) => [
             ...prev,
             { isUser: false, text: responseText, audio: audioUrl }
-          ])
+          ]);
         }
       }
-
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-
-      setMessages(prev => prev.filter((_, i) => i !== userMessageIndex))
+      setMessages((prev) => prev.filter((_, i) => i !== userMessageIndex));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleVoiceInput = () => {
     if (isRecording) {
-      voiceManager.current.stopListening()
-      setIsRecording(false)
-      return
+      voiceManager.current.stopListening();
+      setIsRecording(false);
+      return;
     }
 
-    setIsRecording(true)
+    setIsRecording(true);
     voiceManager.current.startListening(
-      async text => {
-        setTranscription(text)
+      async (text) => {
+        setTranscription(text);
         // Force voice mode to be true for voice input
         const forceVoiceMode = true;
         await handleSubmit(text, user, forceVoiceMode);
       },
       () => setIsRecording(false)
-    )
-  }
+    );
+  };
 
   const exitVoiceMode = () => {
-    setIsVoiceMode(false)
-    setIsRecording(false)
-    voiceManager.current.stopListening()
-  }
+    setIsVoiceMode(false);
+    setIsRecording(false);
+    voiceManager.current.stopListening();
+  };
+
   const toggleAudio = (index: number) => {
     const message = messages[index];
-  
+
     if (!message.audio) return;
-  
+
     if (audioRef.current) {
       // If the same audio is already playing, pause it
       if (isPlayingAudio[index]) {
@@ -286,36 +285,35 @@ useEffect(() => {
 
   const toggleVoiceMode = async () => {
     if (isVoiceMode) {
-      exitVoiceMode()
+      exitVoiceMode();
     } else {
       // Set voice mode first
-      await new Promise<void>(resolve => {
-        setIsVoiceMode(true)
-        setInputValue('')
-        resolve()
-      })
+      await new Promise<void>((resolve) => {
+        setIsVoiceMode(true);
+        setInputValue('');
+        resolve();
+      });
 
       // Start listening after state is updated
-      setIsRecording(true)
+      setIsRecording(true);
       voiceManager.current.startListening(
-        async text => {
-          setTranscription(text)
+        async (text) => {
+          setTranscription(text);
           // Force voice mode to be true for first message
           const forceVoiceMode = true;
           await handleSubmit(text, user, forceVoiceMode);
         },
         () => setIsRecording(false)
-      )
+      );
     }
-  }
+  };
 
   return (
     <>
       {/* Background wrapper */}
       <div className="relative w-full overflow-hidden">
         <StarCanvas />
-        <div className="absolute inset-0 bg-transparent">      
-        </div>
+        <div className="absolute inset-0 bg-transparent"></div>
 
         {/* Your existing content */}
         <div className="relative">
@@ -330,12 +328,12 @@ useEffect(() => {
               <source src="/Cyrene video hero for Topaz_apo8.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0B1220]/10 via-[#0A1A2F]/50 to-black" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B1220]/10 via-[#0A1A2F]/50 to-black" />
             <div className="absolute inset-0 bg-center" />
 
             {/* Hero Content */}
             <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
@@ -343,7 +341,7 @@ useEffect(() => {
               >
                 Journey with
               </motion.h1>
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
@@ -359,7 +357,7 @@ useEffect(() => {
               >
                 Orchestrating <span className="font-bold text-2xl">multi-agent collaboration </span>with  <span className="font-bold text-2xl">self-replicating, decentralized AI agents
                 </span>
-                <br/>Powered by a secured network layer by <span className="font-bold text-2xl">NetSepio</span>
+                <br />Powered by a secured network layer by <span className="font-bold text-2xl">NetSepio</span>
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -380,7 +378,7 @@ useEffect(() => {
             </div>
           </div>
 
-              {/* Chat Section with New Layout */}
+          {/* Chat Section with New Layout */}
           <div className="bg-transparent my-32 py-5">
             <div className="max-w-7xl mx-auto h-[calc(100vh-200px)]">
               <div className="flex flex-col md:flex-row gap-8 items-start h-full">
@@ -441,7 +439,7 @@ useEffect(() => {
                           className="backdrop-blur-xl bg-transparent border border-white/10 rounded-2xl p-6 shadow-[0_0_50px_rgba(124,58,237,0.1)] h-full flex flex-col"
                         >
                           {/* Messages Container with Scroll */}
-                          <div 
+                          <div
                             ref={messagesContainerRef}
                             className="flex-grow overflow-y-auto space-y-6 mb-6 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-blue-100/10"
                           >
@@ -486,29 +484,29 @@ useEffect(() => {
                                 <div
                                   className={`
                                     max-w-[80%] rounded-2xl p-4 sm:p-5 
-                                    ${message.isUser 
-                                      ? 'bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-white/10 rounded-tr-sm' 
+                                    ${message.isUser
+                                      ? 'bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-white/10 rounded-tr-sm'
                                       : 'backdrop-blur-sm bg-transparent border border-white/10 rounded-tl-sm'
                                     }`
                                   }
-                                > 
+                                >
                                   <div className="flex items-start gap-3">
-                                  {!message.isUser && message.audio && (
-  <button
-    onClick={() => toggleAudio(index)}
-    className={`mt-1 transition-colors ${
-      isPlayingAudio[index]
-        ? 'text-blue-400'
-        : 'text-white/60 hover:text-white/90'
-    }`}
-  >
-    {isPlayingAudio[index] ? (
-      <VolumeX className='w-5 h-5' />
-    ) : (
-      <Volume2 className='w-5 h-5' />
-    )}
-  </button>
-)}
+                                    {!message.isUser && message.audio && (
+                                      <button
+                                        onClick={() => toggleAudio(index)}
+                                        className={`mt-1 transition-colors ${
+                                          isPlayingAudio[index]
+                                            ? 'text-blue-400'
+                                            : 'text-white/60 hover:text-white/90'
+                                        }`}
+                                      >
+                                        {isPlayingAudio[index] ? (
+                                          <VolumeX className='w-5 h-5' />
+                                        ) : (
+                                          <Volume2 className='w-5 h-5' />
+                                        )}
+                                      </button>
+                                    )}
                                     <p className='text-white/90 text-sm sm:text-base'>
                                       {message.text}
                                     </p>
@@ -518,75 +516,74 @@ useEffect(() => {
                               </motion.div>
                             ))}
                             <div ref={messagesEndRef} />
-                            
                           </div>
 
-            {/* Voice Mode UI */}
-            {isVoiceMode ? (
-              <div className='w-full flex flex-col items-center gap-6 mb-6'>
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className='relative w-32 h-32 flex items-center justify-center'
-                >
-                  <motion.div
-                    animate={{
-                      scale: isRecording ? [1, 1.2, 1] : 1,
-                      opacity: isRecording ? [0.2, 0.5, 0.2] : 0.2
-                    }}
-                    transition={{
-                      repeat: isRecording ? Infinity : 0,
-                      duration: 1.5
-                    }}
-                    className='absolute inset-0 bg-blue-500 rounded-full'
-                  />
-                  <motion.div
-                    animate={{
-                      scale: isRecording ? [1, 1.1, 1] : 1,
-                      opacity: isRecording ? [0.15, 0.3, 0.15] : 0.15
-                    }}
-                    transition={{
-                      repeat: isRecording ? Infinity : 0,
-                      duration: 1.5,
-                      delay: 0.2
-                    }}
-                    className='absolute inset-2 bg-blue-500 rounded-full'
-                  />
-                  <button
-                    onClick={handleVoiceInput}
-                    className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
-                        ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110'
-                        : 'bg-white/5 text-white/60 hover:text-blue-500 hover:bg-white/10'
-                      }`}
-                  >
-                    {isRecording ? (
-                      <Mic className='w-8 h-8' />
-                    ) : (
-                      <MicOff className='w-8 h-8' />
-                    )}
-                  </button>
-                </motion.div>
-                {transcription && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className='text-white/60 text-sm text-center max-w-md'
-                  >
-                    {transcription}
-                  </motion.p>
-                )}
-                <button
-                  onClick={exitVoiceMode}
-                  className='text-white/40 hover:text-white/60 transition-colors flex items-center gap-2'
-                >
-                  <X className='w-4 h-4' />
-                  <span>Exit Voice Mode</span>
-                </button>
-              </div>
-            ) : null}
+                          {/* Voice Mode UI */}
+                          {isVoiceMode ? (
+                            <div className='w-full flex flex-col items-center gap-6 mb-6'>
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className='relative w-32 h-32 flex items-center justify-center'
+                              >
+                                <motion.div
+                                  animate={{
+                                    scale: isRecording ? [1, 1.2, 1] : 1,
+                                    opacity: isRecording ? [0.2, 0.5, 0.2] : 0.2
+                                  }}
+                                  transition={{
+                                    repeat: isRecording ? Infinity : 0,
+                                    duration: 1.5
+                                  }}
+                                  className='absolute inset-0 bg-blue-500 rounded-full'
+                                />
+                                <motion.div
+                                  animate={{
+                                    scale: isRecording ? [1, 1.1, 1] : 1,
+                                    opacity: isRecording ? [0.15, 0.3, 0.15] : 0.15
+                                  }}
+                                  transition={{
+                                    repeat: isRecording ? Infinity : 0,
+                                    duration: 1.5,
+                                    delay: 0.2
+                                  }}
+                                  className='absolute inset-2 bg-blue-500 rounded-full'
+                                />
+                                <button
+                                  onClick={handleVoiceInput}
+                                  className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
+                                      ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110'
+                                      : 'bg-white/5 text-white/60 hover:text-blue-500 hover:bg-white/10'
+                                    }`}
+                                >
+                                  {isRecording ? (
+                                    <Mic className='w-8 h-8' />
+                                  ) : (
+                                    <MicOff className='w-8 h-8' />
+                                  )}
+                                </button>
+                              </motion.div>
+                              {transcription && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className='text-white/60 text-sm text-center max-w-md'
+                                >
+                                  {transcription}
+                                </motion.p>
+                              )}
+                              <button
+                                onClick={exitVoiceMode}
+                                className='text-white/40 hover:text-white/60 transition-colors flex items-center gap-2'
+                              >
+                                <X className='w-4 h-4' />
+                                <span>Exit Voice Mode</span>
+                              </button>
+                            </div>
+                          ) : null}
 
-            {/* Input Form with Loading Indicator */}
-            <div className="w-full sticky bottom-0  to-transparent pt-4">
+                          {/* Input Form with Loading Indicator */}
+                          <div className="w-full sticky bottom-0 to-transparent pt-4">
                             <div className="relative">
                               <form
                                 onSubmit={(e) => {
@@ -686,7 +683,7 @@ useEffect(() => {
                     {/* Image with gradient border */}
                     <div className="md:w-1/2 z-10">
                       <div className="max-w-[200px] md:max-w-[400px] mx-auto w-full">
-                        <motion.div 
+                        <motion.div
                           className={`aspect-square rounded-3xl bg-gradient-to-br ${feature.gradient} p-1`}
                           animate={{
                             scale: [1, 1.02, 1],
@@ -726,7 +723,7 @@ useEffect(() => {
                     </div>
 
                     {/* Content Box */}
-                    <motion.div 
+                    <motion.div
                       className="md:w-1/2 md:absolute md:-translate-y-1/2 md:left-[45%] bg-transparent backdrop-blur-xl rounded-3xl p-8 border border-white/10"
                       style={{ left: index % 2 === 0 ? '45%' : 'auto', right: index % 2 === 0 ? 'auto' : '45%' }}
                       initial={{ opacity: 0, y: 20 }}
@@ -734,7 +731,7 @@ useEffect(() => {
                       transition={{ duration: 0.8, delay: 0.2 }}
                     >
                       <div className={`w-full max-w-[500px] ${index % 2 === 0 ? 'md:ml-auto' : ''} text-center md:text-left`}>
-                        <motion.h2 
+                        <motion.h2
                           className={`text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r ${feature.gradient} bg-clip-text text-transparent`}
                           initial={{ opacity: 0, y: 10 }}
                           whileInView={{ opacity: 1, y: 0 }}
@@ -742,7 +739,7 @@ useEffect(() => {
                         >
                           {feature.title}
                         </motion.h2>
-                        <motion.p 
+                        <motion.p
                           className="text-lg md:text-xl text-gray-300 leading-relaxed"
                           initial={{ opacity: 0, y: 10 }}
                           whileInView={{ opacity: 1, y: 0 }}
@@ -750,7 +747,7 @@ useEffect(() => {
                         >
                           {feature.description}
                         </motion.p>
-                        <motion.div 
+                        <motion.div
                           className={`mt-6 h-1 w-20 rounded-full bg-gradient-to-r ${feature.gradient}`}
                           initial={{ width: 0 }}
                           whileInView={{ width: 80 }}
@@ -771,7 +768,7 @@ useEffect(() => {
               animate={{ opacity: 1 }}
               className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.1),transparent_50%)]"
             />
-            
+
             <div className="container mx-auto px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -782,7 +779,7 @@ useEffect(() => {
                   Towards Digital, Agentic Future
                 </h2>
                 <p className="text-gray-400 max-w-2xl mx-auto">
-                AI agent launchpad managing a multi-agent platform and AI coordination layer on NetSepio&lsquo;s secure and decentralized network.
+                  AI agent launchpad managing a multi-agent platform and AI coordination layer on NetSepio&lsquo;s secure and decentralized network.
                 </p>
 
                 {/* Stats Section */}
@@ -814,10 +811,8 @@ useEffect(() => {
               </motion.div>
             </div>
           </div>
-
-        
         </div>
       </div>
     </>
-  )
+  );
 }

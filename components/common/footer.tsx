@@ -1,3 +1,4 @@
+'use client'
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaXTwitter } from "react-icons/fa6";
@@ -55,6 +56,7 @@ const Footer = () => {
               {/* <li><Link href='/about' className='text-gray-100 hover:text-white transition-colors'>About</Link></li> */}
               <li><Link href='https://docs.netsepio.com/latest/cyreneai' className='text-gray-100 hover:text-white transition-colors'>Docs</Link></li>
               {/* <li><Link href='/token' className='text-gray-100 hover:text-white transition-colors'>Token</Link></li> */}
+              <li>
             </ul>
           </div>
 
