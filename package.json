@@ -39,7 +39,7 @@
     "next": "15.1.6",
     "openai": "^4.89.0",
     "pino-pretty": "^13.0.0",
-    "react": "link:@reown/appkit-adapter-solana/react",
+    "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "react-intersection-observer": "^9.15.1",
