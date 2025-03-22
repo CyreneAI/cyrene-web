@@ -52,9 +52,9 @@ const Footer = () => {
           <div className='lg:pl-12 lg:py-12 md:py-8'>
             <h3 className='text-white text-lg font-bold text-center sm:text-left lg:mb-4 md:mb-4'>Quick Links</h3>
             <ul className='space-y-2 text-center sm:text-left'>
-              <li><Link href='/about' className='text-gray-100 hover:text-white transition-colors'>About</Link></li>
+              {/* <li><Link href='/about' className='text-gray-100 hover:text-white transition-colors'>About</Link></li> */}
               <li><Link href='https://docs.netsepio.com/latest/cyreneai' className='text-gray-100 hover:text-white transition-colors'>Docs</Link></li>
-              <li><Link href='/token' className='text-gray-100 hover:text-white transition-colors'>Token</Link></li>
+              {/* <li><Link href='/token' className='text-gray-100 hover:text-white transition-colors'>Token</Link></li> */}
             </ul>
           </div>
 
