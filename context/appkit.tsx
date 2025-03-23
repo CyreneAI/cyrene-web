@@ -2,7 +2,7 @@
 
 import { createAppKit } from '@reown/appkit/react';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { SolanaAdapter } from '@reown/appkit-adapter-solana';
+import { BaseWalletAdapter, SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { mainnet, arbitrum, solana, solanaTestnet, solanaDevnet } from '@reown/appkit/networks';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 
@@ -23,8 +23,13 @@ const metadata = {
 };
 
 // 3. Set up Solana Adapter
+const wallets: BaseWalletAdapter[] = [
+  new PhantomWalletAdapter() as unknown as BaseWalletAdapter,
+  new SolflareWalletAdapter() as unknown as BaseWalletAdapter,
+];
+
 const solanaWeb3JsAdapter = new SolanaAdapter({
-  wallets: [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+  wallets,
 });
 
 // 4. Create the AppKit instance with both Ethereum and Solana adapters
