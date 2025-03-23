@@ -6,6 +6,7 @@ import { SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { mainnet, arbitrum, solana, solanaTestnet, solanaDevnet } from '@reown/appkit/networks';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 
+
 // 1. Get projectId from https://cloud.reown.com
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
@@ -28,12 +29,21 @@ const solanaWeb3JsAdapter = new SolanaAdapter({
 
 // 4. Create the AppKit instance with both Ethereum and Solana adapters
 createAppKit({
-  adapters: [new EthersAdapter(), solanaWeb3JsAdapter], // Add both adapters
+  adapters: [new EthersAdapter(), solanaWeb3JsAdapter],
   metadata,
-  networks: [mainnet, arbitrum, solana, solanaTestnet, solanaDevnet], // Add all networks
+  networks: [mainnet, arbitrum, solana, solanaTestnet, solanaDevnet],
   projectId,
   features: {
-    analytics: true, // Optional - defaults to your Cloud configuration
+    analytics: true,
+  },
+  
+  // Theme configuration
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-font-family': 'Inter, sans-serif',
+    '--w3m-accent': '#3B82F6',
+    '--w3m-color-mix': '#3B82F6',
+    '--w3m-color-mix-strength': 40
   },
 });
 
