@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect } from "react";
 import VoiceManager, { Voice } from "@/utils/voiceUtils";
 import { generateCharacterInfo } from "@/app/utils/openaiUtils";
+import { useAppKitAccount } from '@reown/appkit/react'; // For Ethereum wallet
+import { useWallet } from '@solana/wallet-adapter-react'; // For Solana wallet
 
 interface AgentData {
   name: string;
@@ -35,6 +37,7 @@ interface AgentData {
     chat: string[];
     post: string[];
   };
+  wallet_address: string;
 }
 
 interface AgentConfig {
@@ -59,12 +62,12 @@ const agentApi = {
   },
 };
 
-export default function Test() {
+export default function LaunchAgentPage() {
   const [previewAudio, setPreviewAudio] = useState<string | null>(null);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false); // New state for AI generation
+  const [isGenerating, setIsGenerating] = useState(false);
   const voiceManager = useRef(new VoiceManager());
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -88,32 +91,45 @@ export default function Test() {
   const [avatarHash, setAvatarHash] = useState<string>('');
   const [coverHash, setCoverHash] = useState<string>('');
 
+  // Wallet connection
+  const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount(); // Ethereum wallet
+  const { publicKey: solAddress, connected: isSolConnected } = useWallet(); // Solana wallet
+  const [wallet_address, setWalletAddress] = useState<string | null>(null);
 
+  // Handle wallet address changes
+  useEffect(() => {
+    if (isEthConnected && ethAddress) {
+      setWalletAddress(ethAddress);
+    } else if (isSolConnected && solAddress) {
+      setWalletAddress(solAddress.toBase58());
+    } else {
+      setWalletAddress(null);
+    }
+  }, [isEthConnected, isSolConnected, ethAddress, solAddress]);
 
   // Handle AI generation
-// page.tsx
-const handleGenerateWithAI = async () => {
-  if (!oneLiner || !description) {
-    toast.error("Please provide a one-liner and description before generating with AI.");
-    return;
-  }
+  const handleGenerateWithAI = async () => {
+    if (!oneLiner || !description) {
+      toast.error("Please provide a one-liner and description before generating with AI.");
+      return;
+    }
 
-  setIsGenerating(true);
-  try {
-    const generatedInfo = await generateCharacterInfo(oneLiner, description);
-    setCharacterInfo({
-      bio: generatedInfo.bio,
-      lore: generatedInfo.lore,
-      knowledge: generatedInfo.knowledge,
-    });
-    toast.success("Character information generated successfully!");
-  } catch (error) {
-    console.error('Error generating character info:', error);
-    toast.error("Failed to generate character information with AI.");
-  } finally {
-    setIsGenerating(false);
-  }
-};
+    setIsGenerating(true);
+    try {
+      const generatedInfo = await generateCharacterInfo(oneLiner, description);
+      setCharacterInfo({
+        bio: generatedInfo.bio,
+        lore: generatedInfo.lore,
+        knowledge: generatedInfo.knowledge,
+      });
+      toast.success("Character information generated successfully!");
+    } catch (error) {
+      console.error('Error generating character info:', error);
+      toast.error("Failed to generate character information with AI.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Handle voice preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -121,27 +137,27 @@ const handleGenerateWithAI = async () => {
   const handlePreviewVoice = async (voiceId: string) => {
     console.log("Preview button clicked. Voice ID:", voiceId);
     setIsLoadingPreview(true);
-  
+
     try {
       const response = await axios.post('/api/tts', {
         text: "Hello, I'm your AI assistant",
         voice: voiceId,
       }, { responseType: 'blob' });
-  
+
       // Stop and clean up previous audio
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.currentTime = 0; // Reset to prevent replay issues
+        audioRef.current.currentTime = 0;
         URL.revokeObjectURL(audioRef.current.src);
       }
-  
+
       const audioUrl = URL.createObjectURL(new Blob([response.data], { type: 'audio/mpeg' }));
       setPreviewAudio(audioUrl);
-  
+
       // Create a new Audio object
       const newAudio = new Audio(audioUrl);
       audioRef.current = newAudio;
-  
+
       newAudio.play()
         .then(() => {
           console.log("Audio playing successfully");
@@ -154,12 +170,12 @@ const handleGenerateWithAI = async () => {
             toast.error("Playback failed");
           }
         });
-  
+
       newAudio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         setPreviewAudio(null);
       };
-  
+
     } catch (error) {
       console.error('Error previewing voice:', error);
       toast.error('Failed to preview voice');
@@ -167,8 +183,7 @@ const handleGenerateWithAI = async () => {
       setIsLoadingPreview(false);
     }
   };
-  
-  
+
   // Load available voices
   useEffect(() => {
     const loadVoices = async () => {
@@ -262,9 +277,18 @@ const handleGenerateWithAI = async () => {
       return;
     }
 
+    if (!wallet_address) {
+      toast.error("Wallet address is required. Please connect your wallet.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
+
+      
+
+      formData.append('wallet_address', wallet_address); 
       formData.append('character_file', JSON.stringify({
         name,
         clients: [],
@@ -294,7 +318,7 @@ const handleGenerateWithAI = async () => {
           chat: [""],
           post: [""],
         },
-        organization: "cyrene"
+        organization: "cyrene", 
       }));
 
       formData.append('avatar_img', avatarHash);
@@ -380,6 +404,20 @@ const handleGenerateWithAI = async () => {
                 <p className="text-sm text-blue-300/70 mt-2">
                   Must start with a lowercase letter or number. Can contain lowercase letters, numbers, dots, and hyphens.
                 </p>
+              </div>
+
+              <div>
+                <Label className="text-lg mb-2 text-blue-300">Wallet Address</Label>
+                <Input
+                  value={wallet_address || "Not connected"}
+                  disabled
+                  className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+                />
+                {!wallet_address && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Please connect your wallet to proceed.
+                  </p>
+                )}
               </div>
 
               <div>

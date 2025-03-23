@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { Cursor } from "@/components/ui/cursor";
 import Navbar from "@/components/common/navbar";
 import Footer from "@/components/common/footer";
+import { WalletProviderWrapper } from "@/components/WalletProviderWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -70,6 +71,7 @@ export default async function RootLayout({
         <div className="absolute inset-0"></div>
         <div className="relative z-10">
           {/* Replace ContextProvider with AppKit */}
+          <WalletProviderWrapper>
           <AppKit>
             <Cursor />
             <Navbar />
@@ -79,6 +81,7 @@ export default async function RootLayout({
             <Toaster richColors />
             <Footer />
           </AppKit>
+          </WalletProviderWrapper>
         </div>
       </body>
     </html>
