@@ -87,7 +87,7 @@ export default function Home() {
     },
     {
       title: "Decentralized Infrastructure",
-      description: "Powered by locally hosted LLMs and GPUs, ensuring resilience and independent operation on a decentralized infrastructure.",
+      description: "AI agents and MCP servers are hosted on Erebrus ĐVPN Nodes for secure and verifiable execution.",
       gradient: "from-teal-400 via-cyan-500 to-blue-600",
       bgGradient: "from-teal-500/20 via-cyan-500/20 to-blue-600/20",
       image: "/decentralized-infrastructure.jpg",
@@ -95,7 +95,7 @@ export default function Home() {
     },
     {
       title: "Hyper Coherent Network",
-      description: "Multi-agent coordination with real-time precision and fault tolerance.",
+      description: "Multi-agent coordination with real-time precision, fault tolerance and context synchronization.",
       gradient: "from-cyan-400 via-blue-500 to-indigo-600",
       bgGradient: "from-cyan-500/20 via-blue-500/20 to-indigo-600/20",
       image: "/hyper-coherent-network.jpg",
@@ -103,7 +103,7 @@ export default function Home() {
     },
     {
       title: "Unstoppable Ecosystem",
-      description: "Combines blockchain-backed identity validation with ĐVPN technology.",
+      description: "Blockchain-backed security with ÐVPN technology ensures resilience.",
       gradient: "from-blue-400 via-indigo-500 to-cyan-600",
       bgGradient: "from-blue-500/20 via-indigo-500/20 to-cyan-600/20",
       image: "/ecosytem.jpg",

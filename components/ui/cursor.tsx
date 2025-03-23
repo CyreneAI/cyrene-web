@@ -63,7 +63,19 @@ export const Cursor = () => {
         hoveredElement?.closest('.wallet-adapter-modal-title') !== null ||
         hoveredElement?.closest('.wallet-adapter-modal-list') !== null ||
         hoveredElement?.closest('.wallet-adapter-modal-list-more') !== null ||
-        hoveredElement?.closest('.wallet-adapter-modal-list-more-icon') !== null;
+        hoveredElement?.closest('.wallet-adapter-modal-list-more-icon') !== null ||
+        // Add Web3Modal selectors based on inspection
+        hoveredElement?.closest('#w3m-modal') !== null ||
+        hoveredElement?.closest('.w3m-modal') !== null ||
+        hoveredElement?.closest('w3m-modal') !== null ||
+        hoveredElement?.closest('wui-card[role="alertdialog"]') !== null ||
+        hoveredElement?.closest('[data-testid="w3m-modal-overlay"]') !== null ||
+        hoveredElement?.closest('[data-testid="w3m-modal-card"]') !== null ||
+        hoveredElement?.closest('wui-flex') !== null ||
+        hoveredElement?.closest('w3m-header') !== null ||
+        hoveredElement?.closest('w3m-router') !== null ||
+        hoveredElement?.closest('w3m-snackbar') !== null ||
+        hoveredElement?.closest('w3m-alertbar') !== null;
       
       setIsPointer(!!isClickable);
       
@@ -99,7 +111,7 @@ export const Cursor = () => {
       {trail.map((dot, index) => (
         <motion.div
           key={index}
-          className="fixed pointer-events-none z-[99999]"
+          className="fixed pointer-events-none cursor-element z-[100001]"
           style={{
             x: dot.x - (2 + index * 0.5), // Gradually increase size
             y: dot.y - (2 + index * 0.5),
@@ -116,7 +128,7 @@ export const Cursor = () => {
 
       {/* Main Cursor */}
       <motion.div
-        className="fixed pointer-events-none z-[99999]"
+        className="fixed pointer-events-none cursor-element z-[100001]"
         animate={{
           x: position.x - 4,
           y: position.y - 4,
@@ -138,7 +150,7 @@ export const Cursor = () => {
       
       {/* Cursor Ring */}
       <motion.div
-        className="fixed pointer-events-none z-[99999]"
+        className="fixed pointer-events-none cursor-element z-[100001]"
         animate={{
           x: position.x - 16,
           y: position.y - 16,
