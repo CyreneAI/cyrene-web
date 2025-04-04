@@ -34,6 +34,9 @@ interface Agent {
   cover_img: string;
   voice_model: string;
   organization: string;
+  telegram_bot_token?: string;
+  discord_application_id?: string;
+  discord_token?: string;
 }
 
 const agentApi = {
