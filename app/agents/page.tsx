@@ -186,7 +186,7 @@ export default function UserAgentsPage() {
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center min-h-[40vh] space-y-4"
             >
-              <h2 className="text-xl font-medium">You don't have any agents yet</h2>
+              <h2 className="text-xl font-medium">You don`&apos;`t have any agents yet</h2>
               <p className="text-muted-foreground">
                 Launch your first agent to get started
               </p>

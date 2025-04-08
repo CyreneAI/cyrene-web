@@ -3,7 +3,7 @@
 import { useAppKitProvider } from "@reown/appkit/react";
 import { Contract, BrowserProvider } from "ethers";
 import type { Provider } from "@reown/appkit/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const subscriptionSC = "0xFb323A5F6ffD982cF1A4b08B826B62c07ae91620";
 const subscriptionABI = [
@@ -918,7 +918,7 @@ export default function StartSubscription() {
   const [expirationTime, setExpirationTime] = useState<number | null>(null);
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
-  const checkSubscriptionStatus = async () => {
+  const checkSubscriptionStatus = useCallback(async () => {
     if (!walletProvider) return;
 
     try {
@@ -974,15 +974,13 @@ export default function StartSubscription() {
     } finally {
       setCheckingStatus(false);
     }
-  };
+  }, [walletProvider]);
 
   const getOwnedTokenId = async (contract: Contract, userAddress: string) => {
     const balance = await contract.balanceOf(userAddress);
     if (balance === BigInt(0)) return null;
   
     // Try to find the token ID by checking recent token IDs
-    // Note: This is not ideal - a better approach would be to use token enumeration
-    // or have a mapping in the contract that tracks user's token IDs
     for (let i = BigInt(0); i < BigInt(10); i++) {
       try {
         const owner = await contract.ownerOf(i);
@@ -1027,9 +1025,19 @@ export default function StartSubscription() {
       // Refresh status after successful subscription
       await checkSubscriptionStatus();
       alert("🎉 Subscription started successfully!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Subscription failed", err);
-      setError(`❌ ${err.reason || err.message || "Subscription failed"}`);
+      let errorMessage = "Subscription failed";
+      
+      if (err instanceof Error) {
+        errorMessage = err.message.includes("user rejected transaction") 
+          ? "❌ Transaction was cancelled" 
+          : `❌ ${err.message}`;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
       await checkSubscriptionStatus();
     } finally {
       setLoading(false);
@@ -1038,7 +1046,7 @@ export default function StartSubscription() {
 
   useEffect(() => {
     checkSubscriptionStatus();
-  }, [walletProvider]);
+  }, [checkSubscriptionStatus]);
 
   return (
     <div className="p-4 flex flex-col items-start gap-4 bg-[#1f1f2e] text-white rounded-xl border border-purple-700 shadow-lg max-w-md">
