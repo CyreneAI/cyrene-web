@@ -38,12 +38,21 @@ interface AgentData {
     post: string[];
   };
   wallet_address: string;
+  telegram_bot_token?: string;
+  discord_application_id?: string;
+  discord_token?: string;
 }
 
 interface AgentConfig {
   bio: string[];
   lore: string[];
   knowledge: string[];
+}
+interface AgentSecrets {
+  OPENAI_API_KEY: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  DISCORD_APPLICATION_ID?: string;
+  DISCORD_API_TOKEN?: string;
 }
 
 const agentApi = {
@@ -90,6 +99,12 @@ export default function LaunchAgentPage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [avatarHash, setAvatarHash] = useState<string>('');
   const [coverHash, setCoverHash] = useState<string>('');
+
+
+  const [clients, setClients] = useState<string[]>([]);
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+  const [discordAppId, setDiscordAppId] = useState('');
+  const [discordToken, setDiscordToken] = useState('');
 
   // Wallet connection
   const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount(); // Ethereum wallet
@@ -271,27 +286,46 @@ export default function LaunchAgentPage() {
       toast.error("Agent Name is required");
       return;
     }
-
+  
     if (!isValidName(name)) {
       toast.error("Invalid agent name format");
       return;
     }
-
+  
     if (!wallet_address) {
       toast.error("Wallet address is required. Please connect your wallet.");
       return;
     }
-
+  
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-
+  
       
-
+      const settings = {
+        secrets: {} as Record<string, string>, // Initialize empty secrets object
+        voice: {
+          model: "en_US-male-medium",
+        },
+      };
+  
+      // Add Telegram/Discord secrets if clients are selected
+      if (clients.includes('telegram') && telegramBotToken) {
+        settings.secrets.TELEGRAM_BOT_TOKEN = telegramBotToken;
+      }
+      if (clients.includes('discord')) {
+        if (discordAppId) {
+          settings.secrets.DISCORD_APPLICATION_ID = discordAppId;
+        }
+        if (discordToken) {
+          settings.secrets.DISCORD_API_TOKEN = discordToken;
+        }
+      }
+  
       formData.append('wallet_address', wallet_address); 
       formData.append('character_file', JSON.stringify({
         name,
-        clients: [],
+        clients,
         oneLiner,
         description,
         bio: characterInfo.bio.split("\n"),
@@ -318,20 +352,22 @@ export default function LaunchAgentPage() {
           chat: [""],
           post: [""],
         },
-        organization: "cyrene", 
+        organization: "cyrene",
+        settings,
+        modelProvider: "openai",
       }));
-
+  
       formData.append('avatar_img', avatarHash);
       formData.append('cover_img', coverHash);
       formData.append('voice_model', selectedVoice);
       formData.append('domain', domain);
-
+  
       const response = await axios.post('/api/createAgent', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
+  
       toast.success("Agent Created Successfully!", {
         duration: 4000,
         action: {
@@ -339,11 +375,11 @@ export default function LaunchAgentPage() {
           onClick: () => router.push(`/explore-agents/chat/${response.data.agent.id}`),
         },
       });
-
+  
       setTimeout(() => {
         router.push(`/explore-agents/chat/${response.data.agent.id}`);
       }, 2000);
-
+  
     } catch (error) {
       console.error("API Error:", error);
       toast.error("Failed to create agent");
@@ -351,7 +387,6 @@ export default function LaunchAgentPage() {
       setIsSubmitting(false);
     }
   };
-
   // Validate agent name
   const isValidName = (name: string): boolean => {
     const nameRegex = /^[a-z0-9][a-z0-9.-]*$/;
@@ -542,6 +577,78 @@ export default function LaunchAgentPage() {
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div>
+    <Label className="text-lg mb-2 text-blue-300">Integrations</Label>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="telegram-client"
+          checked={clients.includes('telegram')}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setClients([...clients, 'telegram']);
+            } else {
+              setClients(clients.filter(c => c !== 'telegram'));
+            }
+          }}
+        />
+        <Label htmlFor="telegram-client">Telegram</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="discord-client"
+          checked={clients.includes('discord')}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setClients([...clients, 'discord']);
+            } else {
+              setClients(clients.filter(c => c !== 'discord'));
+            }
+          }}
+        />
+        <Label htmlFor="discord-client">Discord</Label>
+      </div>
+    </div>
+  </div>
+
+  {clients.includes('telegram') && (
+    <div>
+      <Label className="text-lg mb-2 text-blue-300">Telegram Bot Token</Label>
+      <Input
+        placeholder="Enter Telegram Bot Token"
+        value={telegramBotToken}
+        onChange={(e) => setTelegramBotToken(e.target.value)}
+        className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+      />
+    </div>
+  )}
+
+  {clients.includes('discord') && (
+    <>
+      <div>
+        <Label className="text-lg mb-2 text-blue-300">Discord Application ID</Label>
+        <Input
+          placeholder="Enter Discord App ID"
+          value={discordAppId}
+          onChange={(e) => setDiscordAppId(e.target.value)}
+          className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+        />
+      </div>
+      <div>
+        <Label className="text-lg mb-2 text-blue-300">Discord Bot Token</Label>
+        <Input
+          placeholder="Enter Discord Bot Token"
+          value={discordToken}
+          onChange={(e) => setDiscordToken(e.target.value)}
+          className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+        />
+      </div>
+    </>
+  )}
+</div>
             </div>
           </motion.div>
 

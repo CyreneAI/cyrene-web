@@ -12,22 +12,23 @@ export async function POST(req: Request) {
     const characterFileStr = formData.get('character_file') as string;
     const agentData = JSON.parse(characterFileStr);
 
-    const modifiedAgentData = {
-      ...agentData,
-      settings: {
+    // Add OPENAI_API_KEY to settings.secrets
+    if (agentData.settings && agentData.settings.secrets) {
+      agentData.settings.secrets.OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+    } else {
+      agentData.settings = {
         secrets: {
-          OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
         },
-        voice: {
+        voice: agentData.settings?.voice || {
           model: "en_US-male-medium",
         },
-      },
-      modelProvider: process.env.MODEL_PROVIDER,
-    };
+      };
+    }
 
     const upstreamFormData = new FormData();
     
-    const characterBlob = new Blob([JSON.stringify(modifiedAgentData)], { type: "application/json" });
+    const characterBlob = new Blob([JSON.stringify(agentData)], { type: "application/json" });
     const characterBuffer = await new Response(characterBlob).arrayBuffer();
     const buffer = Buffer.from(characterBuffer);
     upstreamFormData.append("character_file", buffer, "agent.character.json");
