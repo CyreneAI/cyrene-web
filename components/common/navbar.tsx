@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCog, FaRobot, FaImages, FaGem } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -16,6 +16,7 @@ const Navbar = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const { address, isConnected } = useAppKitAccount();
+  const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
 
   const handleHomeClick = () => {
     localStorage.removeItem('currentAgentId');
@@ -33,10 +34,9 @@ const Navbar = () => {
       localStorage.removeItem('walletAddress');
     }
 
-    // Trigger expansion animation after a delay
     const timer = setTimeout(() => {
       setIsExpanded(true);
-    }, 1000); // 1 second delay before expansion
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [isConnected, address]);
@@ -45,6 +45,13 @@ const Navbar = () => {
     { path: '/', label: 'Home' },
     { path: '/explore-agents', label: 'Explore Agents' },
     { path: '/launch-agent', label: 'Launch Agent' },
+  ];
+
+  const dashboardItems = [
+    { path: '/agents', label: 'My Agents', icon: <FaRobot className="mr-2" /> },
+    //{ path: '/nfts', label: 'My NFTs', icon: <FaImages className="mr-2" /> },
+    { path: '/perks', label: 'Perks' },
+    // { path: '/subscription', label: 'Get Subscription', icon: <FaGem className="mr-2" /> },
   ];
 
   const getNavItemClass = (path: string) => {
@@ -101,6 +108,47 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Dashboard Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
+                  className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 ${
+                    pathname.startsWith('/dashboard')
+                      ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  Dashboard
+                </button>
+
+                <AnimatePresence>
+                  {showDashboardDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800 rounded-lg shadow-lg z-50"
+                    >
+                      <div className="py-1">
+                        {dashboardItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            href={item.path}
+                            className="flex items-center px-4 py-2 text-white hover:bg-blue-500/30 transition-colors"
+                            onClick={() => setShowDashboardDropdown(false)}
+                          >
+                            {item.icon}
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <ConnectButton />
             </motion.div>
           )}
@@ -144,6 +192,23 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              <div className="w-full px-4">
+                <div className="border-t border-gray-700 my-2"></div>
+                <h3 className="text-white font-semibold px-4 py-2">Dashboard</h3>
+                {dashboardItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className="flex items-center px-4 py-2 text-white hover:bg-blue-500/30 rounded-full transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+
               <ConnectButton />
             </div>
           </motion.div>
