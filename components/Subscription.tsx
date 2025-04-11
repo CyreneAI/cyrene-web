@@ -907,16 +907,16 @@ const subscriptionABI = [
 ];
 
 export default function StartSubscription() {
-  const { walletProvider } = useAppKitProvider<Provider>("eip155");
-  const [loading, setLoading] = useState(false);
-  const [txHash, setTxHash] = useState("");
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true);
-  const [tokenId, setTokenId] = useState<bigint | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [canSubscribe, setCanSubscribe] = useState(false);
-  const [expirationTime, setExpirationTime] = useState<number | null>(null);
-  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
+    const { walletProvider } = useAppKitProvider<Provider>("eip155");
+    const [loading, setLoading] = useState(false);
+    const [txHash, setTxHash] = useState("");
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [checkingStatus, setCheckingStatus] = useState(true);
+    const [tokenId, setTokenId] = useState<bigint | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [canSubscribe, setCanSubscribe] = useState(false);
+    const [expirationTime, setExpirationTime] = useState<number | null>(null);
+    const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
   const checkSubscriptionStatus = useCallback(async () => {
     if (!walletProvider) return;
@@ -1049,77 +1049,148 @@ export default function StartSubscription() {
   }, [checkSubscriptionStatus]);
 
   return (
-    <div className="p-4 flex flex-col items-start gap-4 bg-[#1f1f2e] text-white rounded-xl border border-purple-700 shadow-lg max-w-md">
-      <h2 className="text-lg font-semibold">🚀 CyreneAI Subscription</h2>
+    <div className="max-w-md mx-auto p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 shadow-xl">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-indigo-500/10 rounded-xl">
+          <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Premium Subscription</h2>
+          <p className="text-sm text-gray-400">Unlock exclusive Erebrus features</p>
+        </div>
+      </div>
 
+      {/* Status Card */}
+      <div className={`mb-6 p-5 rounded-xl border ${isSubscribed ? 'border-green-500/30 bg-green-900/10' : 'border-gray-700 bg-gray-800/50'}`}>
+        {checkingStatus ? (
+          <div className="flex items-center gap-3">
+            <div className="animate-pulse h-4 w-4 rounded-full bg-blue-400"></div>
+            <span className="text-gray-300">Checking your subscription status...</span>
+          </div>
+        ) : isSubscribed ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-green-500/20 rounded-full">
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="font-medium text-green-400">Active Subscription</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-1">
+                <p className="text-gray-400">Expiration</p>
+                <p className="font-medium text-white">
+                  {expirationTime ? formatExpirationDate(expirationTime) : '--'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-gray-400">Days Remaining</p>
+                <p className={`font-medium ${daysRemaining && daysRemaining <= 7 ? 'text-yellow-400' : 'text-white'}`}>
+                  {daysRemaining ?? '--'} {daysRemaining && daysRemaining <= 7 && '⏳'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="pt-3 border-t border-gray-700">
+              <p className="text-sm text-gray-300">Enjoy your premium access to all Erebrus features</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-yellow-500/20 rounded-full">
+                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <span className="font-medium text-yellow-400">No Active Subscription</span>
+            </div>
+            <p className="text-sm text-gray-300">
+              Subscribe now to unlock premium features and exclusive content
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Error Message */}
       {error && (
-        <div className="text-red-400 text-sm p-2 bg-red-900/20 rounded-md w-full">
-          {error}
+        <div className="mb-6 p-3 flex items-start gap-2 bg-red-900/30 border border-red-700/50 rounded-lg">
+          <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-sm text-red-300">{error}</span>
         </div>
       )}
 
-      {checkingStatus ? (
-        <p className="text-sm text-gray-400">Checking subscription status...</p>
-      ) : isSubscribed && expirationTime ? (
-        <div className="space-y-2 w-full">
-          <p className="text-green-400 font-medium">✅ Active Subscription</p>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="text-gray-300">Expires on:</div>
-            <div className="text-white font-semibold">
-              {formatExpirationDate(expirationTime)}
-            </div>
-            
-            <div className="text-gray-300">Days remaining:</div>
-            <div className={daysRemaining && daysRemaining <= 7 ? "text-yellow-400 font-semibold" : "text-white font-semibold"}>
-              {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}
-              {daysRemaining && daysRemaining <= 7 && ' (renew soon)'}
-            </div>
-          </div>
-
-          <p className="text-sm text-purple-300 mt-2">Enjoy your exclusive access to Erebrus DVpn.</p>
-          
-          {txHash && (
-            <a
-              href={`https://explorer.rise-technology.com/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 text-sm underline"
-            >
-              View transaction
-            </a>
-          )}
-        </div>
-      ) : (
-        <>
-          <p className="text-sm text-gray-300">
-            {canSubscribe 
-              ? "Subscribe to access exclusive features"
-              : "Unable to verify subscription status"}
-          </p>
+      {/* Action Section */}
+      <div className="space-y-4">
+        {!isSubscribed && canSubscribe && (
           <button
             onClick={handleStartSubscription}
-            disabled={loading || !walletProvider || !canSubscribe}
-            className={`px-4 py-2 rounded-xl ${
-              loading || !walletProvider || !canSubscribe
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-700"
+            disabled={loading || !walletProvider}
+            className={`w-full py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all ${
+              loading || !walletProvider
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-indigo-500/20"
             }`}
           >
-            {loading
-              ? "Processing..."
-              : !walletProvider
-              ? "Connect Wallet"
-              : !canSubscribe
-              ? "Subscription Status Unknown"
-              : "Start Subscription"}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : !walletProvider ? (
+              "Connect Wallet to Subscribe"
+            ) : (
+              "Start Premium Subscription"
+            )}
           </button>
-          {!canSubscribe && !isSubscribed && (
-            <p className="text-sm text-yellow-400">
-              Please wait while we verify your subscription status...
-            </p>
-          )}
-        </>
+        )}
+
+        {txHash && (
+          <a
+            href={`https://explorer.rise-technology.com/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300"
+          >
+            View transaction details
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        )}
+      </div>
+
+      {/* Features List */}
+      {!isSubscribed && (
+        <div className="mt-8 pt-6 border-t border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Premium Benefits</h3>
+          <ul className="space-y-3">
+            {[
+              "Unlimited access to all AI models",
+              "Priority customer support",
+              "Exclusive content and features",
+              "Higher processing limits",
+              "Ad-free experience"
+            ].map((feature, index) => (
+              <li key={index} className="flex items-start">
+                <svg className="w-5 h-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-gray-300">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
