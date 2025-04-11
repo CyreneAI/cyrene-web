@@ -8,9 +8,11 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Loader2, Search } from 'lucide-react';
+import {BeatLoader} from 'react-spinners'
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import { GlowButton } from '@/components/ui/glow-button';
+import ConnectButton from '@/components/common/ConnectBtn';
 
 interface Agent {
   id: string;
@@ -93,21 +95,28 @@ export default function UserAgentsPage() {
 
   if (!walletAddress) {
     return (
+      <>
+      <StarCanvas/>
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">Connect your wallet</h2>
+          
+          <h2 className="text-2xl font-bold text-white">Connect your wallet</h2>
           <p className="text-muted-foreground">
             Please connect your wallet to view your agents
           </p>
+          <div className='px-20 py-3 ml-4'> <ConnectButton/></div>
+          
         </div>
       </div>
+      </>
+      
     );
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <BeatLoader color="#2f7add" />
       </div>
     );
   }
@@ -159,7 +168,7 @@ export default function UserAgentsPage() {
           </motion.div>
 
           {/* Launch Agent Button */}
-          <motion.div 
+          {/* <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -177,7 +186,7 @@ export default function UserAgentsPage() {
                 Launch New Agent
               </GlowButton>
             </Link>
-          </motion.div>
+          </motion.div> */}
 
           {/* Agents Grid */}
           {filteredAgents.length === 0 ? (
@@ -186,7 +195,7 @@ export default function UserAgentsPage() {
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center min-h-[40vh] space-y-4"
             >
-              <h2 className="text-xl font-medium">You don`&apos;`t have any agents yet</h2>
+              {/* <h2 className="text-xl font-medium">You don`&apos;`t have any agents yet</h2> */}
               <p className="text-muted-foreground">
                 Launch your first agent to get started
               </p>
