@@ -560,19 +560,20 @@ export default function LaunchAgentPage() {
                     </Select>
 
                     {/* Preview Button with Loader */}
-                    <div className="flex justify-end mt-4">
-                      <button
-                        type="button"
-                        onClick={() => handlePreviewVoice(selectedVoice)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all flex items-center gap-2"
-                        disabled={isLoadingPreview}
+                    <div className="flex justify-end mt-4 py-2">
+                     
+                      <GlowButton
+                       type="button"
+                       onClick={() => handlePreviewVoice(selectedVoice)}
+                       className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all flex items-center gap-2"
+                       disabled={isLoadingPreview}
                       >
-                        {isLoadingPreview ? (
+                            {isLoadingPreview ? (
                           <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                         ) : (
                           "Preview Voice"
                         )}
-                      </button>
+                      </GlowButton>
                     </div>
                   </div>
                 </div>
@@ -580,38 +581,44 @@ export default function LaunchAgentPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
   <div>
     <Label className="text-lg mb-2 text-blue-300">Integrations</Label>
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="telegram-client"
-          checked={clients.includes('telegram')}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setClients([...clients, 'telegram']);
-            } else {
-              setClients(clients.filter(c => c !== 'telegram'));
-            }
-          }}
-        />
-        <Label htmlFor="telegram-client">Telegram</Label>
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="discord-client"
-          checked={clients.includes('discord')}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setClients([...clients, 'discord']);
-            } else {
-              setClients(clients.filter(c => c !== 'discord'));
-            }
-          }}
-        />
-        <Label htmlFor="discord-client">Discord</Label>
-      </div>
-    </div>
+    <div className="space-y-2 ">
+  <div className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      id="telegram-client"
+      checked={clients.includes('telegram')}
+      onChange={(e) => {
+        if (e.target.checked) {
+          setClients([...clients, 'telegram']);
+        } else {
+          setClients(clients.filter(c => c !== 'telegram'));
+        }
+      }}
+      className={`h-4 w-4 accent-blue-500 rounded-md transition-shadow duration-300 
+        ${clients.includes('telegram') ? 'shadow-blue-500 shadow-md' : ''}`}
+    />
+    <Label htmlFor="telegram-client">Telegram</Label>
+  </div>
+  <div className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      id="discord-client"
+      checked={clients.includes('discord')}
+      onChange={(e) => {
+        if (e.target.checked) {
+          setClients([...clients, 'discord']);
+        } else {
+          setClients(clients.filter(c => c !== 'discord'));
+        }
+      }}
+      className={`h-4 w-4 accent-violet-500 rounded-md transition-shadow duration-300 
+        ${clients.includes('discord') ? 'shadow-violet-500 shadow-md' : ''}`}
+    />
+    <Label htmlFor="discord-client">Discord</Label>
+  </div>
+</div>
+
+
   </div>
 
   {clients.includes('telegram') && (

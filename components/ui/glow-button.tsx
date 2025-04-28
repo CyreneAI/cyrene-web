@@ -2,9 +2,10 @@ import React from 'react';
 
 interface GlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  active?: boolean;
 }
 
-export const GlowButton = ({ children, ...props }: GlowButtonProps) => (
+export const GlowButton = ({ children, active = false, ...props }: GlowButtonProps) => (
   <button
     {...props}
     style={{
@@ -20,7 +21,7 @@ export const GlowButton = ({ children, ...props }: GlowButtonProps) => (
       padding: '5px 10px',
       borderRadius: '10px',
     }}
-    className="relative"
+    className={`relative ${props.className || ''}`}
   >
     <span
       style={{
@@ -37,6 +38,7 @@ export const GlowButton = ({ children, ...props }: GlowButtonProps) => (
         animation: 'glowing-button 20s linear infinite',
         transition: 'opacity 0.3s ease-in-out',
         borderRadius: 'inherit',
+        opacity: active ? 0.8 : 0.3,
       }}
     />
     <span
@@ -54,4 +56,4 @@ export const GlowButton = ({ children, ...props }: GlowButtonProps) => (
     />
     {children}
   </button>
-); 
+);
