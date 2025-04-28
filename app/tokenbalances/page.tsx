@@ -181,31 +181,6 @@ export default function TokenBalancesPage() {
 
   const fetchSolanaTokens = async (address: string): Promise<TokenBalance[]> => {
     try {
-      // First try MagicEden
-      // try {
-      //   const meResponse = await fetch(
-      //     `https://api-mainnet.magiceden.io/v2/wallets/${address}/tokens?offset=0&limit=500`
-      //   );
-        
-      //   if (meResponse.ok) {
-      //     const meData: MagicEdenResponse = await meResponse.json();
-      //     if (Array.isArray(meData?.tokens)) {
-      //       return meData.tokens.map((nft: MagicEdenNFT) => ({
-      //         contractAddress: nft.mintAddress,
-      //         tokenBalance: '1',
-      //         name: nft.name || 'Unnamed NFT',
-      //         symbol: nft.symbol || '',
-      //         logo: nft.image || '/NFT_Icon.png',
-      //         type: 'SOL-NFT' as const,
-      //         chain: 'solana' as const,
-      //       }));
-      //     }
-      //   }
-      // } catch (meError) {
-      //   console.warn('MagicEden API failed, trying fallback...', meError);
-      // }
-  
-      // Fallback to Helius API if MagicEden fails
       const heliusApiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
       if (heliusApiKey) {
         const heliusResponse = await fetch(
