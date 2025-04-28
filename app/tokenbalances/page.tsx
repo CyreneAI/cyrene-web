@@ -35,6 +35,38 @@ interface TokenMetadataResponse {
   logo?: string;
 }
 
+interface HeliusNFTContent {
+  metadata?: {
+    name?: string;
+  };
+  files?: Array<{
+    uri?: string;
+  }>;
+}
+
+interface HeliusNFT {
+  id: string;
+  content?: HeliusNFTContent;
+}
+
+interface HeliusResponse {
+  result?: {
+    items?: HeliusNFT[];
+  };
+}
+
+// Define interface for MagicEden NFT
+interface MagicEdenNFT {
+  mintAddress: string;
+  name?: string;
+  symbol?: string;
+  image?: string;
+}
+
+interface MagicEdenResponse {
+  tokens?: MagicEdenNFT[];
+}
+
 interface NftToken {
   contract: {
     address: string;
@@ -149,36 +181,74 @@ export default function TokenBalancesPage() {
 
   const fetchSolanaTokens = async (address: string): Promise<TokenBalance[]> => {
     try {
-      const response = await fetch(
-        `https://api-mainnet.magiceden.dev/v2/wallets/${address}/tokens`
-      );
+      // First try MagicEden
+      // try {
+      //   const meResponse = await fetch(
+      //     `https://api-mainnet.magiceden.io/v2/wallets/${address}/tokens?offset=0&limit=500`
+      //   );
+        
+      //   if (meResponse.ok) {
+      //     const meData: MagicEdenResponse = await meResponse.json();
+      //     if (Array.isArray(meData?.tokens)) {
+      //       return meData.tokens.map((nft: MagicEdenNFT) => ({
+      //         contractAddress: nft.mintAddress,
+      //         tokenBalance: '1',
+      //         name: nft.name || 'Unnamed NFT',
+      //         symbol: nft.symbol || '',
+      //         logo: nft.image || '/NFT_Icon.png',
+      //         type: 'SOL-NFT' as const,
+      //         chain: 'solana' as const,
+      //       }));
+      //     }
+      //   }
+      // } catch (meError) {
+      //   console.warn('MagicEden API failed, trying fallback...', meError);
+      // }
   
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+      // Fallback to Helius API if MagicEden fails
+      const heliusApiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
+      if (heliusApiKey) {
+        const heliusResponse = await fetch(
+          `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: '1',
+              method: 'getAssetsByOwner',
+              params: {
+                ownerAddress: address,
+                page: 1,
+                limit: 1000
+              }
+            })
+          }
+        );
+  
+        if (heliusResponse.ok) {
+          const heliusData: HeliusResponse = await heliusResponse.json();
+          if (heliusData?.result?.items) {
+            return heliusData.result.items.map((nft: HeliusNFT) => ({
+              contractAddress: nft.id,
+              tokenBalance: '1',
+              name: nft.content?.metadata?.name || 'Unnamed NFT',
+              symbol: '',
+              logo: nft.content?.files?.[0]?.uri || '/NFT_Icon.png',
+              type: 'SOL-NFT' as const,
+              chain: 'solana' as const,
+            }));
+          }
+        }
       }
   
-      const data = await response.json();
-  
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid response format from MagicEden API');
-      }
-  
-      return data.map((nft) => ({
-        contractAddress: nft.mintAddress,
-        tokenBalance: '1', // Each NFT is unique, so balance is always 1
-        name: nft.name || 'Unnamed NFT',
-        symbol: nft.symbol || '',
-        logo: nft.image,
-        type: 'SOL-NFT' as const,
-        chain: 'solana' as const,
-      }));
+      throw new Error('All Solana NFT fetch attempts failed');
     } catch (error) {
-      console.error('Error fetching NFTs from MagicEden:', error);
+      console.error('Error fetching Solana NFTs:', error);
       toast.error('Failed to fetch Solana NFTs');
       return [];
     }
   };
-
   const fetchEthereumTokens = async (address: string): Promise<TokenBalance[]> => {
     try {
       // Fetch ERC-20 tokens
