@@ -300,13 +300,18 @@ export default function LaunchAgentPage() {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-  
+      
+      const dockerUrl = 
+      clients.includes('telegram') || clients.includes('discord') 
+        ? 'ghcr.io/netsepio/cyrene:main' 
+        : 'ghcr.io/netsepio/cyrene:latest';
       
       const settings = {
         secrets: {} as Record<string, string>, // Initialize empty secrets object
         voice: {
           model: "en_US-male-medium",
         },
+        docker_url: dockerUrl,
       };
   
       // Add Telegram/Discord secrets if clients are selected
