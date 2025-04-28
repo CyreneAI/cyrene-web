@@ -1,15 +1,14 @@
-
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { headers } from "next/headers";
-import { AppKit } from '@/context/appkit'; // Replace ContextProvider with AppKit
+import { AppKit } from '@/context/appkit';
 import { Toaster } from "sonner";
 import { Cursor } from "@/components/ui/cursor";
 import Navbar from "@/components/common/navbar";
 import Footer from "@/components/common/footer";
 import { WalletProviderWrapper } from "@/components/WalletProviderWrapper";
+import ProtectedRoute from "@/components/ProtectedRoute"; // Add this import
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -70,17 +69,19 @@ export default async function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col bg-[#030014] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] cursor-none`}>
         <div className="absolute inset-0"></div>
         <div className="relative z-10">
-          {/* Replace ContextProvider with AppKit */}
           <WalletProviderWrapper>
-          <AppKit>
-            <Cursor />
-            <Navbar />
-            <main className="flex-grow min-h-[calc(100vh-200px)]">
-              {children}
-            </main>
-            <Toaster richColors />
-            <Footer />
-          </AppKit>
+            <AppKit>
+              <Cursor />
+              <Navbar />
+              <main className="flex-grow min-h-[calc(100vh-200px)]">
+                {/* Wrap children with ProtectedRoute */}
+                <ProtectedRoute>
+                  {children}
+                </ProtectedRoute>
+              </main>
+              <Toaster richColors />
+              <Footer />
+            </AppKit>
           </WalletProviderWrapper>
         </div>
       </body>
