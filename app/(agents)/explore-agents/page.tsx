@@ -112,7 +112,7 @@ const AgentCard = ({ agent, index, onChatClick }: {
             Chat with {agent.name}
           </GlowButton>
 
-          {agent.clients.includes('telegram') && (
+          {/* {agent.clients.includes('telegram') && (
               <a
                 href={`https://t.me/${agent.name.toLowerCase()}_bot`}
                 target="_blank"
@@ -124,9 +124,9 @@ const AgentCard = ({ agent, index, onChatClick }: {
                 </svg>
                 Connect on Telegram
               </a>
-            )}
+            )} */}
 
-            {agent.clients.includes('discord') && (
+            {/* {agent.clients.includes('discord') && (
               <a
                 href={`https://discord.com/api/oauth2/authorize?client_id=${agent.discord_application_id}&permissions=0&scope=bot`}
                 target="_blank"
@@ -138,7 +138,7 @@ const AgentCard = ({ agent, index, onChatClick }: {
                 </svg>
                 Add to Discord
               </a>
-            )}
+            )} */}
         </div>
       </Card>
     </div>
