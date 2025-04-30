@@ -32,7 +32,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const [isAuthChecked, setIsAuthChecked] = useState(false)
 
   // List of allowed routes without authentication
-  const ALLOWED_ROUTES = ['/', '/explore-agents']
+  const ALLOWED_ROUTES = ['/', '/explore-agents', '/privacy', '/terms']
 
   useEffect(() => {
     const checkAuth = async () => {
