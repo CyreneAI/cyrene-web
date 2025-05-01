@@ -63,7 +63,7 @@ interface AgentSecrets {
 // CYAI token constants
 const CYAI_TOKEN_ADDRESS = new PublicKey('6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray');
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS!;
-const REQUIRED_CYAI = 100;
+const REQUIRED_CYAI = 100000;
 const CYAI_DECIMALS = 6;
 
 const agentApi = {
