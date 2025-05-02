@@ -16,8 +16,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect } from "react";
 import VoiceManager, { Voice } from "@/utils/voiceUtils";
 import { generateCharacterInfo } from "@/app/utils/openaiUtils";
-import { useAppKitAccount } from '@reown/appkit/react'; // For Ethereum wallet
-import { useWallet } from '@solana/wallet-adapter-react'; // For Solana wallet
+import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
+import { useWallet } from '@solana/wallet-adapter-react';
+
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { Provider } from "@reown/appkit-adapter-solana";
 
 interface AgentData {
   name: string;
@@ -55,6 +60,12 @@ interface AgentSecrets {
   DISCORD_API_TOKEN?: string;
 }
 
+// CYAI token constants
+const CYAI_TOKEN_ADDRESS = new PublicKey('6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray');
+const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS!;
+const REQUIRED_CYAI = 100000;
+const CYAI_DECIMALS = 6;
+
 const agentApi = {
   async createAgent(agentData: AgentData) {
     try {
@@ -71,12 +82,168 @@ const agentApi = {
   },
 };
 
+async function getSolanaConnection(): Promise<Connection> {
+  // Ordered list of RPC endpoints to try
+  const endpoints = [
+    {
+      url: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
+      type: 'alchemy'
+    },
+    {
+      url: 'https://api.mainnet-beta.solana.com',
+      type: 'solana-mainnet'
+    },
+    {
+      url: 'https://solana-api.projectserum.com',
+      type: 'project-serum'
+    }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const connection = new Connection(endpoint.url, 'confirmed');
+      // Test the connection
+      await connection.getSlot();
+      console.log(`Connected to ${endpoint.type} RPC`);
+      return connection;
+    } catch (error) {
+      console.warn(`Failed to connect to ${endpoint.type} RPC:`, error);
+      continue;
+    }
+  }
+
+  throw new Error('Unable to connect to any Solana RPC endpoint');
+}
+async function checkSOLBalance(walletAddress: string): Promise<number> {
+  const connection = await getSolanaConnection();
+  try {
+    const publicKey = new PublicKey(walletAddress);
+    const balance = await connection.getBalance(publicKey);
+    return balance / 1e9; // Convert lamports to SOL
+  } catch (error) {
+    console.error("Error checking SOL balance:", error);
+    throw new Error("Failed to check SOL balance");
+  }
+}
+
+
+async function checkCYAIBalance(walletAddress: string): Promise<number> {
+  const connection = await getSolanaConnection();
+  try {
+    const publicKey = new PublicKey(walletAddress);
+    const accounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
+      mint: CYAI_TOKEN_ADDRESS,
+    });
+
+    if (accounts.value.length === 0) return 0;
+    return accounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+  } catch (error) {
+    console.error('Balance check error:', error);
+    throw new Error('Failed to check CYAI balance');
+  }
+}
+
+
+async function confirmTransactionWithRetry(
+  connection: Connection,
+  txid: string,
+  retries = 3
+): Promise<void> {
+  try {
+    await connection.confirmTransaction(txid, 'confirmed');
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return confirmTransactionWithRetry(connection, txid, retries - 1);
+    }
+    throw error;
+  }
+}
+
+
+async function getConnection(): Promise<Connection> {
+  const endpoint = `https://solana-mainnet.rpc.extrnode.com`;
+  
+  // Try both HTTP and WebSocket
+  try {
+    const connection = new Connection(endpoint, 'confirmed');
+    // Test connection
+    await connection.getVersion();
+    return connection;
+  } catch (error) {
+    // Fallback to public RPC if Alchemy fails
+    return new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+  }
+}
+
+async function transferCYAI(walletAddress: string, walletProvider: Provider): Promise<string> {
+  const connection = await getSolanaConnection();
+  
+  try {
+    const fromPublicKey = new PublicKey(walletAddress);
+    const toPublicKey = new PublicKey(TREASURY_ADDRESS);
+    const amount =  REQUIRED_CYAI * Math.pow(10, CYAI_DECIMALS); 
+
+    // Get token accounts
+    const fromTokenAccount = await getAssociatedTokenAddress(
+      CYAI_TOKEN_ADDRESS,
+      fromPublicKey
+    );
+
+    const toTokenAccount = await getAssociatedTokenAddress(
+      CYAI_TOKEN_ADDRESS,
+      toPublicKey
+    );
+
+    // Create transaction
+    const transaction = new Transaction();
+    
+    // Check if recipient needs token account
+    const recipientAccount = await connection.getAccountInfo(toTokenAccount);
+    if (!recipientAccount) {
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          fromPublicKey,
+          toTokenAccount,
+          toPublicKey,
+          CYAI_TOKEN_ADDRESS
+        )
+      );
+    }
+
+    transaction.add(
+      createTransferInstruction(
+        fromTokenAccount,
+        toTokenAccount,
+        fromPublicKey,
+        amount
+      )
+    );
+
+    // Sign and send
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = fromPublicKey;
+    
+    const signedTx = await walletProvider.signTransaction(transaction);
+    const txid = await connection.sendRawTransaction(signedTx.serialize());
+    
+    await confirmTransactionWithRetry(connection, txid);
+    return txid;
+  } catch (error) {
+    console.error('Transfer error:', error);
+    throw new Error('Transfer failed');
+  }
+}
+
 export default function LaunchAgentPage() {
   const [previewAudio, setPreviewAudio] = useState<string | null>(null);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [cyaiBalance, setCyaiBalance] = useState<number | null>(null);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const voiceManager = useRef(new VoiceManager());
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -109,8 +276,8 @@ export default function LaunchAgentPage() {
   // Wallet connection
   const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount(); // Ethereum wallet
   const { publicKey: solAddress, connected: isSolConnected } = useWallet(); // Solana wallet
-  const [wallet_address, setWalletAddress] = useState<string | null>(null);
-
+  const [wallet_address, setWalletAddress] = useState<string>('');
+  const [solBalance, setSolBalance] = useState<number | null>(null);
   // Handle wallet address changes
   useEffect(() => {
     if (isEthConnected && ethAddress) {
@@ -118,10 +285,25 @@ export default function LaunchAgentPage() {
     } else if (isSolConnected && solAddress) {
       setWalletAddress(solAddress.toBase58());
     } else {
-      setWalletAddress(null);
+      setWalletAddress('');
     }
   }, [isEthConnected, isSolConnected, ethAddress, solAddress]);
 
+
+  const handleCheckBalance = async () => {
+    if (!wallet_address) return;
+    
+    setIsCheckingBalance(true);
+    try {
+      const balance = await checkCYAIBalance(wallet_address);
+      setCyaiBalance(balance);
+      toast.success(`Your balance: ${balance} CYAI`);
+    } catch (error) {
+      toast.error('Failed to check balance');
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
   // Handle AI generation
   const handleGenerateWithAI = async () => {
     if (!oneLiner || !description) {
@@ -279,116 +461,128 @@ export default function LaunchAgentPage() {
     }
   };
 
+  const { walletProvider } = useAppKitProvider<Provider>("solana");
+
+
+  const [showConfirmation, setShowConfirmation] = useState(false);
+const [confirmationData, setConfirmationData] = useState({
+  amount: 0,
+  balance: 0,
+});
+
+// Replace your existing confirm() call with this:
+const handleConfirmation = (balance: number) => {
+  
+  setConfirmationData({
+    amount: REQUIRED_CYAI,
+    balance: balance,
+
+  });
+  setShowConfirmation(true);
+};
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!name) {
-      toast.error("Agent Name is required");
+    
+    if (!name || !wallet_address) {
+      toast.error("Please complete all required fields");
       return;
     }
-  
-    if (!isValidName(name)) {
-      toast.error("Invalid agent name format");
-      return;
-    }
-  
-    if (!wallet_address) {
-      toast.error("Wallet address is required. Please connect your wallet.");
-      return;
-    }
-  
-    setIsSubmitting(true);
+
     try {
-      const formData = new FormData();
-      
-      const dockerUrl = 
-      clients.includes('telegram') || clients.includes('discord') 
-        ? 'ghcr.io/netsepio/cyrene:main' 
-        : 'ghcr.io/netsepio/cyrene:latest';
-      
-      const settings = {
-        secrets: {} as Record<string, string>, // Initialize empty secrets object
-        voice: {
-          model: "en_US-male-medium",
-        },
-        docker_url: dockerUrl,
-      };
-  
-      // Add Telegram/Discord secrets if clients are selected
-      if (clients.includes('telegram') && telegramBotToken) {
-        settings.secrets.TELEGRAM_BOT_TOKEN = telegramBotToken;
+
+      const solBalance = await checkSOLBalance(wallet_address);
+      if (solBalance < 0.01) { // Minimum recommended SOL balance
+        toast.error(`Insufficient SOL for gas fees. You need at least 0.01 SOL (Current: ${solBalance.toFixed(4)} SOL)`);
+        return;
       }
-      if (clients.includes('discord')) {
-        if (discordAppId) {
-          settings.secrets.DISCORD_APPLICATION_ID = discordAppId;
-        }
-        if (discordToken) {
-          settings.secrets.DISCORD_API_TOKEN = discordToken;
-        }
+      // Check balance first
+      const balance = await checkCYAIBalance(wallet_address);
+      setCyaiBalance(balance);
+      
+      if (balance < REQUIRED_CYAI) {
+        toast.error(`Insufficient CYAI balance. Required: ${REQUIRED_CYAI.toLocaleString()}, Your balance: ${balance}`);
+        return;
       }
-  
-      formData.append('wallet_address', wallet_address); 
-      formData.append('character_file', JSON.stringify({
-        name,
-        clients,
-        oneLiner,
-        description,
-        bio: characterInfo.bio.split("\n"),
-        lore: characterInfo.lore.split("\n"),
-        knowledge: characterInfo.knowledge.split("\n"),
-        messageExamples: [
-          [
-            {
-              user: "{{user1}}",
-              content: { text: "What is your role?" },
-            },
-            {
-              user: name,
-              content: { text: "I am here to help you" },
-            },
-          ],
-        ],
-        postExamples: [],
-        topics: [],
-        adjectives: [""],
-        plugins: [],
-        style: {
-          all: [""],
-          chat: [""],
-          post: [""],
-        },
-        organization: "cyrene",
-        settings,
-        modelProvider: "openai",
-      }));
-  
-      formData.append('avatar_img', avatarHash);
-      formData.append('cover_img', coverHash);
-      formData.append('voice_model', selectedVoice);
-      formData.append('domain', domain);
-  
-      const response = await axios.post('/api/createAgent', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      toast.success("Agent Created Successfully!", {
-        duration: 4000,
-        action: {
-          label: "Chat Now",
-          onClick: () => router.push(`/explore-agents/chat/${response.data.agent.id}`),
-        },
-      });
-  
-      setTimeout(() => {
-        router.push(`/explore-agents/chat/${response.data.agent.id}`);
-      }, 2000);
-  
-    } catch (error) {
-      console.error("API Error:", error);
-      toast.error("Failed to create agent");
-    } finally {
+
+      // Enhanced confirmation dialog
+      handleConfirmation(balance);
+
+     
+      // // Continue with agent creation
+      // const formData = new FormData();
+      // const dockerUrl = clients.includes('telegram') || clients.includes('discord') 
+      //   ? 'ghcr.io/netsepio/cyrene:main' 
+      //   : 'ghcr.io/netsepio/cyrene:latest';
+      
+      // const settings = {
+      //   secrets: {} as Record<string, string>,
+      //   voice: { model: "en_US-male-medium" },
+      //   docker_url: dockerUrl,
+      // };
+
+      // if (clients.includes('telegram') && telegramBotToken) {
+      //   settings.secrets.TELEGRAM_BOT_TOKEN = telegramBotToken;
+      // }
+      // if (clients.includes('discord')) {
+      //   if (discordAppId) settings.secrets.DISCORD_APPLICATION_ID = discordAppId;
+      //   if (discordToken) settings.secrets.DISCORD_API_TOKEN = discordToken;
+      // }
+
+      // formData.append('wallet_address', wallet_address);
+      // formData.append('character_file', JSON.stringify({
+      //   name,
+      //   clients,
+      //   oneLiner,
+      //   description,
+      //   bio: characterInfo.bio.split("\n"),
+      //   lore: characterInfo.lore.split("\n"),
+      //   knowledge: characterInfo.knowledge.split("\n"),
+      //   messageExamples: [[
+      //     { user: "{{user1}}", content: { text: "What is your role?" } },
+      //     { user: name, content: { text: "I am here to help you" } },
+      //   ]],
+      //   postExamples: [],
+      //   topics: [],
+      //   adjectives: [""],
+      //   plugins: [],
+      //   style: { all: [""], chat: [""], post: [""] },
+      //   organization: "cyrene",
+      //   settings,
+      //   modelProvider: "openai",
+      // }));
+
+      // formData.append('avatar_img', avatarHash);
+      // formData.append('cover_img', coverHash);
+      // formData.append('voice_model', selectedVoice);
+      // formData.append('domain', domain);
+
+      // const response = await axios.post('/api/createAgent', formData, {
+      //   headers: { 'Content-Type': 'multipart/form-data' },
+      // });
+
+      // toast.success("Agent Created Successfully!", {
+      //   duration: 4000,
+      //   action: {
+      //     label: "Chat Now",
+      //     onClick: () => router.push(`/explore-agents/chat/${response.data.agent.id}`),
+      //   },
+      // });
+
+      // setTimeout(() => {
+      //   router.push(`/explore-agents/chat/${response.data.agent.id}`);
+      // }, 2000);
+
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error:', error.message);
+        toast.error(`Operation failed: ${error.message}`);
+      } else {
+        console.error('Unknown error:', error);
+        toast.error('An unknown error occurred');
+      }
+    }finally {
       setIsSubmitting(false);
     }
   };
@@ -459,6 +653,74 @@ export default function LaunchAgentPage() {
                   </p>
                 )}
               </div>
+
+              <div>
+                <Label className="text-lg mb-2 text-blue-300">CYAI Balance</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={
+                      isCheckingBalance ? "Checking..." :
+                      cyaiBalance !== null ? `${cyaiBalance.toLocaleString()} CYAI` : 
+                      wallet_address ? "Check balance" : "Connect wallet"
+                    }
+                    disabled
+                    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 flex-1"
+                  />
+                  {wallet_address && (
+                    <GlowButton
+                      type="button"
+                      onClick={handleCheckBalance}
+                      disabled={isCheckingBalance}
+                      className="px-4 py-2"
+                    >
+                      {isCheckingBalance ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      ) : "Check"}
+                    </GlowButton>
+                  )}
+                </div>
+                <p className="text-sm text-blue-300/70 mt-2">
+                  {REQUIRED_CYAI.toLocaleString()} CYAI required to launch an agent
+                </p>
+                {cyaiBalance !== null && cyaiBalance < REQUIRED_CYAI && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Insufficient balance. You need {REQUIRED_CYAI.toLocaleString()} CYAI.
+                  </p>
+                )}
+              </div>
+
+              <div>
+  
+  <div>
+  <Label className="text-lg mb-2 text-blue-300">SOL Balance (for gas fees)</Label>
+  <div className="flex items-center gap-2">
+    <Input
+      value={solBalance !== null ? `${solBalance.toFixed(4)} SOL` : "Checking..."}
+      disabled
+      className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 flex-1"
+    />
+    <GlowButton
+      type="button"
+      onClick={async () => {
+        const balance = await checkSOLBalance(wallet_address);
+        setSolBalance(balance);
+      }}
+      className="px-4 py-2"
+    >
+      Refresh
+    </GlowButton>
+  </div>
+ 
+</div>
+  <p className="text-sm text-blue-300/70 mt-2">
+    Minimum 0.01 SOL required for transactions
+  </p>
+  {solBalance !== null && solBalance < 0.01 && (
+    <p className="text-sm text-red-500 mt-2">
+      Add SOL to your wallet to pay for gas fees
+    </p>
+  )}
+</div>
 
               <div>
                 <Label className="text-lg mb-2 text-blue-300">Upload Images</Label>
@@ -728,19 +990,180 @@ export default function LaunchAgentPage() {
           <div className="flex justify-center">
             <GlowButton
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !wallet_address || (cyaiBalance !== null && cyaiBalance < REQUIRED_CYAI)}
               className="px-12 py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Creating Agent...</span>
+                  <span>Processing...</span>
                 </div>
               ) : 'Launch Agent'}
             </GlowButton>
           </div>
         </form>
       </div>
+      {showConfirmation && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="bg-gradient-to-br from-blue-900 to-purple-900 rounded-xl p-6 max-w-md w-full border border-purple-500 shadow-lg shadow-purple-500/20">
+      <div className="text-center mb-6">
+        <Sparkles className="w-10 h-10 mx-auto text-yellow-400 mb-3" />
+        <h3 className="text-2xl font-bold text-white mb-2">Confirm Transaction</h3>
+        <p className="text-blue-200">You&apos;re about to launch your AI agent!</p>
+      </div>
+
+      <div className="space-y-4 mb-6">
+        <div className="flex justify-between items-center">
+          <span className="text-blue-300">Amount:</span>
+          <span className="font-mono text-white">
+            {confirmationData.amount.toLocaleString()} <span className="text-yellow-400">CYAI</span>
+          </span>
+        </div>
+        
+        {/* <div className="flex justify-between items-center">
+          <span className="text-blue-300">USD Value:</span>
+          <span className="font-mono text-white">
+            ${confirmationData.usdValue.toFixed(6)}
+          </span>
+        </div> */}
+        
+        <div className="flex justify-between items-center">
+          <span className="text-blue-300">Recipient:</span>
+          <span className="font-mono text-purple-300 text-sm truncate max-w-[200px]">
+            {TREASURY_ADDRESS}
+          </span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-blue-300">Your Balance:</span>
+          <span className={`font-mono ${confirmationData.balance >= confirmationData.amount ? 'text-green-400' : 'text-red-400'}`}>
+            {confirmationData.balance.toLocaleString()} CYAI
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4 text-blue-200 text-sm">
+        <p>Transaction fee: ~0.0001 SOL</p>
+        {/* <p className="mt-1">1 CYAI = ${(0.00006113).toFixed(8)} USD</p> */}
+      </div>
+
+      <div className="flex gap-3 justify-center">
+        <button
+           onClick={() => {
+            setShowConfirmation(false);
+            setIsSubmitting(false); // Reset submitting state if cancelled
+          }}
+          className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors text-white"
+        >
+          Cancel
+        </button>
+        <button
+  onClick={async () => {
+    setShowConfirmation(false);
+    try {
+      setIsSubmitting(true);
+      toast.info('Please approve the transaction in your wallet...');
+
+      // 1. First do the CYAI transfer
+      const txid = await transferCYAI(wallet_address, walletProvider);
+      toast.success(
+        <div>
+          <p>Payment successful!</p>
+          <a 
+            href={`https://solscan.io/tx/${txid}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            View transaction
+          </a>
+        </div>
+      );
+
+      // 2. Then create the agent
+      const formData = new FormData();
+      const dockerUrl = clients.includes('telegram') || clients.includes('discord') 
+        ? 'ghcr.io/netsepio/cyrene:main' 
+        : 'ghcr.io/netsepio/cyrene:latest';
+      
+      const settings = {
+        secrets: {} as Record<string, string>,
+        voice: { model: "en_US-male-medium" },
+        docker_url: dockerUrl,
+      };
+
+      if (clients.includes('telegram') && telegramBotToken) {
+        settings.secrets.TELEGRAM_BOT_TOKEN = telegramBotToken;
+      }
+      if (clients.includes('discord')) {
+        if (discordAppId) settings.secrets.DISCORD_APPLICATION_ID = discordAppId;
+        if (discordToken) settings.secrets.DISCORD_API_TOKEN = discordToken;
+      }
+
+      formData.append('wallet_address', wallet_address);
+      formData.append('character_file', JSON.stringify({
+        name,
+        clients,
+        oneLiner,
+        description,
+        bio: characterInfo.bio.split("\n"),
+        lore: characterInfo.lore.split("\n"),
+        knowledge: characterInfo.knowledge.split("\n"),
+        messageExamples: [[
+          { user: "{{user1}}", content: { text: "What is your role?" } },
+          { user: name, content: { text: "I am here to help you" } },
+        ]],
+        postExamples: [],
+        topics: [],
+        adjectives: [""],
+        plugins: [],
+        style: { all: [""], chat: [""], post: [""] },
+        organization: "cyrene",
+        settings,
+        modelProvider: "openai",
+      }));
+
+      formData.append('avatar_img', avatarHash);
+      formData.append('cover_img', coverHash);
+      formData.append('voice_model', selectedVoice);
+      formData.append('domain', domain);
+
+      const response = await axios.post('/api/createAgent', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success("Agent Created Successfully!", {
+        duration: 4000,
+        action: {
+          label: "Chat Now",
+          onClick: () => router.push(`/explore-agents/chat/${response.data.agent.id}`),
+        },
+      });
+
+      setTimeout(() => {
+        router.push(`/explore-agents/chat/${response.data.agent.id}`);
+      }, 2000);
+
+    } catch (error) {
+      setIsSubmitting(false);
+      if (error instanceof Error) {
+        toast.error(`Transaction failed: ${error.message}`);
+      } else {
+        toast.error('Transaction failed');
+      }
+    }
+  }}
+  className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white flex items-center gap-2"
+>
+  <FileUp className="w-4 h-4" />
+  Confirm & Sign
+</button>
+      </div>
     </div>
+  </div>
+)}
+    </div>
+
+    
   );
 }
