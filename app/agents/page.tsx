@@ -14,6 +14,8 @@ import StarCanvas from '@/components/StarCanvas';
 import { GlowButton } from '@/components/ui/glow-button';
 import ConnectButton from '@/components/common/ConnectBtn';
 
+import { useRouter } from 'next/navigation';
+
 interface Agent {
   id: string;
   name: string;
@@ -31,6 +33,7 @@ interface Agent {
 const GRADIENT_COLORS = 'linear-gradient(45deg, #0162FF, white, #A63FE1, #0162FF)';
 
 export default function UserAgentsPage() {
+  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -276,15 +279,12 @@ export default function UserAgentsPage() {
                         <p className="text-gray-400 mb-4 line-clamp-2 text-center">{agent.description}</p>
                         
                         <div className="flex flex-col gap-3">
-                          <GlowButton
-                            onClick={() => {
-                              setChatAgent(agent.id, agent.name, agent.avatar_img, agent.cover_img);
-                            }}
-                            style={{ width: '100%', padding: '0.8em', borderRadius: '999px', fontSize: '15px', fontWeight: '500' }}
-                          >
-                            Chat with {agent.name}
-                          </GlowButton>
-
+                        <GlowButton
+          onClick={() => router.push(`/explore-agents/chat/${agent.id}`)}
+          style={{ width: '100%', padding: '0.8em', borderRadius: '999px', fontSize: '15px', fontWeight: '500' }}
+        >
+          Chat with {agent.name}
+        </GlowButton>
                           {agent.clients?.includes('telegram') && (
                             <a
                               href={`https://t.me/${agent.name.toLowerCase()}_bot`}
