@@ -177,12 +177,22 @@ async function getConnection(): Promise<Connection> {
 }
 
 async function transferCYAI(walletAddress: string, walletProvider: Provider): Promise<string> {
-  const connection = await getSolanaConnection();
+
+  // if (!walletAddress || !walletProvider) {
+  //   throw new Error('Wallet address or provider is not available');
+  // }
+
+  // const connection = await getSolanaConnection();
   
   try {
+    if (!walletAddress) throw new Error('Wallet address is required');
+    if (!walletProvider) throw new Error('Wallet provider is required');
+    if (!TREASURY_ADDRESS) throw new Error('Treasury address not configured');
+
+    const connection = await getSolanaConnection();
     const fromPublicKey = new PublicKey(walletAddress);
     const toPublicKey = new PublicKey(TREASURY_ADDRESS);
-    const amount =  REQUIRED_CYAI * Math.pow(10, CYAI_DECIMALS); 
+    const amount = BigInt(REQUIRED_CYAI) * BigInt(10 ** CYAI_DECIMALS);
 
     // Get token accounts
     const fromTokenAccount = await getAssociatedTokenAddress(
@@ -231,8 +241,15 @@ async function transferCYAI(walletAddress: string, walletProvider: Provider): Pr
     await confirmTransactionWithRetry(connection, txid);
     return txid;
   } catch (error) {
-    console.error('Transfer error:', error);
-    throw new Error('Transfer failed');
+    console.error('Detailed transfer error:', {
+      error,
+      walletAddress,
+      hasWalletProvider: !!walletProvider,
+      treasuryAddress: TREASURY_ADDRESS,
+       amount : BigInt(REQUIRED_CYAI) * BigInt(10 ** CYAI_DECIMALS)
+
+    });
+    throw error;
   }
 }
 
@@ -490,6 +507,10 @@ const handleConfirmation = (balance: number) => {
       return;
     }
 
+    if (!walletProvider) {
+      toast.error("Wallet provider not available. Please reconnect your wallet.");
+      return;
+    }
     try {
 
       const solBalance = await checkSOLBalance(wallet_address);
