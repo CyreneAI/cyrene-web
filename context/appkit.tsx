@@ -9,7 +9,8 @@ import { defineChain } from '@reown/appkit/networks';
 import React, { useEffect } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, toUtf8Bytes } from "ethers";
+
 
 declare global {
   interface Window {
@@ -178,12 +179,28 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
 
     const message = data.payload.eula;
     const flowId = data.payload.flowId;
-
+  const combinedMessage = `${message}${flowId}`;
+    console.log("Combined Message:", combinedMessage);
+    
     const provider = new BrowserProvider(walletProvider);
     const signer = await provider.getSigner();
-    const signature = await signer.signMessage(message);
+  const signerAddress = await signer.getAddress();
 
-    const authResponse = await axios.post(
+    if (signerAddress.toLowerCase() !== walletAddress?.toLowerCase()) {
+      throw new Error(
+        `Mismatch: Signer address (${signerAddress}) !== Connected address (${walletAddress})`
+      );
+    }
+
+    // Sign the COMBINED message (message + flowId)
+    let signature = await signer.signMessage(combinedMessage);
+
+    // Remove "0x" prefix if present
+    if (signature.startsWith("0x")) {
+      signature = signature.slice(2);
+    }
+    
+    const authResponse = await axios.post( 
       `${GATEWAY_URL}api/v1.0/authenticate?&chain=evm`,
       {
         flowId,
