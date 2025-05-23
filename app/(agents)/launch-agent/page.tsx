@@ -65,6 +65,10 @@ const CYAI_TOKEN_ADDRESS = new PublicKey('6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4Xj
 const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS!;
 const REQUIRED_CYAI = 100000;
 const CYAI_DECIMALS = 6;
+const ADMIN_ADDRESSES = [
+  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_1!,
+  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_2!
+];
 
 const agentApi = {
   async createAgent(agentData: AgentData) {
@@ -512,24 +516,28 @@ const handleConfirmation = (balance: number) => {
       return;
     }
     try {
-
-      const solBalance = await checkSOLBalance(wallet_address);
-      if (solBalance < 0.01) { // Minimum recommended SOL balance
-        toast.error(`Insufficient SOL for gas fees. You need at least 0.01 SOL (Current: ${solBalance.toFixed(4)} SOL)`);
+      const isAdmin = ADMIN_ADDRESSES.includes(wallet_address);
+    
+      if (!isAdmin) {
+        const solBalance = await checkSOLBalance(wallet_address);
+        if (solBalance < 0.01) {
+          toast.error(`Insufficient SOL for gas fees. You need at least 0.01 SOL (Current: ${solBalance.toFixed(4)} SOL)`);
+          return;
+        }
+  
+        // Check balance first
+        const balance = await checkCYAIBalance(wallet_address);
+        setCyaiBalance(balance);
+        
+        if (balance < REQUIRED_CYAI) {
+          toast.error(`Insufficient CYAI balance. Required: ${REQUIRED_CYAI.toLocaleString()}, Your balance: ${balance}`);
+          return;
+        }
+  
+        // Show confirmation only for non-admin users
+        handleConfirmation(balance);
         return;
       }
-      // Check balance first
-      const balance = await checkCYAIBalance(wallet_address);
-      setCyaiBalance(balance);
-      
-      if (balance < REQUIRED_CYAI) {
-        toast.error(`Insufficient CYAI balance. Required: ${REQUIRED_CYAI.toLocaleString()}, Your balance: ${balance}`);
-        return;
-      }
-
-      // Enhanced confirmation dialog
-      handleConfirmation(balance);
-
      
       // // Continue with agent creation
       // const formData = new FormData();
@@ -594,8 +602,7 @@ const handleConfirmation = (balance: number) => {
       // setTimeout(() => {
       //   router.push(`/explore-agents/chat/${response.data.agent.id}`);
       // }, 2000);
-
-    } catch (error: unknown) {
+    }  catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Error:', error.message);
         toast.error(`Operation failed: ${error.message}`);
@@ -603,7 +610,7 @@ const handleConfirmation = (balance: number) => {
         console.error('Unknown error:', error);
         toast.error('An unknown error occurred');
       }
-    }finally {
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -662,18 +669,23 @@ const handleConfirmation = (balance: number) => {
               </div>
 
               <div>
-                <Label className="text-lg mb-2 text-blue-300">Wallet Address</Label>
-                <Input
-                  value={wallet_address || "Not connected"}
-                  disabled
-                  className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
-                />
-                {!wallet_address && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Please connect your wallet to proceed.
-                  </p>
-                )}
-              </div>
+  <Label className="text-lg mb-2 text-blue-300">Wallet Address</Label>
+  <Input
+    value={wallet_address || "Not connected"}
+    disabled
+    className="bg-[rgba(33,37,52,0.7)] border-none ring-1 ring-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+  />
+  {ADMIN_ADDRESSES.includes(wallet_address) && (
+    <p className="text-sm text-green-500 mt-2">
+      Admin account detected - no payment required
+    </p>
+  )}
+  {!wallet_address && (
+    <p className="text-sm text-red-500 mt-2">
+      Please connect your wallet to proceed.
+    </p>
+  )}
+</div>
 
               <div>
                 <Label className="text-lg mb-2 text-blue-300">CYAI Balance</Label>

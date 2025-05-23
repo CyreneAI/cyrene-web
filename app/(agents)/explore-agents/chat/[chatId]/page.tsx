@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
+import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X, Paperclip } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import VoiceManager from '@/utils/voiceUtils';
@@ -15,10 +15,17 @@ import { useRouter } from "next/navigation";
 import { UserAvatar } from '@/components/user-avatar';
 import StarCanvas from "@/components/StarCanvas";
 
+interface Attachment {
+  url: string;
+  contentType: string;
+  title: string;
+}
+
 interface Message {
   isUser: boolean;
   text: string;
   audio?: string | null;
+  attachments?: Attachment[];
 }
 
 interface Agent {
@@ -73,6 +80,8 @@ export default function Page() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Ethereum wallet
   const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount();
@@ -154,6 +163,13 @@ export default function Page() {
     scrollToBottom();
   }, [messages]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
   const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
     console.log("clicked");
     if (!text.trim() || isLoading) return;
@@ -161,10 +177,22 @@ export default function Page() {
     setIsLoading(true);
     setTranscription('');
 
+    // Create attachments if file is selected
+    const attachments = selectedFile ? [{
+      url: URL.createObjectURL(selectedFile),
+      contentType: selectedFile.type,
+      title: selectedFile.name
+    }] : undefined;
+
     // Immediately show user message
     const userMessageIndex = messages.length;
-    setMessages((prev) => [...prev, { isUser: true, text }]);
+    setMessages((prev) => [...prev, { 
+      isUser: true, 
+      text,
+      attachments 
+    }]);
     setInputValue('');
+    setSelectedFile(null);
 
     try {
       let responseText: string;
@@ -487,6 +515,17 @@ export default function Page() {
                               {message.text}
                             </p>
                           </div>
+                          {message.attachments?.map((attachment, idx) => (
+                            <div key={idx} className="mt-2">
+                              {attachment.contentType.startsWith('image/') && (
+                                <img 
+                                  src={attachment.url} 
+                                  alt={attachment.title}
+                                  className="max-w-xs rounded-md"
+                                />
+                              )}
+                            </div>
+                          ))}
                           {message.audio && (
                             <audio
                               ref={(el) => {
@@ -577,8 +616,27 @@ export default function Page() {
               </div>
             ) : null}
 
+            {/* Selected file preview */}
+            {selectedFile && (
+              <div className="w-full p-3 flex">
+                <div className="relative rounded-md border p-2">
+                  <button
+                    onClick={() => setSelectedFile(null)}
+                    className="absolute -right-2 -top-2 size-5 bg-white/10 rounded-full flex items-center justify-center text-white/60 hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <img
+                    src={URL.createObjectURL(selectedFile)}
+                    alt="Preview"
+                    className="aspect-square object-contain w-16"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Input Form with Loading Indicator */}
-            <div className="w-full sticky bottom-0  to-transparent pt-4">
+            <div className="w-full sticky bottom-0 to-transparent pt-4">
               <div className="relative">
                 <form
                   onSubmit={(e) => {
@@ -615,6 +673,20 @@ export default function Page() {
                   />
 
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-blue-500"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
                     <button
                       type='button'
                       onClick={toggleVoiceMode}
@@ -676,3 +748,7 @@ export default function Page() {
     </>
   );
 }
+
+
+
+
