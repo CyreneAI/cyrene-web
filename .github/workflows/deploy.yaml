@@ -98,6 +98,8 @@ jobs:
             echo "🐳 Running the new container..."
             docker run -d -p 9080:3000 \
               --name cyreneai \
+              --env-file .env \
+              --restart unless-stopped \
               --label "traefik.enable=true" \
               --label 'traefik.http.routers.cyreneai.rule=Host("cyreneai.com")' \
               --label "traefik.http.routers.cyreneai.entrypoints=websecure" \
