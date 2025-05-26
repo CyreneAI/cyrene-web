@@ -67,8 +67,8 @@ jobs:
             docker pull ghcr.io/netsepio/cyrene-web:prod
 
             echo "🛑 Stopping and removing existing container (if running)..."
-            docker stop cyrene-web || true
-            docker rm cyrene-web || true
+            docker stop cyreneai || true
+            docker rm cyreneai || true
 
             echo "🧹 Removing old images to free up space..."
             docker system prune -f
@@ -90,6 +90,6 @@ jobs:
             EOF
 
             echo "🐳 Running the new container..."
-            docker run --name cyrene-web --env-file .env --restart=always -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
+            docker run --name cyreneai --env-file .env --restart=always -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
 
             echo "✅ Deployment complete!"
