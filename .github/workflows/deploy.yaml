@@ -96,6 +96,14 @@ jobs:
             EOF
 
             echo "🐳 Running the new container..."
-            docker run --name cyreneai --restart=always -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
+            docker run -d -p 9080:3000 \
+              --name cyreneai \
+              --label "traefik.enable=true" \
+              --label 'traefik.http.routers.cyreneai.rule=Host("cyreneai.com")' \
+              --label "traefik.http.routers.cyreneai.entrypoints=websecure" \
+              --label "traefik.http.routers.cyreneai.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.cyreneai.loadbalancer.server.port=3000" \
+              --network traefik \
+              ghcr.io/netsepio/cyrene-web:prod
 
             echo "✅ Deployment complete!"
