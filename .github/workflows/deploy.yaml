@@ -24,23 +24,27 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build \
-            --build-arg API_BASE_URL="${{ secrets.API_BASE_URL }}" \
-            --build-arg MESSAGE_API_URL="${{ secrets.MESSAGE_API_URL }}" \
-            --build-arg CYRENE_AI_ID="${{ secrets.CYRENE_AI_ID }}" \
-            --build-arg TTS_API_URL="${{ secrets.TTS_API_URL }}" \
-            --build-arg MODEL_PROVIDER="${{ secrets.MODEL_PROVIDER }}" \
-            --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
-            --build-arg NEXT_PUBLIC_PROJECT_ID="${{ secrets.NEXT_PUBLIC_PROJECT_ID }}" \
-            --build-arg NEXT_PUBLIC_HELIUS_API_KEY="${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}" \
-            --build-arg NEXT_PUBLIC_SOLANA_RPC_URL="${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}" \
-            --build-arg NEXT_PUBLIC_ALCHEMY_API_KEY="${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}" \
-            --build-arg NEXT_PUBLIC_TREASURY_ADDRESS="${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}" \
-            -t ghcr.io/netsepio/cyrene-web:prod .
+            docker build \
+              --build-arg API_BASE_URL="${{ secrets.API_BASE_URL }}" \
+              --build-arg MESSAGE_API_URL="${{ secrets.MESSAGE_API_URL }}" \
+              --build-arg CYRENE_AI_ID="${{ secrets.CYRENE_AI_ID }}" \
+              --build-arg TTS_API_URL="${{ secrets.TTS_API_URL }}" \
+              --build-arg MODEL_PROVIDER="${{ secrets.MODEL_PROVIDER }}" \
+              --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+              --build-arg NEXT_PUBLIC_PROJECT_ID="${{ secrets.NEXT_PUBLIC_PROJECT_ID }}" \
+              --build-arg NEXT_PUBLIC_HELIUS_API_KEY="${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}" \
+              --build-arg NEXT_PUBLIC_SOLANA_RPC_URL="${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}" \
+              --build-arg NEXT_PUBLIC_ALCHEMY_API_KEY="${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}" \
+              --build-arg NEXT_PUBLIC_TREASURY_ADDRESS="${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}" \
+              --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_1="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}" \
+              --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_2="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}" \
+              -t ghcr.io/netsepio/cyrene-web:prod .
+
 
 
       - name: Push Docker Image to GHCR
         run: docker push ghcr.io/netsepio/cyrene-web:prod
+
 
   # 2️⃣ Deploy to Production Server via SSH
   deploy:
@@ -67,29 +71,41 @@ jobs:
             docker pull ghcr.io/netsepio/cyrene-web:prod
 
             echo "🛑 Stopping and removing existing container (if running)..."
-            docker stop cyrene-web || true
-            docker rm cyrene-web || true
+            docker stop cyreneai || true
+            docker rm cyreneai || true
 
             echo "🧹 Removing old images to free up space..."
             docker system prune -f
 
-            echo "📄 Creating environment file..."
-            cat <<EOF > .env
-            API_BASE_URL=${{ secrets.API_BASE_URL }}
-            MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
-            CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
-            TTS_API_URL=${{ secrets.TTS_API_URL }}
-            MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
-            NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
-            NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
-            NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
-            NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
+            # echo "📄 Creating environment file..."
+            # cat <<EOF > .env
+            # API_BASE_URL=${{ secrets.API_BASE_URL }}
+            # MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
+            # CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
+            # TTS_API_URL=${{ secrets.TTS_API_URL }}
+            # MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
+            # OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            # NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
+            # NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
+            # NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+            # NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+            # NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
+            # NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
+            # NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
 
             EOF
 
             echo "🐳 Running the new container..."
-            docker run --name cyrene-web --env-file .env --restart=always -p 9080:3000 -d ghcr.io/netsepio/cyrene-web:prod
+            docker run -d -p 9080:3000 \
+              --name cyreneai \
+              --env-file .env \
+              --restart unless-stopped \
+              --label "traefik.enable=true" \
+              --label 'traefik.http.routers.cyreneai.rule=Host("cyreneai.com")' \
+              --label "traefik.http.routers.cyreneai.entrypoints=websecure" \
+              --label "traefik.http.routers.cyreneai.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.cyreneai.loadbalancer.server.port=3000" \
+              --network traefik \
+              ghcr.io/netsepio/cyrene-web:prod
 
             echo "✅ Deployment complete!"
