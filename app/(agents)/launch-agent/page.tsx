@@ -67,7 +67,7 @@ const CYAI_DECIMALS = 6;
 const ADMIN_ADDRESSES = [
   process.env.NEXT_PUBLIC_ADMIN_ADDRESS_1!,
   process.env.NEXT_PUBLIC_ADMIN_ADDRESS_2!,
-  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_3!,
+  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_3!
 ];
 
 const agentApi = {
