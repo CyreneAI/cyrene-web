@@ -38,6 +38,7 @@ jobs:
               --build-arg NEXT_PUBLIC_TREASURY_ADDRESS="${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}" \
               --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_1="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}" \
               --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_2="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}" \
+              --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_3="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}" \
               -t ghcr.io/netsepio/cyrene-web:prod .
 
 
@@ -92,7 +93,7 @@ jobs:
             # NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
             # NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
             # NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
-
+             # NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
             EOF
 
             echo "🐳 Running the new container..."

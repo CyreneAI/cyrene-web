@@ -9,8 +9,7 @@ import { defineChain } from '@reown/appkit/networks';
 import React, { useEffect } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
-import { BrowserProvider, toUtf8Bytes } from "ethers";
-
+import { BrowserProvider } from 'ethers';
 
 declare global {
   interface Window {
@@ -167,7 +166,7 @@ const getAuthFromCookies = (chainType: 'solana' | 'evm') => {
   };
 };
 
-// EVM Authentication
+// EVM Authentication - Updated version
 const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
@@ -179,12 +178,20 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
 
     const message = data.payload.eula;
     const flowId = data.payload.flowId;
-  const combinedMessage = `${message}${flowId}`;
+
+    console.log("EVM Message:", message);
+    console.log("EVM Flow ID:", flowId);
+
+    // Combine message and flowId like the backend does
+    const combinedMessage = `${message}${flowId}`;
     console.log("Combined Message:", combinedMessage);
-    
+
     const provider = new BrowserProvider(walletProvider);
+    if (!walletAddress) {
+      throw new Error("Wallet address is undefined");
+    }
     const signer = await provider.getSigner();
-  const signerAddress = await signer.getAddress();
+    const signerAddress = await signer.getAddress();
 
     if (signerAddress.toLowerCase() !== walletAddress?.toLowerCase()) {
       throw new Error(
@@ -199,13 +206,15 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
     if (signature.startsWith("0x")) {
       signature = signature.slice(2);
     }
-    
-    const authResponse = await axios.post( 
-      `${GATEWAY_URL}api/v1.0/authenticate?&chain=evm`,
+
+    // Post to auth endpoint - match the backend format exactly
+    const authResponse = await axios.post(
+      `${GATEWAY_URL}api/v1.0/authenticate`,
       {
+        chainName,
         flowId,
         signature,
-        chainName,
+        walletAddress
       },
       {
         headers: {

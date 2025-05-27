@@ -19,7 +19,6 @@ import { generateCharacterInfo } from "@/app/utils/openaiUtils";
 import { useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 import { useWallet } from '@solana/wallet-adapter-react';
 
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { Provider } from "@reown/appkit-adapter-solana";
@@ -67,7 +66,8 @@ const REQUIRED_CYAI = 100000;
 const CYAI_DECIMALS = 6;
 const ADMIN_ADDRESSES = [
   process.env.NEXT_PUBLIC_ADMIN_ADDRESS_1!,
-  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_2!
+  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_2!,
+  process.env.NEXT_PUBLIC_ADMIN_ADDRESS_3!,
 ];
 
 const agentApi = {

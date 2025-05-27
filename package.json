@@ -20,6 +20,7 @@
     "@reown/appkit-adapter-solana": "^1.7.0",
     "@reown/appkit-adapter-wagmi": "^1.7.0",
     "@reown/appkit-wallet-button": "^1.7.0",
+    "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.24",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-react": "^0.15.35",
