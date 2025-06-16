@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     
     const characterFileStr = formData.get('character_file') as string;
+    const nodeId = formData.get('node_id') as string;
     const agentData = JSON.parse(characterFileStr);
 
     // Add OPENAI_API_KEY to settings.secrets
@@ -40,6 +41,10 @@ export async function POST(req: Request) {
     upstreamFormData.append("wallet_address", formData.get('wallet_address'));
     upstreamFormData.append("organization", "cyrene");
 
+    console.log(nodeId, "nodeId");
+
+    // Use the selected node domain in the API URL
+    // ${API_BASE_URL}/agents/${nodeId}/
     const response = await axios.post(`${API_BASE_URL}/agents/us01.erebrus.io/`, upstreamFormData, {
       headers: {
         'Content-Type': 'multipart/form-data',

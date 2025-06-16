@@ -110,6 +110,45 @@ const AgentCard = ({ agent, index, onChatClick }: {
           >
             Chat with {agent.name}
           </GlowButton>
+          {/* <GlowButton
+  style={{
+    width: "100%",
+    padding: "0.8em",
+    borderRadius: "999px",
+    fontSize: "15px",
+    fontWeight: "500",
+    marginTop: "0.5rem",
+  }}
+>
+  <Dialog>
+    <DialogTrigger>Integrate Agent</DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>
+          Copy this script tag to integrate {agent.name} with your app
+        </DialogTitle>
+        <DialogDescription>
+          <article className="prose">
+            <ReactMarkdown>{`
+\`\`\`html
+<script>
+  window.aiChatConfig = {
+    chatUrl: 'https://${agent.name.toLowerCase()}.us01.erebrus.io/${agent.id}/message',
+    agentInfoUrl: 'https://gateway.erebrus.io/api/v1.0/agents/us01.erebrus.io/${agent.id}',
+    agentName: '${agent.name}',
+    primaryColor: '#1366d9',
+    position: "bottom-right"
+  };
+</script>
+<script src="./index.js"></script>
+\`\`\`
+            `}</ReactMarkdown>
+          </article>
+        </DialogDescription>
+      </DialogHeader>
+    </DialogContent>
+  </Dialog>
+</GlowButton> */}
         </div>
       </Card>
     </div>

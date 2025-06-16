@@ -6,10 +6,11 @@ import { BaseWalletAdapter, SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { mainnet, arbitrum, base, solana, solanaTestnet, solanaDevnet } from '@reown/appkit/networks';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { defineChain } from '@reown/appkit/networks';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { BrowserProvider } from 'ethers';
+import { toast } from 'sonner';
 
 declare global {
   interface Window {
@@ -18,6 +19,13 @@ declare global {
         signMessage: (message: Uint8Array) => Promise<{ signature: Uint8Array }>;
         isPhantom?: boolean;
       };
+    };
+    solflare?: {
+      isSolflare?: boolean;
+      signMessage: (message: Uint8Array) => Promise<{ signature: Uint8Array }>;
+    };
+    backpack?: {
+      signMessage: (message: Uint8Array) => Promise<{ signature: Uint8Array }>;
     };
   }
 }
@@ -166,7 +174,7 @@ const getAuthFromCookies = (chainType: 'solana' | 'evm') => {
   };
 };
 
-// EVM Authentication - Updated version
+// EVM Authentication
 const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
@@ -182,7 +190,6 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
     console.log("EVM Message:", message);
     console.log("EVM Flow ID:", flowId);
 
-    // Combine message and flowId like the backend does
     const combinedMessage = `${message}${flowId}`;
     console.log("Combined Message:", combinedMessage);
 
@@ -199,15 +206,12 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
       );
     }
 
-    // Sign the COMBINED message (message + flowId)
     let signature = await signer.signMessage(combinedMessage);
 
-    // Remove "0x" prefix if present
     if (signature.startsWith("0x")) {
       signature = signature.slice(2);
     }
 
-    // Post to auth endpoint - match the backend format exactly
     const authResponse = await axios.post(
       `${GATEWAY_URL}api/v1.0/authenticate`,
       {
@@ -233,7 +237,7 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
   }
 };
 
-// Solana Authentication
+// Solana Authentication - Updated to support multiple wallets
 const authenticateSolana = async (walletAddress: string) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
@@ -249,15 +253,23 @@ const authenticateSolana = async (walletAddress: string) => {
     const message = data.payload.eula;
     const flowId = data.payload.flowId;
 
-    const wallet = window.phantom?.solana;
-    if (!wallet) throw new Error("Phantom wallet not found");
+    // Check for any supported Solana wallet
+    const wallet = 
+      window.phantom?.solana || 
+      window.solflare || 
+      window.backpack || 
+      (window.solana?.isConnected ? window.solana : null);
+
+    if (!wallet) {
+      throw new Error("No Solana wallet detected");
+    }
 
     const encodedMessage = new TextEncoder().encode(message);
     const { signature: sigBytes } = await wallet.signMessage(encodedMessage);
 
-    const signatureHex = Array.from(sigBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    const signatureHex = Array.from(new Uint8Array(sigBytes))
+    .map((b: number) => b.toString(16).padStart(2, '0'))
+    .join('');
 
     const authResponse = await axios.post(
       `${GATEWAY_URL}api/v1.0/authenticate?walletAddress=${walletAddress}&chain=sol`,
@@ -287,67 +299,95 @@ const authenticateSolana = async (walletAddress: string) => {
 };
 
 // Wallet auth hook
-function useWalletAuth() {
+export function useWalletAuth() {
   const { isConnected, address } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider<Provider>("eip155");
   const { chainId, caipNetworkId } = useAppKitNetworkCore();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState(false);
 
-  useEffect(() => {
-    const handleAuthentication = async () => {
-      if (!isConnected || !address) return;
+  // Get current auth status
+  const getCurrentAuthStatus = () => {
+    if (!isConnected || !address) return false;
+    
+    const chainType = caipNetworkId?.startsWith('solana:') ? 'solana' : 'evm';
+    const { token, wallet } = getAuthFromCookies(chainType);
+    return !!(token && wallet?.toLowerCase() === address.toLowerCase());
+  };
 
-      // Determine chain type
-      let chainType: 'solana' | 'evm' = 'evm';
-      if (caipNetworkId) {
-        chainType = caipNetworkId.startsWith('solana:') ? 'solana' : 'evm';
-      } else if (chainId) {
-        chainType = getChainType(chainId);
-      }
+  // Authentication function
+  const authenticate = async () => {
+  if (!isConnected || !address) {
+    setAuthError('Wallet not connected');
+    return false;
+  }
 
-      // Check existing auth
-      const { token, wallet } = getAuthFromCookies(chainType);
+  setIsAuthenticating(true);
+  setAuthError(null);
+  setAuthSuccess(false);
+
+  try {
+    // First determine if we're dealing with Solana or EVM
+    const isSolanaChain = caipNetworkId?.startsWith('solana:') || 
+                         chainId === NETWORK_IDS.SOLANA || 
+                         chainId === Number(solanaDevnet.id) || 
+                         chainId === Number(solanaTestnet.id);
+
+    const chainType = isSolanaChain ? 'solana' : 'evm';
+
+    // Check existing auth
+    const { token, wallet } = getAuthFromCookies(chainType);
+    
+    if (token && wallet?.toLowerCase() === address.toLowerCase()) {
+      setAuthSuccess(true);
+      return true;
+    }
+
+    // Clear existing auth if wallet mismatch
+    if (wallet && wallet.toLowerCase() !== address.toLowerCase()) {
+      clearAuthCookies(chainType);
+    }
+
+    let authResult = false;
+    
+    if (isSolanaChain) {
+      // Solana authentication path
+      const solanaWallet = 
+        window.phantom?.solana || 
+        window.solflare || 
+        window.backpack || 
+        (window.solana?.isConnected ? window.solana : null);
       
-      if (token && wallet?.toLowerCase() === address.toLowerCase()) {
-        console.log(`Already authenticated for ${chainType} chain`);
-        return;
+      if (!solanaWallet) {
+        throw new Error('Please connect a Solana wallet like Phantom or Solflare');
       }
-
-      // Clear existing auth if wallet mismatch
-      if (wallet && wallet.toLowerCase() !== address.toLowerCase()) {
-        clearAuthCookies(chainType);
+      authResult = await authenticateSolana(address);
+    } else {
+      // EVM authentication path
+      if (!walletProvider) {
+        throw new Error('EVM wallet provider not available');
       }
+      authResult = await authenticateEVM(address, walletProvider);
+    }
 
-      try {
-        let authSuccess = false;
-        
-        if (chainType === 'solana') {
-          if (!window.phantom?.solana) {
-            console.error('Phantom wallet not detected');
-            return;
-          }
-          authSuccess = await authenticateSolana(address);
-        } else {
-          if (!walletProvider) {
-            console.error('EVM wallet provider not available');
-            return;
-          }
-          authSuccess = await authenticateEVM(address, walletProvider);
-        }
-
-        if (authSuccess) {
-          console.log(`Authentication successful for ${chainType} chain`);
-        } else {
-          console.error(`Authentication failed for ${chainType} chain`);
-        }
-      } catch (error) {
-        console.error(`Error during ${chainType} authentication:`, error);
-      }
-    };
-
-    // Add slight delay to ensure wallet is fully connected
-    const timer = setTimeout(handleAuthentication, 500);
-    return () => clearTimeout(timer);
-  }, [isConnected, address, chainId, caipNetworkId, walletProvider]);
+    if (authResult) {
+      setAuthSuccess(true);
+      toast.success('Authentication successful');
+      return true;
+    } else {
+      throw new Error('Authentication failed');
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+    setAuthError(errorMessage);
+    toast.error(errorMessage);
+    return false;
+  } finally {
+    setIsAuthenticating(false);
+  }
+};
 
   // Cleanup on disconnection
   useEffect(() => {
@@ -355,13 +395,23 @@ function useWalletAuth() {
       ['solana', 'evm'].forEach(chainType => {
         clearAuthCookies(chainType as 'solana' | 'evm');
       });
+      setAuthSuccess(false);
     }
   }, [isConnected]);
+
+  return {
+    isConnected,
+    address,
+    isAuthenticated: getCurrentAuthStatus(),
+    isAuthenticating,
+    authError,
+    authSuccess,
+    authenticate,
+  };
 }
 
 // AppKit provider component
 export function AppKit({ children }: { children: React.ReactNode }) {
-  useWalletAuth();
   return <>{children}</>;
 }
 
