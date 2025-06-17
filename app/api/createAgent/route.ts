@@ -45,12 +45,14 @@ export async function POST(req: Request) {
 
     // Use the selected node domain in the API URL
     // ${API_BASE_URL}/agents/${nodeId}/
-    const response = await axios.post(`${API_BASE_URL}/agents/us01.erebrus.io/`, upstreamFormData, {
+    // console.log(`${API_BASE_URL}/agents/${nodeId}`, "API URL");
+    const response = await axios.post(`${API_BASE_URL}/agents/${nodeId}/`, upstreamFormData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         ...upstreamFormData.getHeaders(),
       },
     });
+  
 
     return NextResponse.json(response.data);
   } catch (error) {
