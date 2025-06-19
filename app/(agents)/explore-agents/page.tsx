@@ -36,8 +36,15 @@ const agentApi = {
   async getAgents(): Promise<Agent[]> {
     try {
       const response = await axios.get('/api/getAgents');
-      return response.data.agents || [];
+      
+      // Extract agents from all items in the response array that have nested agents
+      const allAgents = response.data.agents
+        .filter((item: any) => item.agents && item.agents.agents && Array.isArray(item.agents.agents))
+        .flatMap((item: any) => item.agents.agents);
+      
+      return allAgents || [];
     } catch (error) {
+      console.error('Error fetching agents:', error);
       return [];
     }
   },

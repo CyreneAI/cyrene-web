@@ -41,6 +41,7 @@ interface Agent {
   cover_img: string;
   voice_model: string;
   organization: string;
+  node_id: string;
   telegram_bot_token?: string;
   discord_application_id?: string;
   discord_token?: string;
@@ -215,7 +216,7 @@ export default function Page() {
         let messageApiUrl = "";
 
         messageApiUrl = `https://${agent?.domain}`;
-
+        // messageApiUrl = `https://${agent?.node_id}`;
         console.log("Message API URL:", messageApiUrl, agent?.id);
         console.log('Message API URL:', messageApiUrl, 'Voice Mode:', useVoiceMode);
         if (!messageApiUrl) throw new Error('Message API URL not configured');

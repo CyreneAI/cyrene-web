@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.API_BASE_URL;
 export async function GET(req: Request) {
   try {
     // Make the request to the external API
-    const response = await axios.get(`${API_BASE_URL}/agents/us01.erebrus.io`);
+    const response = await axios.get(`${API_BASE_URL}/agents`);
     
     // Return the data from the API
     return NextResponse.json(response.data);
