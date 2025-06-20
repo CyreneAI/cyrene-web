@@ -32,16 +32,27 @@ interface Agent {
   discord_token?: string;
 }
 
+interface AgentResponseItem {
+  agents: {
+    agents: Agent[];
+  };
+  node: Record<string, unknown>; // or define `Node` type if needed
+}
+
+export interface AgentsApiResponse {
+  agents: AgentResponseItem[];
+}
+
 const agentApi = {
   async getAgents(): Promise<Agent[]> {
     try {
-      const response = await axios.get('/api/getAgents');
-      
-      // Extract agents from all items in the response array that have nested agents
+      const response = await axios.get<AgentsApiResponse>('/api/getAgents');
+
       const allAgents = response.data.agents
-        .filter((item: any) => item.agents && item.agents.agents && Array.isArray(item.agents.agents))
-        .flatMap((item: any) => item.agents.agents);
-      
+  .filter((item: AgentResponseItem) => item.agents && Array.isArray(item.agents.agents))
+  .flatMap((item: AgentResponseItem) => item.agents.agents);
+
+
       return allAgents || [];
     } catch (error) {
       console.error('Error fetching agents:', error);
