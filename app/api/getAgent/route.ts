@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://gateway.erebrus.io/api/v1.0';
+const API_BASE_URL = process.env.API_BASE_URL ;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
