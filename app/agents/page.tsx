@@ -223,7 +223,7 @@ useEffect(() => {
   </script>
   
   <!-- AI Chat Widget -->
-  <script src="https://script-tag-netsepio.vercel.app/"></script>`;
+  <script src="https://cyreneai.com/chatbot/index.js"></script>`;
     } else if (activeTab === 'react') {
       return `import { ErebrusChat } from '@erebrus/chat-widget';
   
@@ -287,7 +287,7 @@ useEffect(() => {
         <div className="absolute top-40 right-10 w-72 h-72 bg-[#A63FE1] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" />
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#3985FF] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000" />
 
-        <div className="relative z-10 max-w-7xl mx-auto">
+        <div className="relative z-10 max-w-7xl mx-auto mb-8">
           {/* Title Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -295,7 +295,7 @@ useEffect(() => {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#0162FF] via-[#3985FF] to-[#A63FE1] bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#0162FF] via-[#3985FF] to-[#A63FE1] bg-clip-text text-transparent py-4">
               My Agents
             </h1>
             <p className="mt-4 text-gray-400">

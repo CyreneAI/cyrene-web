@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes, FaUserCog, FaRobot, FaImages, FaGem, FaGift, FaCheckCircle, FaBriefcase } from 'react-icons/fa';
+import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -24,6 +24,7 @@ const Navbar = () => {
   const [erebrusWallet, setErebrusWallet] = useState<string | null>(null);
   const [erebrusToken, setErebrusToken] = useState<string | null>(null);
   const [chainSymbol, setChainSymbol] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
  
   const handleHomeClick = () => {
     localStorage.removeItem('currentAgentId');
@@ -31,6 +32,18 @@ const Navbar = () => {
     localStorage.removeItem('currentAgentImage');
     router.replace('/');
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDashboardDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Check for existing authentication
@@ -96,7 +109,6 @@ const Navbar = () => {
     return () => clearInterval(authCheckInterval);
   }, []);
 
-
   const navItems = [
     { path: '/', label: 'Home', protected: false },
     { path: '/explore-agents', label: 'Explore Agents', protected: false },
@@ -107,19 +119,19 @@ const Navbar = () => {
     { 
       path: '/agents', 
       label: 'My Agents', 
-      icon: <FaRobot className="mr-2" />,
+      icon: <FaRobot className="w-4 h-4 mr-2" />,
       protected: true
     },
     { 
       path: '/perks', 
       label: 'Perks',  
-      icon: <FaGift className="mr-2" />,
+      icon: <FaGift className="w-4 h-4 mr-2" />,
       protected: true
     },
     { 
       path: '/tokenbalances', 
       label: 'Assets',  
-      icon: <FaBriefcase className="mr-2" />,
+      icon: <FaBriefcase className="w-4 h-4 mr-2" />,
       protected: true
     },
   ];
@@ -154,16 +166,9 @@ const Navbar = () => {
   const handleProtectedRouteClick = (e: React.MouseEvent, isProtected: boolean) => {
     if (isProtected && !isAuthenticated) {
       e.preventDefault();
-      
-      // Use the toast notification
       toast.error('Authentication Required', {
         description: 'Please connect your wallet to access this page',
-        // action: {
-        //   label: 'Connect',
-        //   onClick: () => <ConnectButton />,
-        // },
         position: 'top-center',
-        duration: 5000,
       });
     }
   };
@@ -172,139 +177,129 @@ const Navbar = () => {
   const handleDashboardClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      
       toast.warning('Dashboard Access', {
         description: 'Please authenticate your wallet to view the dashboard',
-        // action: {
-        //   label: 'Authenticate',
-        //   onClick: () => <ConnectButton />,
-        // },
         position: 'top-center',
-        duration: 5000,
       });
     } else {
       setIsMobileMenuOpen(false);
+      setShowDashboardDropdown(false);
     }
   };
 
   return (
     <motion.nav
-    initial={{ width: '120px' }}
-    animate={{
-      width: isExpanded ? '90%' : '120px',
-      transition: { duration: 0.8, ease: 'easeInOut' },
-    }}
-    className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-blue-500/10 via-transparent to-blue-900/50 shadow-lg lg:rounded-full md:rounded-full rounded-2xl px-2"
-  >
-    <div className="flex justify-between items-center">
-      {/* Logo */}
-      <div onClick={handleHomeClick} className="flex items-center cursor-pointer">
-        <Image
-          src="/CyreneAI_logo-text.png"
-          alt="Cyrene AI"
-          width={120}
-          height={40}
-          className="object-contain"
-        />
-      </div>
+      initial={{ width: '120px' }}
+      animate={{
+        width: isExpanded ? '90%' : '120px',
+        transition: { duration: 0.8, ease: 'easeInOut' },
+      }}
+      className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-blue-500/10 via-transparent to-blue-900/50 shadow-lg lg:rounded-full md:rounded-full rounded-2xl px-2"
+    >
+      <div className="flex justify-between items-center">
+        {/* Logo */}
+        <div onClick={handleHomeClick} className="flex items-center cursor-pointer">
+          <Image
+            src="/CyreneAI_logo-text.png"
+            alt="Cyrene AI"
+            width={120}
+            height={40}
+            className="object-contain"
+          />
+        </div>
 
-      {/* Desktop Navigation */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="hidden md:flex items-center space-x-4"
-          >
-            {navItems.map((item) => (
-              <Link 
-                key={item.path} 
-                href={item.protected && !isAuthenticated ? '#' : item.path}
-                className={getNavItemClass(item.path, item.protected)}
-                onClick={(e) => handleProtectedRouteClick(e, item.protected)}
-              >
-                {item.label}
-              </Link>
-            ))}
-            
-            {/* Dashboard Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
-                className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 ${
-                  pathname.startsWith('/dashboard')
-                    ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
-                    : 'text-white hover:bg-white/10'
-                }`}
-              >
-                Dashboard
-              </button>
-
-              <AnimatePresence>
-                {showDashboardDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800 rounded-lg shadow-lg z-50"
-                  >
-                    <div className="py-1">
-                      {dashboardItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          href={isAuthenticated ? item.path : '#'}
-                          className={`flex items-center px-4 py-2 ${
-                            isAuthenticated 
-                              ? 'text-white hover:bg-blue-500/30 transition-colors'
-                              : 'text-gray-500 cursor-not-allowed'
-                          }`}
-                          onClick={handleDashboardClick}
-                        >
-                          {item.icon}
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Authentication Status */}
-            {/* {isAuthenticated && (
-              <div className="flex items-center space-x-2 bg-green-500/20 px-3 py-1 rounded-full">
-                <FaCheckCircle className="text-green-400" />
-                <span className="text-sm text-white">Authenticated</span>
-                {erebrusWallet && (
-                  <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
-                    {erebrusWallet.substring(0, 6)}...{erebrusWallet.substring(erebrusWallet.length - 4)}
-                  </span>
-                )}
-                {chainSymbol && (
-                  <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">
-                    {chainSymbol}
-                  </span>
-                )}
-              </div>
-            )} */}
-
-            <ConnectButton />
-            <AuthButton />
-          </motion.div>
-        )}
-      </AnimatePresence>
-        {/* Mobile Menu Button */}
+        {/* Desktop Navigation */}
         <AnimatePresence>
           {isExpanded && (
-            <motion.button
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="text-white text-2xl md:hidden"
+              className="hidden md:flex items-center space-x-1"
+            >
+              {navItems.map((item) => (
+                <Link 
+                  key={item.path} 
+                  href={item.protected && !isAuthenticated ? '#' : item.path}
+                  className={getNavItemClass(item.path, item.protected)}
+                  onClick={(e) => handleProtectedRouteClick(e, item.protected)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              
+              {/* Dashboard Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
+                  className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 ${
+                    pathname.startsWith('/agents') || 
+                    pathname.startsWith('/perks') || 
+                    pathname.startsWith('/tokenbalances')
+                      ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  Dashboard
+                  <FaChevronDown className={`ml-2 transition-transform duration-200 ${showDashboardDropdown ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                <AnimatePresence>
+                  {showDashboardDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl z-50 border border-gray-700 overflow-hidden"
+                    >
+                      <div className="py-1">
+                        {dashboardItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            href={isAuthenticated ? item.path : '#'}
+                            className={`flex items-center px-4 py-3 text-sm ${
+                              isAuthenticated 
+                                ? 'text-white hover:bg-blue-500/30 transition-colors'
+                                : 'text-gray-500 cursor-not-allowed'
+                            } ${pathname === item.path ? 'bg-blue-500/30 text-white' : ''}`}
+                            onClick={(e) => {
+                              handleDashboardClick(e);
+                              setShowDashboardDropdown(false);
+                            }}
+                          >
+                            {item.icon}
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="flex items-center space-x-2 ml-2">
+                <ConnectButton />
+                <AuthButton />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Menu Button */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-white text-2xl md:hidden transition-colors p-2"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             >
               {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
@@ -320,7 +315,7 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="md:hidden bg-gradient-to-r from-gray-800 via-gray-900 to-black py-4 rounded-2xl"
           >
             <div className="flex flex-col items-center space-y-4">
@@ -342,18 +337,14 @@ const Navbar = () => {
                   <Link
                     key={item.path}
                     href={isAuthenticated ? item.path : '#'}
-                    className={`flex items-center px-4 py-2 ${
+                    className={`flex items-center justify-center px-4 py-2 text-sm rounded-lg mx-2 mb-1 ${
                       isAuthenticated 
                         ? 'text-white hover:bg-blue-500/30 transition-colors'
                         : 'text-gray-500 cursor-not-allowed'
+                    } ${
+                      pathname === item.path ? 'bg-blue-500/30 text-white' : ''
                     }`}
-                    onClick={(e) => {
-                      if (!isAuthenticated) {
-                        handleDashboardClick(e);
-                      } else {
-                        setIsMobileMenuOpen(false);
-                      }
-                    }}
+                    onClick={(e) => handleDashboardClick(e)}
                   >
                     {item.icon}
                     {item.label}
@@ -361,28 +352,10 @@ const Navbar = () => {
                 ))}
               </div>
 
-              {/* Mobile Authentication Status */}
-              {/* {isAuthenticated && (
-                <div className="flex flex-col items-center space-y-2 bg-green-500/20 px-4 py-2 rounded-lg w-11/12">
-                  <div className="flex items-center space-x-2">
-                    <FaCheckCircle className="text-green-400" />
-                    <span className="text-sm text-white">Authenticated</span>
-                  </div>
-                  {erebrusWallet && (
-                    <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
-                      {erebrusWallet.substring(0, 6)}...{erebrusWallet.substring(erebrusWallet.length - 4)}
-                    </span>
-                  )}
-                  {chainSymbol && (
-                    <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">
-                      Chain: {chainSymbol}
-                    </span>
-                  )}
-                </div>
-              )} */}
-
-              <ConnectButton />
-              <AuthButton />
+              <div className="w-full px-2 py-3 flex flex-col space-y-2">
+                <ConnectButton />
+                <AuthButton />
+              </div>
             </div>
           </motion.div>
         )}
