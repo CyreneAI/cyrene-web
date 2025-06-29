@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown,FaExchangeAlt } from 'react-icons/fa';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -132,6 +133,12 @@ const Navbar = () => {
       path: '/tokenbalances', 
       label: 'Assets',  
       icon: <FaBriefcase className="w-4 h-4 mr-2" />,
+      protected: true
+    },
+    { 
+      path: '/swap', 
+      label: 'Trade',  
+      icon: <FaExchangeAlt className="w-4 h-4 mr-2" />,
       protected: true
     },
   ];
