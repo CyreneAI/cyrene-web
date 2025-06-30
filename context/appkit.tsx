@@ -1,6 +1,6 @@
 'use client'
 
-import { createAppKit, useAppKitAccount, useAppKitProvider, useAppKitNetworkCore, type Provider } from '@reown/appkit/react';
+import { createAppKit, useAppKitAccount, useAppKitProvider, useAppKitNetworkCore } from '@reown/appkit/react';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { BaseWalletAdapter, SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { mainnet, arbitrum, base, solana, solanaTestnet, solanaDevnet } from '@reown/appkit/networks';
@@ -11,6 +11,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { BrowserProvider } from 'ethers';
 import { toast } from 'sonner';
+import type { Provider } from "@reown/appkit-adapter-solana/react";
 
 declare global {
   interface Window {
@@ -109,7 +110,7 @@ const metadata = {
   name: 'CyreneAI',
   description: "Powering the future of AI interaction through multi-agent collaboration.",
   url: 'https://cyreneai.com/',
-  icons: ['https://cyreneai.com/CyreneAI_logo-text.png'],
+  icons: ['https://cyreneai.com/Cyrene_mobile_logo.webp'],
 };
 
 const wallets: BaseWalletAdapter[] = [
@@ -187,11 +188,7 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
     const message = data.payload.eula;
     const flowId = data.payload.flowId;
 
-    console.log("EVM Message:", message);
-    console.log("EVM Flow ID:", flowId);
-
     const combinedMessage = `${message}${flowId}`;
-    console.log("Combined Message:", combinedMessage);
 
     const provider = new BrowserProvider(walletProvider);
     if (!walletAddress) {
@@ -237,8 +234,8 @@ const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
   }
 };
 
-// Solana Authentication - Updated to support multiple wallets
-const authenticateSolana = async (walletAddress: string) => {
+// Solana Authentication with social login support
+const authenticateSolana = async (walletAddress: string, walletProvider: Provider) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
     const chainName = "sol";
@@ -253,23 +250,12 @@ const authenticateSolana = async (walletAddress: string) => {
     const message = data.payload.eula;
     const flowId = data.payload.flowId;
 
-    // Check for any supported Solana wallet
-    const wallet = 
-      window.phantom?.solana || 
-      window.solflare || 
-      window.backpack || 
-      (window.solana?.isConnected ? window.solana : null);
-
-    if (!wallet) {
-      throw new Error("No Solana wallet detected");
-    }
-
     const encodedMessage = new TextEncoder().encode(message);
-    const { signature: sigBytes } = await wallet.signMessage(encodedMessage);
-
-    const signatureHex = Array.from(new Uint8Array(sigBytes))
-    .map((b: number) => b.toString(16).padStart(2, '0'))
-    .join('');
+    const signature = await walletProvider.signMessage(encodedMessage);
+    
+    const signatureHex = Array.from(new Uint8Array(signature))
+      .map((b: number) => b.toString(16).padStart(2, '0'))
+      .join('');
 
     const authResponse = await axios.post(
       `${GATEWAY_URL}api/v1.0/authenticate?walletAddress=${walletAddress}&chain=sol`,
@@ -301,7 +287,8 @@ const authenticateSolana = async (walletAddress: string) => {
 // Wallet auth hook
 export function useWalletAuth() {
   const { isConnected, address } = useAppKitAccount();
-  const { walletProvider } = useAppKitProvider<Provider>("eip155");
+  const { walletProvider: evmWalletProvider } = useAppKitProvider<Provider>("eip155");
+  const { walletProvider: solanaWalletProvider } = useAppKitProvider<Provider>("solana");
   const { chainId, caipNetworkId } = useAppKitNetworkCore();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -318,76 +305,64 @@ export function useWalletAuth() {
 
   // Authentication function
   const authenticate = async () => {
-  if (!isConnected || !address) {
-    setAuthError('Wallet not connected');
-    return false;
-  }
-
-  setIsAuthenticating(true);
-  setAuthError(null);
-  setAuthSuccess(false);
-
-  try {
-    // First determine if we're dealing with Solana or EVM
-    const isSolanaChain = caipNetworkId?.startsWith('solana:') || 
-                         chainId === NETWORK_IDS.SOLANA || 
-                         chainId === Number(solanaDevnet.id) || 
-                         chainId === Number(solanaTestnet.id);
-
-    const chainType = isSolanaChain ? 'solana' : 'evm';
-
-    // Check existing auth
-    const { token, wallet } = getAuthFromCookies(chainType);
-    
-    if (token && wallet?.toLowerCase() === address.toLowerCase()) {
-      setAuthSuccess(true);
-      return true;
+    if (!isConnected || !address) {
+      setAuthError('Wallet not connected');
+      return false;
     }
 
-    // Clear existing auth if wallet mismatch
-    if (wallet && wallet.toLowerCase() !== address.toLowerCase()) {
-      clearAuthCookies(chainType);
-    }
+    setIsAuthenticating(true);
+    setAuthError(null);
+    setAuthSuccess(false);
 
-    let authResult = false;
-    
-    if (isSolanaChain) {
-      // Solana authentication path
-      const solanaWallet = 
-        window.phantom?.solana || 
-        window.solflare || 
-        window.backpack || 
-        (window.solana?.isConnected ? window.solana : null);
+    try {
+      const isSolanaChain = caipNetworkId?.startsWith('solana:') || 
+                           chainId === NETWORK_IDS.SOLANA || 
+                           chainId === Number(solanaDevnet.id) || 
+                           chainId === Number(solanaTestnet.id);
+
+      const chainType = isSolanaChain ? 'solana' : 'evm';
+      const { token, wallet } = getAuthFromCookies(chainType);
       
-      if (!solanaWallet) {
-        throw new Error('Please connect a Solana wallet like Phantom or Solflare');
+      if (token && wallet?.toLowerCase() === address.toLowerCase()) {
+        setAuthSuccess(true);
+        return true;
       }
-      authResult = await authenticateSolana(address);
-    } else {
-      // EVM authentication path
-      if (!walletProvider) {
-        throw new Error('EVM wallet provider not available');
-      }
-      authResult = await authenticateEVM(address, walletProvider);
-    }
 
-    if (authResult) {
-      setAuthSuccess(true);
-      toast.success('Authentication successful');
-      return true;
-    } else {
-      throw new Error('Authentication failed');
+      if (wallet && wallet.toLowerCase() !== address.toLowerCase()) {
+        clearAuthCookies(chainType);
+      }
+
+      let authResult = false;
+      
+      if (isSolanaChain) {
+        if (!solanaWalletProvider) {
+          throw new Error('Solana wallet provider not available');
+        }
+        authResult = await authenticateSolana(address, solanaWalletProvider);
+      } else {
+        if (!evmWalletProvider) {
+          throw new Error('EVM wallet provider not available');
+        }
+        authResult = await authenticateEVM(address, evmWalletProvider);
+      }
+
+      if (authResult) {
+        setAuthSuccess(true);
+        toast.success('Authentication successful');
+        return true;
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setIsAuthenticating(false);
     }
-  } catch (error) {
-    console.error('Authentication error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-    setAuthError(errorMessage);
-    toast.error(errorMessage);
-    return false;
-  } finally {
-    setIsAuthenticating(false);
-  }
-};
+  };
 
   // Cleanup on disconnection
   useEffect(() => {
@@ -419,7 +394,7 @@ export function AppKit({ children }: { children: React.ReactNode }) {
 createAppKit({
   adapters: [new EthersAdapter(), solanaWeb3JsAdapter],
   metadata,
-  networks: [solana, mainnet, arbitrum, base, peaqNetwork, monadTestnet, riseTestnet],
+  networks: [solana, peaqNetwork, riseTestnet],
   projectId,
   features: {
     analytics: true,
