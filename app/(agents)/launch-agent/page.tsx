@@ -1223,7 +1223,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 
 import { createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import { Provider } from "@reown/appkit-adapter-solana";
+import type { Provider } from "@reown/appkit-adapter-solana/vue";
 import { SolanaLogo } from "@/components/icons/SolanaLogo";
 
 interface AgentData {
