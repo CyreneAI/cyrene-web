@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get('content-type') || '';
-    let ipfsFormData = new FormData();
+    const ipfsFormData = new FormData();
 
     // Handle JSON uploads
     if (contentType.includes('application/json')) {

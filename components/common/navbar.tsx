@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown,FaExchangeAlt } from 'react-icons/fa';
+import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown, FaExchangeAlt, FaRocket } from 'react-icons/fa';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
@@ -113,7 +113,8 @@ const Navbar = () => {
   const navItems = [
     { path: '/', label: 'Home', protected: false },
     { path: '/explore-agents', label: 'Explore Agents', protected: false },
-    { path: '/launch-agent', label: 'Launch Agent', protected: true },
+    // { path: '/launch-agent', label: 'Launch Agent', protected: true },
+    { path: '/launch-projects', label: 'Launch Projects', protected: true }, // NEW ITEM
   ];
 
   const dashboardItems = [
@@ -245,7 +246,8 @@ const Navbar = () => {
                   className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 ${
                     pathname.startsWith('/agents') || 
                     pathname.startsWith('/perks') || 
-                    pathname.startsWith('/tokenbalances')
+                    pathname.startsWith('/tokenbalances') ||
+                    pathname.startsWith('/swap')
                       ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
                       : 'text-white hover:bg-white/10'
                   }`}
