@@ -649,7 +649,7 @@ const SOL_USDC_PAIR_ADDRESS = '58oQChx4yWmvKdwLLZzBi4ChoCc2fqbAaGv_2aK_A8p';
 async function getSolanaConnection(): Promise<Connection> {
   const connection = new Connection(
     // UPDATED: Using mainnet-beta instead of devnet
-    'https://api.mainnet-beta.solana.com',
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     {
       commitment: "confirmed",
       confirmTransactionInitialTimeout: 120000,
