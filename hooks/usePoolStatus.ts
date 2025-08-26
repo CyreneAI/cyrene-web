@@ -172,7 +172,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { 
   DynamicBondingCurveClient, 
-  deriveDammV1PoolAddress,
+  deriveDammV2PoolAddress,
   DAMM_V1_MIGRATION_FEE_ADDRESS 
 } from '@meteora-ag/dynamic-bonding-curve-sdk';
 import { QUOTE_MINTS, type QuoteMintType } from '@/helper/meteoraServices/createConfig';
@@ -188,7 +188,7 @@ interface UsePoolStatusProps {
 }
 
 // UPDATED: Use mainnet connection
-const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, "confirmed"); // replace with helius rpc
 const client = new DynamicBondingCurveClient(connection, "confirmed");
 
 // Create a Map to track derivation status per pool address (instead of global object)
@@ -278,7 +278,7 @@ export const usePoolStatus = ({
             const tokenBMint = new PublicKey(QUOTE_MINTS[quoteMint].address);
 
             // 5. Derive the final DAMM V1 pool address
-            const dammV1PoolAddress = deriveDammV1PoolAddress(
+            const dammV1PoolAddress = deriveDammV2PoolAddress(
               dammConfigKey,
               tokenAMint,
               tokenBMint

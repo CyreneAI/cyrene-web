@@ -439,10 +439,7 @@ async function createPool(params: CreatePoolParams): Promise<CreatePoolResult> {
   const wallet = Keypair.fromSecretKey(secretKey);
 
   // Updated connection for MAINNET
-  const connection = new Connection(
-    "https://api.mainnet-beta.solana.com",
-    "confirmed"
-  );
+  const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, "confirmed");// replace with helius rpc
 
   const configAddress = new PublicKey(params.configAddress);
 
@@ -485,8 +482,8 @@ async function createPool(params: CreatePoolParams): Promise<CreatePoolResult> {
           value: "9"
         },
         {
-          trait_type: "Network",
-          value: "Solana Mainnet"
+          trait_type: "Launchpad",
+          value: "CyreneAI"
         },
         {
           trait_type: "Contract Address",

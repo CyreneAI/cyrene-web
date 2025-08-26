@@ -195,7 +195,6 @@ import {
   Keypair,
   Transaction,
 } from "@solana/web3.js";
-import { createMint } from "@solana/spl-token";
 import {
   BaseFeeMode,
   DynamicBondingCurveClient,
@@ -203,7 +202,7 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 
 // Initialize connection and client for MAINNET
-const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, "confirmed");// replace with helius r[c]
 const client = new DynamicBondingCurveClient(connection, "confirmed");
 
 // Interface for wallet adapter (works with most Solana wallets)
@@ -221,14 +220,14 @@ export const QUOTE_MINTS = {
     decimals: 9,
     name: "Solana",
     coingeckoId: "solana"
-  },
-  CYAI: {
-    address: "6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray", // Update this with actual mainnet CYAI address
-    fullSymbol: "CYAI", 
-    decimals: 6,
-    name: "Cyrene AI",
-    coingeckoId: "cyrene-ai"
   }
+  // CYAI: {
+  //   address: "6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray", // Update this with actual mainnet CYAI address
+  //   fullSymbol: "CYAI", 
+  //   decimals: 6,
+  //   name: "Cyrene AI",
+  //   coingeckoId: "cyrene-ai"
+  // }
 } as const;
 
 export type QuoteMintType = keyof typeof QUOTE_MINTS;
@@ -276,11 +275,11 @@ export class createConfig {
         tokenBaseDecimal: 9, // 9 DECIMALS FOR MEME COIN
         tokenQuoteDecimal: selectedQuoteMint.decimals,
         lockedVestingParam: {
-          totalLockedVestingAmount: 0,
-          numberOfVestingPeriod: 0,
-          cliffUnlockAmount: 0,
-          totalVestingDuration: 0,
-          cliffDurationFromMigrationTime: 0,
+          totalLockedVestingAmount: 100000000,
+          numberOfVestingPeriod: 6,
+          cliffUnlockAmount: 100000000,
+          totalVestingDuration: 15552000,
+          cliffDurationFromMigrationTime: 15552000,
         },
         baseFeeParams: {
           baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
@@ -298,8 +297,8 @@ export class createConfig {
         tokenType: 1, // Token2022
         partnerLpPercentage: 0,
         creatorLpPercentage: 0,
-        partnerLockedLpPercentage: 50,
-        creatorLockedLpPercentage: 50,
+        partnerLockedLpPercentage: 40,
+        creatorLockedLpPercentage: 60,
         creatorTradingFeePercentage: 2,
         leftover: 1,
         tokenUpdateAuthority: 1,
@@ -312,8 +311,8 @@ export class createConfig {
       // Create the config setup transaction
       const configSetup = await client.partner.createConfig({
         config: config.publicKey,
-        feeClaimer: new PublicKey("CWfBXH66Wa5JEPBYsqC3JWg1CLxaerumfX9e19pAwVRY"), // Stories wallet address
-        leftoverReceiver: new PublicKey("CWfBXH66Wa5JEPBYsqC3JWg1CLxaerumfX9e19pAwVRY"), // Stories wallet address
+        feeClaimer: new PublicKey("FG75GTSYMimybJUBEcu6LkcNqm7fkga1iMp3v4nKnDQS"), 
+        leftoverReceiver: new PublicKey("FG75GTSYMimybJUBEcu6LkcNqm7fkga1iMp3v4nKnDQS"), 
         payer: wallet.publicKey,
         quoteMint: new PublicKey(selectedQuoteMint.address),
         ...curveConfig,
