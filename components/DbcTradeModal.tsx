@@ -659,8 +659,8 @@ async function getSolanaConnection(): Promise<Connection> {
     await connection.getEpochInfo();
     return connection;
   } catch (error) {
-    console.error('Failed to connect to Solana MAINNET RPC:', error);
-    throw new Error('Unable to connect to Solana MAINNET RPC endpoint');
+    console.error('Failed to connect to Solana  RPC:', error);
+    throw new Error('Unable to connect to Solana  RPC endpoint');
   }
 }
 
@@ -860,14 +860,14 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
     }
 
     try {
-      setTxStatus('Preparing MAINNET swap...');
+      setTxStatus('Preparing swap...');
       setLoading(true);
       const amountInLamports = parseFloat(solAmount) * 1e9;
       if (isNaN(amountInLamports) || amountInLamports <= 0) throw new Error('Invalid amount');
       const connection = await getSolanaConnection();
       const client = new DynamicBondingCurveClient(connection, "confirmed");
       const poolPublicKey = new PublicKey(poolAddress);
-      setTxStatus('Creating MAINNET transaction...');
+      setTxStatus('Creating transaction...');
       const transaction = await client.pool.swap({
         owner: new PublicKey(address),
         amountIn: new BN(amountInLamports),
@@ -882,21 +882,21 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = new PublicKey(address);
       const signedTx = await solanaWalletProvider!.signTransaction(transaction);
-      setTxStatus('Sending transaction to MAINNET...');
+      setTxStatus('Sending transaction...');
       const signature = await connection.sendRawTransaction(signedTx.serialize());
-      setTxStatus('Confirming MAINNET transaction...');
+      setTxStatus('Confirming transaction...');
       await connection.confirmTransaction(signature, 'confirmed');
-      toast.success('MAINNET Swap successful!');
-      console.log(`MAINNET Transaction: https://solscan.io/tx/${signature}`);
+      toast.success(' Swap successful!');
+      console.log(` Transaction: https://solscan.io/tx/${signature}`);
       checkBalances();
       getPoolProgression();
     } catch (error) {
-      console.error('MAINNET Swap failed:', error);
+      console.error(' Swap failed:', error);
       if (error instanceof Error && error.message.includes('completed')) {
         setIsPoolGraduated(true);
         toast.info("This token has just graduated! You can now trade it on Jupiter.");
       } else {
-        toast.error(error instanceof Error ? error.message : 'MAINNET Swap failed. See console for details.');
+        toast.error(error instanceof Error ? error.message : ' Swap failed. See console for details.');
       }
     } finally {
       setTxStatus('');
@@ -910,7 +910,7 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
       const solBal = await checkSOLBalance(address);
       setSolBalance(solBal);
     } catch (error) {
-      console.error('Error checking MAINNET balances:', error);
+      console.error('Error checking balances:', error);
     }
   };
 
@@ -1026,7 +1026,7 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
                 
                 {/* Pool Address Section */}
                 <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                  <label className="block text-gray-300 text-sm mb-2">MAINNET Pool Address</label>
+                  <label className="block text-gray-300 text-sm mb-2">Pool Address</label>
                   <div className="text-white font-mono text-xs break-all bg-black/20 p-2 rounded">
                     {poolAddress}
                   </div>

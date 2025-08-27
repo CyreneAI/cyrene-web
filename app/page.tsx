@@ -366,13 +366,13 @@ export default function Home() {
                 className="flex flex-col items-center"
               >
                 <motion.a
-                  href="/launch-agent"
+                  href="/launch-projects"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.6 }}
                   className="px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full hover:shadow-[0_0_30px_rgba(124,58,237,0.5)] transition-all duration-300"
                 >
-                  Launch Agent
+                  Launch Projects
                 </motion.a>
               </motion.div>
             </div>

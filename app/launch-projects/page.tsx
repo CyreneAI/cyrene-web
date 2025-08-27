@@ -17,6 +17,7 @@ import { DbcTradeModal } from '@/components/DbcTradeModal';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { LaunchedTokenData } from '@/lib/supabase';
 import React from 'react';
+import { Copy, Check } from 'lucide-react';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -104,6 +105,9 @@ export default function LaunchProjectsPage() {
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
 
+
+
+
   // Update refs when state changes (no re-render triggers)
   useEffect(() => {
     launchedTokensRef.current = launchedTokens;
@@ -175,6 +179,8 @@ export default function LaunchProjectsPage() {
       setCurrentLaunchedToken(null);
     }
   }, [address, isConnected, handleMigration, loadLaunchedTokens]);
+
+
 
   // Save launched token to Supabase
   const saveLaunchedToken = async (tokenData: LaunchedTokenData) => {
@@ -367,12 +373,12 @@ export default function LaunchProjectsPage() {
       toast.error('Please connect your wallet first');
       return;
     }
-
+  
     if (!params.name || !params.symbol || !params.image || !params.description) {
       toast.error('Please fill in all required fields');
       return;
     }
-
+  
     setIsLoading(true);
     
     try {
@@ -388,25 +394,26 @@ export default function LaunchProjectsPage() {
       if (!configResult.success || !configResult.configAddress) {
         throw new Error(configResult.error || 'Failed to create config');
       }
-
+  
       console.log('Config created successfully:', configResult.configAddress);
       toast.info('Creating token pool...');
-
+  
+      // Updated to pass walletAdapter to createPool
       const poolResult = await createPool({
         configAddress: configResult.configAddress,
         name: params.name,
         symbol: params.symbol,
         image: params.image,
         description: params.description
-      });
-
+      }, walletAdapter);
+  
       if (!poolResult.success) {
         throw new Error(poolResult.error || 'Failed to create pool');
       }
-
+  
       console.log('Pool created successfully:', poolResult.dbcPoolAddress);
       toast.success(`Token launched successfully! Pool: ${poolResult.dbcPoolAddress?.slice(0, 8)}...${poolResult.dbcPoolAddress?.slice(-8)}`);
-
+  
       const tokenData: LaunchedTokenData = {
         contractAddress: poolResult.contractAddress || '',
         dbcPoolAddress: poolResult.dbcPoolAddress || '',
@@ -416,7 +423,7 @@ export default function LaunchProjectsPage() {
         tokenSymbol: params.symbol,
         launchedAt: Date.now()
       };
-
+  
       await saveLaunchedToken(tokenData);
       
       // Reset form
@@ -885,6 +892,17 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
       minute: '2-digit'
     });
   };
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      toast.success(`${fieldName} copied!`);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      toast.error('Failed to copy');
+    }
+  };
 
   return (
     <motion.div
@@ -921,19 +939,45 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-        <div>
-          <span className="text-gray-400">Contract:</span>
-          <p className="text-gray-300 font-mono truncate">
-            {token.contractAddress.slice(0, 8)}...{token.contractAddress.slice(-4)}
-          </p>
-        </div>
-        <div>
-          <span className="text-gray-400">Pool:</span>
-          <p className="text-gray-300 font-mono truncate">
-            {token.dbcPoolAddress.slice(0, 8)}...{token.dbcPoolAddress.slice(-4)}
-          </p>
-        </div>
-      </div>
+  <div>
+    <div className="flex items-center gap-2 mb-1">
+      <span className="text-gray-400">Token:</span>
+      <button
+        onClick={() => copyToClipboard(token.contractAddress, 'Contract Address')}
+        className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+        title="Copy contract address"
+      >
+        {copiedField === 'Contract Address' ? (
+          <Check className="w-3 h-3 text-green-400" />
+        ) : (
+          <Copy className="w-3 h-3" />
+        )}
+      </button>
+    </div>
+    <p className="text-gray-300 font-mono truncate">
+      {token.contractAddress.slice(0, 8)}...{token.contractAddress.slice(-4)}
+    </p>
+  </div>
+  <div>
+    <div className="flex items-center gap-2 mb-1">
+      <span className="text-gray-400">Pool:</span>
+      <button
+        onClick={() => copyToClipboard(token.dbcPoolAddress, 'Pool Address')}
+        className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+        title="Copy pool address"
+      >
+        {copiedField === 'Pool Address' ? (
+          <Check className="w-3 h-3 text-green-400" />
+        ) : (
+          <Copy className="w-3 h-3" />
+        )}
+      </button>
+    </div>
+    <p className="text-gray-300 font-mono truncate">
+      {token.dbcPoolAddress.slice(0, 8)}...{token.dbcPoolAddress.slice(-4)}
+    </p>
+  </div>
+</div>
 
       <div className="flex gap-2">
         {isPoolStatusLoading ? (

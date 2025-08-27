@@ -41,7 +41,6 @@ jobs:
               --build-arg NEXT_PUBLIC_ADMIN_ADDRESS_3="${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}" \
               --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
               --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
-              --build-arg NEXT_PUBLIC_PRIVATE_KEY="${{ secrets.NEXT_PUBLIC_PRIVATE_KEY }}" \
               -t ghcr.io/netsepio/cyrene-web:prod .
 
 
@@ -99,7 +98,6 @@ jobs:
             # NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
             # NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             # NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            # NEXT_PUBLIC_PRIVATE_KEY=${{ secrets.NEXT_PUBLIC_PRIVATE_KEY }}
             EOF
 
             echo "🐳 Running the new container..."
