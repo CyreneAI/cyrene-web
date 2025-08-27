@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown } from 'lucide-react';
+import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -14,6 +14,8 @@ import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
 import type { Provider } from "@reown/appkit-adapter-solana/vue";
 import { usePoolStatus } from '@/hooks/usePoolStatus';
 import { DbcTradeModal } from '@/components/DbcTradeModal';
+import { LaunchedTokensService } from '@/services/launchedTokensService';
+import { LaunchedTokenData } from '@/lib/supabase';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -43,17 +45,6 @@ interface WalletAdapter {
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAllTransactions: (transactions: Transaction[]) => Promise<Transaction[]>;
   isConnected: boolean;
-}
-
-interface LaunchedTokenData {
-  contractAddress: string;
-  dbcPoolAddress: string;
-  configAddress: string;
-  quoteMint: QuoteMintType;
-  tokenName: string;
-  tokenSymbol: string;
-  dammPoolAddress?: string;
-  launchedAt: number;
 }
 
 const useReownWalletAdapter = () => {
@@ -97,57 +88,134 @@ export default function LaunchProjectsPage() {
   const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [currentLaunchedToken, setCurrentLaunchedToken] = useState<LaunchedTokenData | null>(null);
+  
+  // Database loading states
+  const [tokensLoading, setTokensLoading] = useState(false);
+  const [tokensError, setTokensError] = useState<string | null>(null);
+  const [migrationStatus, setMigrationStatus] = useState<'idle' | 'migrating' | 'completed' | 'error'>('idle');
 
   // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
 
-  // Load launched tokens from localStorage
-  useEffect(() => {
-    if (address) {
-      const stored = localStorage.getItem(`launched_tokens_${address}`);
-      if (stored) {
-        const tokens = JSON.parse(stored);
-        setLaunchedTokens(tokens);
-        if (tokens.length > 0) {
-          setCurrentLaunchedToken(tokens[0]);
-        }
+  // Load launched tokens from Supabase
+  const loadLaunchedTokens = useCallback(async (showLoading = true) => {
+    if (!address) return;
+    
+    try {
+      if (showLoading) setTokensLoading(true);
+      setTokensError(null);
+      
+      const tokens = await LaunchedTokensService.getLaunchedTokens(address);
+      setLaunchedTokens(tokens);
+      
+      if (tokens.length > 0) {
+        setCurrentLaunchedToken(tokens[0]);
       }
+    } catch (error) {
+      console.error('Error loading launched tokens:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load tokens';
+      setTokensError(errorMessage);
+      toast.error(`Failed to load tokens: ${errorMessage}`);
+    } finally {
+      if (showLoading) setTokensLoading(false);
     }
   }, [address]);
 
-  // Save launched tokens to localStorage
-  const saveLaunchedToken = (tokenData: LaunchedTokenData) => {
+  // Migrate from localStorage on first connection
+  const handleMigration = useCallback(async () => {
+    if (!address || migrationStatus !== 'idle') return;
+    
+    try {
+      setMigrationStatus('migrating');
+      const migratedTokens = await LaunchedTokensService.migrateFromLocalStorage(address);
+      
+      if (migratedTokens.length > 0) {
+        toast.success(`Migrated ${migratedTokens.length} token(s) from local storage`);
+        await loadLaunchedTokens(false); // Reload from database
+      }
+      
+      setMigrationStatus('completed');
+    } catch (error) {
+      console.error('Migration error:', error);
+      setMigrationStatus('error');
+      toast.error('Failed to migrate local data');
+    }
+  }, [address, migrationStatus, loadLaunchedTokens]);
+
+  // Load tokens when wallet connects
+  useEffect(() => {
+    if (address && isConnected) {
+      handleMigration().then(() => {
+        loadLaunchedTokens();
+      });
+    } else {
+      setLaunchedTokens([]);
+      setCurrentLaunchedToken(null);
+    }
+  }, [address, isConnected, handleMigration, loadLaunchedTokens]);
+
+  // Save launched token to Supabase
+  const saveLaunchedToken = async (tokenData: LaunchedTokenData) => {
     if (!address) return;
     
-    const key = `launched_tokens_${address}`;
-    const existing = localStorage.getItem(key);
-    const tokens = existing ? JSON.parse(existing) : [];
-    tokens.unshift(tokenData);
-    localStorage.setItem(key, JSON.stringify(tokens));
-    setLaunchedTokens(tokens);
-    setCurrentLaunchedToken(tokenData);
+    try {
+      const savedToken = await LaunchedTokensService.saveLaunchedToken(tokenData, address);
+      
+      // Update local state
+      setLaunchedTokens(prev => [savedToken, ...prev]);
+      setCurrentLaunchedToken(savedToken);
+      
+      toast.success('Token saved successfully!');
+    } catch (error) {
+      console.error('Error saving token:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save token';
+      toast.error(`Failed to save token: ${errorMessage}`);
+      
+      // Fallback to localStorage as backup
+      try {
+        const key = `launched_tokens_${address}`;
+        const existing = localStorage.getItem(key);
+        const tokens = existing ? JSON.parse(existing) : [];
+        tokens.unshift(tokenData);
+        localStorage.setItem(key, JSON.stringify(tokens));
+        
+        setLaunchedTokens(prev => [tokenData, ...prev]);
+        setCurrentLaunchedToken(tokenData);
+        
+        toast.info('Token saved to local storage as backup');
+      } catch (localError) {
+        console.error('Fallback save failed:', localError);
+      }
+    }
   };
 
   // Callback for when the final AMM pool is derived for current launched token
-  const handleCurrentTokenDammDerived = useCallback((dammPoolAddress: string) => {
+  const handleCurrentTokenDammDerived = useCallback(async (dammPoolAddress: string) => {
     if (!address || !currentLaunchedToken) return;
     
-    const updatedToken = { 
-      ...currentLaunchedToken, 
-      dammPoolAddress 
-    };
-    
-    const updatedTokens = launchedTokens.map(token => 
-      token.contractAddress === currentLaunchedToken.contractAddress ? updatedToken : token
-    );
-    
-    const key = `launched_tokens_${address}`;
-    localStorage.setItem(key, JSON.stringify(updatedTokens));
-    setLaunchedTokens(updatedTokens);
-    setCurrentLaunchedToken(updatedToken);
-    
-    toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
+    try {
+      const updatedToken = await LaunchedTokensService.updateLaunchedToken(
+        currentLaunchedToken.contractAddress, 
+        address, 
+        { dammPoolAddress }
+      );
+      
+      if (updatedToken) {
+        // Update local state
+        const updatedTokens = launchedTokens.map(token => 
+          token.contractAddress === currentLaunchedToken.contractAddress ? updatedToken : token
+        );
+        
+        setLaunchedTokens(updatedTokens);
+        setCurrentLaunchedToken(updatedToken);
+        
+        toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
+      }
+    } catch (error) {
+      console.error('Error updating token with DAMM pool:', error);
+      toast.error('Failed to update token graduation status');
+    }
   }, [currentLaunchedToken, launchedTokens, address]);
 
   // Use the custom hook to monitor the current token's pool status
@@ -160,20 +228,31 @@ export default function LaunchProjectsPage() {
   });
 
   // Callback for when the final AMM pool is derived for tokens in the list
-  const handleTokenDammDerived = useCallback((dammPoolAddress: string, tokenIndex: number) => {
+  const handleTokenDammDerived = useCallback(async (dammPoolAddress: string, tokenIndex: number) => {
     if (!address) return;
     
-    const updatedTokens = [...launchedTokens];
-    updatedTokens[tokenIndex] = { 
-      ...updatedTokens[tokenIndex], 
-      dammPoolAddress 
-    };
+    const token = launchedTokens[tokenIndex];
+    if (!token) return;
     
-    const key = `launched_tokens_${address}`;
-    localStorage.setItem(key, JSON.stringify(updatedTokens));
-    setLaunchedTokens(updatedTokens);
-    
-    toast.success(`Token ${updatedTokens[tokenIndex].tokenName} graduated! AMM Pool is ready.`);
+    try {
+      const updatedToken = await LaunchedTokensService.updateLaunchedToken(
+        token.contractAddress,
+        address,
+        { dammPoolAddress }
+      );
+      
+      if (updatedToken) {
+        const updatedTokens = [...launchedTokens];
+        updatedTokens[tokenIndex] = updatedToken;
+        
+        setLaunchedTokens(updatedTokens);
+        
+        toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
+      }
+    } catch (error) {
+      console.error('Error updating token with DAMM pool:', error);
+      toast.error('Failed to update token graduation status');
+    }
   }, [launchedTokens, address]);
 
   // Fetch real-time prices
@@ -299,7 +378,7 @@ export default function LaunchProjectsPage() {
         launchedAt: Date.now()
       };
 
-      saveLaunchedToken(tokenData);
+      await saveLaunchedToken(tokenData);
       
       // Reset form
       setParams({
@@ -357,6 +436,21 @@ export default function LaunchProjectsPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-white mb-4">Launch Your Project</h1>
             <p className="text-gray-400">Discover and interact with our diverse collection of AI agents</p>
+            
+            {/* Migration Status */}
+            {migrationStatus === 'migrating' && (
+              <div className="mt-4 p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                <span className="text-blue-300 text-sm">Migrating your data...</span>
+              </div>
+            )}
+            
+            {migrationStatus === 'error' && (
+              <div className="mt-4 p-3 bg-red-600/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <span className="text-red-300 text-sm">Migration failed - using local backup</span>
+              </div>
+            )}
           </div>
 
           {/* Tabs */}
@@ -380,7 +474,7 @@ export default function LaunchProjectsPage() {
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Launched Tokens
+                Launched Tokens {launchedTokens.length > 0 && `(${launchedTokens.length})`}
               </button>
               <button
                 onClick={() => setActiveTab('swap')}
@@ -410,9 +504,6 @@ export default function LaunchProjectsPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Upload Section */}
-         
-
                 {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -507,11 +598,6 @@ export default function LaunchProjectsPage() {
                     <div>
                       <label className="block text-gray-300 text-sm font-medium mb-2">
                         Migration Quote Threshold
-                        {/* {conversionRates && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            (~${formatPrice((params.migrationQuoteThreshold * (params.quoteMint === 'SOL' ? conversionRates.solToUsd : conversionRates.cyaiToUsd)))} USD)
-                          </span>
-                        )} */}
                       </label>
                       <input
                         type="number"
@@ -577,9 +663,36 @@ export default function LaunchProjectsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-gray-900/50 rounded-2xl p-8 border border-gray-700"
             >
-              <h2 className="text-2xl font-bold text-white mb-6">Your Launched Tokens</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Your Launched Tokens</h2>
+                <button
+                  onClick={() => loadLaunchedTokens()}
+                  disabled={tokensLoading}
+                  className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                  title="Refresh tokens"
+                >
+                  <RefreshCw className={`w-4 h-4 text-white ${tokensLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
               
-              {launchedTokens.length === 0 ? (
+              {tokensLoading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
+                  <p className="text-gray-400">Loading your tokens...</p>
+                </div>
+              ) : tokensError ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
+                  <p className="text-red-400 mb-2">Failed to load tokens</p>
+                  <p className="text-gray-500 text-sm mb-4">{tokensError}</p>
+                  <button
+                    onClick={() => loadLaunchedTokens()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : launchedTokens.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🚀</div>
                   <p className="text-gray-400">No tokens launched yet</p>
@@ -591,7 +704,7 @@ export default function LaunchProjectsPage() {
                 <div className="space-y-4">
                   {launchedTokens.map((token, index) => (
                     <LaunchedTokenCard 
-                      key={index}
+                      key={`${token.contractAddress}-${index}`}
                       token={token}
                       index={index}
                       onDammDerived={handleTokenDammDerived}
@@ -614,7 +727,12 @@ export default function LaunchProjectsPage() {
             >
               <h2 className="text-2xl font-bold text-white mb-6">Swap Tokens</h2>
               
-              {currentLaunchedToken ? (
+              {tokensLoading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
+                  <p className="text-gray-400">Loading tokens...</p>
+                </div>
+              ) : currentLaunchedToken ? (
                 <div className="space-y-6">
                   <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-600">
                     <div className="flex items-center justify-between mb-4">

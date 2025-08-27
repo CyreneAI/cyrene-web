@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload to IPFS
-    const ipfsResponse = await fetch('https://ipfs.erebrus.io/api/v0/add', {
+    const ipfsResponse = await fetch('https://ipfs.erebrus.io/api/v0/add?cid-version=1', {
       method: 'POST',
       body: ipfsFormData
     });
