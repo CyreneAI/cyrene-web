@@ -1,7 +1,7 @@
 // app/launch-projects/page.tsx
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import { usePoolStatus } from '@/hooks/usePoolStatus';
 import { DbcTradeModal } from '@/components/DbcTradeModal';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { LaunchedTokenData } from '@/lib/supabase';
+import React from 'react';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -94,19 +95,38 @@ export default function LaunchProjectsPage() {
   const [tokensError, setTokensError] = useState<string | null>(null);
   const [migrationStatus, setMigrationStatus] = useState<'idle' | 'migrating' | 'completed' | 'error'>('idle');
 
+  // Stable refs to prevent callback recreation
+  const launchedTokensRef = useRef<LaunchedTokenData[]>([]);
+  const addressRef = useRef<string>('');
+  const currentLaunchedTokenRef = useRef<LaunchedTokenData | null>(null);
+
   // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
 
+  // Update refs when state changes (no re-render triggers)
+  useEffect(() => {
+    launchedTokensRef.current = launchedTokens;
+  }, [launchedTokens]);
+
+  useEffect(() => {
+    addressRef.current = address || '';
+  }, [address]);
+
+  useEffect(() => {
+    currentLaunchedTokenRef.current = currentLaunchedToken;
+  }, [currentLaunchedToken]);
+
   // Load launched tokens from Supabase
   const loadLaunchedTokens = useCallback(async (showLoading = true) => {
-    if (!address) return;
+    const currentAddress = addressRef.current;
+    if (!currentAddress) return;
     
     try {
       if (showLoading) setTokensLoading(true);
       setTokensError(null);
       
-      const tokens = await LaunchedTokensService.getLaunchedTokens(address);
+      const tokens = await LaunchedTokensService.getLaunchedTokens(currentAddress);
       setLaunchedTokens(tokens);
       
       if (tokens.length > 0) {
@@ -120,15 +140,16 @@ export default function LaunchProjectsPage() {
     } finally {
       if (showLoading) setTokensLoading(false);
     }
-  }, [address]);
+  }, []); // Empty deps - uses ref for current address
 
   // Migrate from localStorage on first connection
   const handleMigration = useCallback(async () => {
-    if (!address || migrationStatus !== 'idle') return;
+    const currentAddress = addressRef.current;
+    if (!currentAddress || migrationStatus !== 'idle') return;
     
     try {
       setMigrationStatus('migrating');
-      const migratedTokens = await LaunchedTokensService.migrateFromLocalStorage(address);
+      const migratedTokens = await LaunchedTokensService.migrateFromLocalStorage(currentAddress);
       
       if (migratedTokens.length > 0) {
         toast.success(`Migrated ${migratedTokens.length} token(s) from local storage`);
@@ -141,7 +162,7 @@ export default function LaunchProjectsPage() {
       setMigrationStatus('error');
       toast.error('Failed to migrate local data');
     }
-  }, [address, migrationStatus, loadLaunchedTokens]);
+  }, [migrationStatus, loadLaunchedTokens]);
 
   // Load tokens when wallet connects
   useEffect(() => {
@@ -157,10 +178,11 @@ export default function LaunchProjectsPage() {
 
   // Save launched token to Supabase
   const saveLaunchedToken = async (tokenData: LaunchedTokenData) => {
-    if (!address) return;
+    const currentAddress = addressRef.current;
+    if (!currentAddress) return;
     
     try {
-      const savedToken = await LaunchedTokensService.saveLaunchedToken(tokenData, address);
+      const savedToken = await LaunchedTokensService.saveLaunchedToken(tokenData, currentAddress);
       
       // Update local state
       setLaunchedTokens(prev => [savedToken, ...prev]);
@@ -174,7 +196,7 @@ export default function LaunchProjectsPage() {
       
       // Fallback to localStorage as backup
       try {
-        const key = `launched_tokens_${address}`;
+        const key = `launched_tokens_${currentAddress}`;
         const existing = localStorage.getItem(key);
         const tokens = existing ? JSON.parse(existing) : [];
         tokens.unshift(tokenData);
@@ -190,24 +212,28 @@ export default function LaunchProjectsPage() {
     }
   };
 
-  // Callback for when the final AMM pool is derived for current launched token
+  // Stable callback for current token DAMM derivation using refs
   const handleCurrentTokenDammDerived = useCallback(async (dammPoolAddress: string) => {
-    if (!address || !currentLaunchedToken) return;
+    const currentAddress = addressRef.current;
+    const currentToken = currentLaunchedTokenRef.current;
+    
+    if (!currentAddress || !currentToken) return;
     
     try {
       const updatedToken = await LaunchedTokensService.updateLaunchedToken(
-        currentLaunchedToken.contractAddress, 
-        address, 
+        currentToken.contractAddress, 
+        currentAddress, 
         { dammPoolAddress }
       );
       
       if (updatedToken) {
-        // Update local state
-        const updatedTokens = launchedTokens.map(token => 
-          token.contractAddress === currentLaunchedToken.contractAddress ? updatedToken : token
+        // Update both lists and current token using functional updates
+        setLaunchedTokens(prevTokens => 
+          prevTokens.map(token => 
+            token.contractAddress === currentToken.contractAddress ? updatedToken : token
+          )
         );
         
-        setLaunchedTokens(updatedTokens);
         setCurrentLaunchedToken(updatedToken);
         
         toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
@@ -216,7 +242,7 @@ export default function LaunchProjectsPage() {
       console.error('Error updating token with DAMM pool:', error);
       toast.error('Failed to update token graduation status');
     }
-  }, [currentLaunchedToken, launchedTokens, address]);
+  }, []); // Empty deps - uses refs for current values
 
   // Use the custom hook to monitor the current token's pool status
   const { isGraduated: currentTokenGraduated, isLoading: isCurrentPoolStatusLoading } = usePoolStatus({
@@ -227,25 +253,38 @@ export default function LaunchProjectsPage() {
     onDammDerive: handleCurrentTokenDammDerived,
   });
 
-  // Callback for when the final AMM pool is derived for tokens in the list
+  // Stable callback for token list DAMM derivation using refs
   const handleTokenDammDerived = useCallback(async (dammPoolAddress: string, tokenIndex: number) => {
-    if (!address) return;
+    const currentAddress = addressRef.current;
+    const currentTokens = launchedTokensRef.current;
     
-    const token = launchedTokens[tokenIndex];
+    if (!currentAddress) return;
+    
+    const token = currentTokens[tokenIndex];
     if (!token) return;
     
     try {
       const updatedToken = await LaunchedTokensService.updateLaunchedToken(
         token.contractAddress,
-        address,
+        currentAddress,
         { dammPoolAddress }
       );
       
       if (updatedToken) {
-        const updatedTokens = [...launchedTokens];
-        updatedTokens[tokenIndex] = updatedToken;
+        // Update state using functional update to ensure we get latest state
+        setLaunchedTokens(prevTokens => {
+          const updatedTokens = [...prevTokens];
+          const currentIndex = updatedTokens.findIndex(t => t.contractAddress === token.contractAddress);
+          if (currentIndex !== -1) {
+            updatedTokens[currentIndex] = updatedToken;
+          }
+          return updatedTokens;
+        });
         
-        setLaunchedTokens(updatedTokens);
+        // Update current token if it matches
+        setCurrentLaunchedToken(prev => 
+          prev?.contractAddress === token.contractAddress ? updatedToken : prev
+        );
         
         toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
       }
@@ -253,7 +292,7 @@ export default function LaunchProjectsPage() {
       console.error('Error updating token with DAMM pool:', error);
       toast.error('Failed to update token graduation status');
     }
-  }, [launchedTokens, address]);
+  }, []); // Empty deps - uses refs for current values
 
   // Fetch real-time prices
   useEffect(() => {
@@ -515,7 +554,6 @@ export default function LaunchProjectsPage() {
                       name="name"
                       value={params.name}
                       onChange={handleInputChange}
-                      placeholder="Can contain lowercase letters, numbers, dots, and hyphens"
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                       required
                       disabled={isLoading}
@@ -531,7 +569,6 @@ export default function LaunchProjectsPage() {
                       name="symbol"
                       value={params.symbol}
                       onChange={handleInputChange}
-                      placeholder="Max 50 characters with spaces"
                       className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 uppercase"
                       required
                       disabled={isLoading}
@@ -564,14 +601,13 @@ export default function LaunchProjectsPage() {
                     name="description"
                     value={params.description}
                     onChange={handleInputChange}
-                    placeholder="Optional Max 500 characters with spaces"
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 min-h-[100px] resize-y"
                     required
                     disabled={isLoading}
-                    maxLength={500}
+                    maxLength={50000}
                   />
                   <div className="text-right text-xs text-gray-500 mt-1">
-                    {params.description.length}/500 characters
+                    {params.description.length}/50000 characters
                   </div>
                 </div>
 
@@ -650,7 +686,7 @@ export default function LaunchProjectsPage() {
                       <span>Launching Token...</span>
                     </div>
                   ) : (
-                    'Launch Token on Mainnet'
+                    'Launch Token'
                   )}
                 </button>
               </form>
@@ -704,7 +740,7 @@ export default function LaunchProjectsPage() {
                 <div className="space-y-4">
                   {launchedTokens.map((token, index) => (
                     <LaunchedTokenCard 
-                      key={`${token.contractAddress}-${index}`}
+                      key={token.contractAddress} 
                       token={token}
                       index={index}
                       onDammDerived={handleTokenDammDerived}
@@ -769,7 +805,7 @@ export default function LaunchProjectsPage() {
                           className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         >
                           <TrendingUp className="w-4 h-4" />
-                          Trade on DBC Pool
+                          Trade
                         </button>
                       )}
                       
@@ -814,7 +850,7 @@ export default function LaunchProjectsPage() {
   );
 }
 
-// Component for individual launched token card
+// Memoized LaunchedTokenCard component with stable callbacks
 interface LaunchedTokenCardProps {
   token: LaunchedTokenData;
   index: number;
@@ -822,18 +858,23 @@ interface LaunchedTokenCardProps {
   onTradeClick: () => void;
 }
 
-const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = ({ 
+const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({ 
   token, 
   index, 
   onDammDerived, 
   onTradeClick 
 }) => {
+  // Create a stable callback for this specific token using useCallback
+  const handleDammDerived = useCallback((dammPoolAddress: string) => {
+    onDammDerived(dammPoolAddress, index);
+  }, [onDammDerived, index]);
+
   const { isGraduated, isLoading: isPoolStatusLoading } = usePoolStatus({
     configAddress: token.configAddress,
     contractAddress: token.contractAddress,
     dbcPoolAddress: token.dbcPoolAddress,
     quoteMint: token.quoteMint,
-    onDammDerive: (dammPoolAddress: string) => onDammDerived(dammPoolAddress, index),
+    onDammDerive: handleDammDerived,
   });
 
   const formatDate = (timestamp: number) => {
@@ -934,4 +975,11 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = ({
       </div>
     </motion.div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.token.contractAddress === nextProps.token.contractAddress &&
+    prevProps.token.dammPoolAddress === nextProps.token.dammPoolAddress &&
+    prevProps.index === nextProps.index
+  );
+});

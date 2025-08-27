@@ -691,7 +691,7 @@ async function checkPoolGraduation(poolAddress: string): Promise<boolean> {
 }
 
 //================================================================//
-// REUSABLE DBC TRADE MODAL COMPONENT - UPDATED FOR MAINNET       //
+// REUSABLE DBC TRADE MODAL COMPONENT - UPDATED LAYOUT            //
 //================================================================//
 export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
   isOpen,
@@ -952,16 +952,19 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <div className="bg-blue/10 backdrop-blur-md border border-black/20 rounded-2xl overflow-hidden shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col">
-        <div className="p-4 border-b border-black/20 flex-shrink-0">
+      {/* Wider modal with fixed dimensions */}
+      <div className="bg-blue/10 backdrop-blur-md border border-black/20 rounded-2xl overflow-hidden shadow-2xl w-full h-[90vh] flex flex-col" style={{ maxWidth: '95vw', width: '1400px' }}>
+        
+        {/* Header - Fixed Height */}
+        <div className="p-4 border-b border-black/20 flex-shrink-0 h-20">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <TrendingUp className="w-6 h-6 text-[#3d71e9]" />
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {isPoolGraduated ? "Token Graduated!" : "Trade on Mainnet"}
+                  {isPoolGraduated ? "Token Graduated!" : "Trade"}
                 </h2>
-                <p className="text-sm text-gray-300">{tokenName} by @{creatorName}</p>
+                <p className="text-sm text-gray-300">{tokenName} ({tokenSymbol})</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 transition-colors">
@@ -970,7 +973,8 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        {/* Main Content - Fixed Height */}
+        <div className="flex-1 overflow-hidden min-h-0">
           {!poolAddress ? (
             <div className="text-center py-8">
               <p className="text-white">Pool address is not available.</p>
@@ -990,178 +994,182 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
               </a>
             </div>
           ) : (
-            <div className="flex h-full">
-              {/* Left Column: Trading UI */}
-              <div className="w-full md:w-[420px] flex-shrink-0 overflow-y-auto p-4 space-y-4 border-r border-black/20">
-                <>
-                  {/* Pool Address Section */}
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-                    <label className="block text-gray-300 text-sm mb-2">MAINNET Pool Address</label>
-                    <div className="text-white font-mono text-xs break-all bg-black/20 p-2 rounded">
-                      {poolAddress}
+            <div className="flex h-full min-h-0">
+              
+              {/* Left Column: BirdEye Chart - Fixed Width */}
+              <div className="flex-1 min-w-0 bg-black/10 border-r border-black/20" style={{ minWidth: '800px' }}>
+                {tokenMintAddress ? (
+                  <div className="w-full h-full p-4">
+                    <iframe
+                      key={tokenMintAddress}
+                      width="100%"
+                      height="100%"
+                      src={chartUrl}
+                      allowFullScreen
+                      className="rounded-xl border border-white/10"
+                      style={{ minHeight: '600px' }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-center text-gray-400">
+                    <div>
+                      <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                      <p>Chart data is unavailable.</p>
+                      <p className="text-sm">Token mint address not provided.</p>
                     </div>
                   </div>
-
-                  {/* Pool Progression Section */}
-                  <div className="bg-gradient-to-r from-[#3d71e9]/20 to-[#799ef3]/20 rounded-xl p-4 border border-[#3d71e9]/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <BarChart3 className="w-5 h-5 text-[#3d71e9]" />
-                      <h3 className="text-white font-semibold">Pool Progress to Graduation</h3>
-                      <button
-                        onClick={getPoolProgression}
-                        disabled={isLoadingProgression}
-                        className="ml-auto p-1 rounded hover:bg-white/10 transition-colors"
-                        title="Refresh progression"
-                      >
-                        <Activity className={`w-4 h-4 text-[#3d71e9] ${isLoadingProgression ? 'animate-spin' : ''}`} />
-                      </button>
-                    </div>
-
-                    {isLoadingProgression ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 text-[#3d71e9] animate-spin" />
-                        <span className="text-sm text-gray-300">Loading MAINNET pool progression...</span>
-                      </div>
-                    ) : progressionError ? (
-                      <div className="text-sm text-red-400">{progressionError}</div>
-                    ) : poolProgression ? (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-300">Progress:</span>
-                          <span className="font-bold text-lg text-[#3d71e9]">{poolProgression}</span>
-                        </div>
-                        <div className="relative w-full h-3 bg-black/30 rounded-full overflow-hidden">
-                          <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3d71e9] to-[#799ef3] transition-all duration-500 ease-out"
-                            style={{ width: poolProgression || "0%" }}
-                          />
-                          <div
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3d71e9]/60 to-[#799ef3]/60 blur-sm"
-                            style={{ width: poolProgression || "0%" }}
-                          />
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {parseFloat(poolProgression.replace('%', '')) >= 100
-                            ? "Pool graduated! Ready for AMM trading"
-                            : "Pool filling up - help it graduate to unlock AMM trading!"
-                          }
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-400">No progression data available</div>
-                    )}
-                  </div>
-
-                  {/* You Pay Section */}
-                  <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-black font-medium text-sm">You pay</span>
-                      <div className="text-right text-black text-xs">
-                        Balance: {solBalance !== null ? solBalance.toFixed(4) : '-'} SOL
-                      </div>
-                    </div>
-                    <div className="flex items-center mb-2">
-                      <input
-                        type="number"
-                        value={solAmount}
-                        onChange={handleSolAmountChange}
-                        className="flex-1 bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
-                        placeholder="0.0"
-                        min="0"
-                        step="0.1"
-                        disabled={isPoolGraduated}
-                      />
-                      <div className="bg-black/20 rounded-lg px-2 py-1">
-                        <span className="font-medium text-black text-sm">SOL</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center border-t border-black/10 pt-2">
-                      <span className="text-black text-sm mr-2">≈</span>
-                      <input
-                        type="number"
-                        value={usdAmount}
-                        onChange={handleUsdAmountChange}
-                        className="flex-1 bg-transparent text-black text-sm font-medium outline-none placeholder-gray-600"
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        disabled={isPoolGraduated}
-                      />
-                      <div className="bg-black/20 rounded-lg px-2 py-1">
-                        <span className="font-medium text-black text-xs">USD</span>
-                      </div>
-                    </div>
-                    {solPrice > 0 && (
-                      <div className="text-xs text-black/70 mt-1">1 SOL ≈ ${solPrice.toFixed(2)} USD</div>
-                    )}
-                  </div>
-
-                  {/* You Receive Section */}
-                  <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20">
-                    <span className="text-black font-medium text-sm">You receive</span>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={customPoolQuote ? (parseFloat(customPoolQuote.amountOut) / 1e9).toFixed(4) : isPoolGraduated ? 'Token graduated' : '...'}
-                        readOnly
-                        className="flex-1 bg-transparent text-black text-xl font-medium outline-none"
-                      />
-                      <div className="bg-black/20 rounded-lg px-2 py-1">
-                        <span className="font-medium text-black text-sm">{tokenSymbol}</span>
-                      </div>
-                    </div>
-                    {customPoolQuote && (
-                      <div className="mt-1 text-xs text-black font-medium">
-                        Minimum: {(parseFloat(customPoolQuote.minimumAmountOut) / 1e9).toFixed(4)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Trading Fees */}
-                  {customPoolQuote && (
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Trading Fee:</span>
-                        <span className="font-medium text-white">
-                          {(parseFloat(customPoolQuote.tradingFee) / 1e9).toFixed(6)} SOL
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Protocol Fee:</span>
-                        <span className="font-medium text-white">
-                          {(parseFloat(customPoolQuote.protocolFee) / 1e9).toFixed(6)} SOL
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Transaction Status */}
-                  {txStatus && (
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex items-center space-x-2">
-                      <Loader2 className="animate-spin h-4 w-4 text-[#3d71e9]" />
-                      <span className="text-white text-sm">{txStatus}</span>
-                    </div>
-                  )}
-                </>
+                )}
               </div>
 
-              {/* Right Column: BirdEye Chart */}
-              <div className="flex-1 p-4 hidden md:flex items-center justify-center bg-black/10">
-                {tokenMintAddress ? (
-                  <iframe
-                    key={tokenMintAddress}
-                    width="100%"
-                    height="100%"
-                    src={chartUrl}
-                    frameBorder="0"
-                    allowFullScreen
-                    className="rounded-xl border border-white/10"
-                  ></iframe>
-                ) : (
-                  <div className="text-center text-gray-400">
-                    <BarChart3 className="w-12 h-12 mx-auto mb-4" />
-                    <p>Chart data is unavailable.</p>
-                    <p className="text-sm">Token mint address not provided.</p>
+              {/* Right Column: Trading UI - Fixed Width */}
+              <div className="w-96 flex-shrink-0 overflow-y-auto p-4 space-y-4">
+                
+                {/* Pool Address Section */}
+                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                  <label className="block text-gray-300 text-sm mb-2">MAINNET Pool Address</label>
+                  <div className="text-white font-mono text-xs break-all bg-black/20 p-2 rounded">
+                    {poolAddress}
+                  </div>
+                </div>
+
+                {/* Pool Progression Section */}
+                <div className="bg-gradient-to-r from-[#3d71e9]/20 to-[#799ef3]/20 rounded-xl p-4 border border-[#3d71e9]/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-5 h-5 text-[#3d71e9]" />
+                    <h3 className="text-white font-semibold text-sm">Pool Progress</h3>
+                    <button
+                      onClick={getPoolProgression}
+                      disabled={isLoadingProgression}
+                      className="ml-auto p-1 rounded hover:bg-white/10 transition-colors"
+                      title="Refresh progression"
+                    >
+                      <Activity className={`w-4 h-4 text-[#3d71e9] ${isLoadingProgression ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+
+                  {isLoadingProgression ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-[#3d71e9] animate-spin" />
+                      <span className="text-sm text-gray-300">Loading...</span>
+                    </div>
+                  ) : progressionError ? (
+                    <div className="text-sm text-red-400">{progressionError}</div>
+                  ) : poolProgression ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-300">Progress:</span>
+                        <span className="font-bold text-lg text-[#3d71e9]">{poolProgression}</span>
+                      </div>
+                      <div className="relative w-full h-3 bg-black/30 rounded-full overflow-hidden">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3d71e9] to-[#799ef3] transition-all duration-500 ease-out"
+                          style={{ width: poolProgression || "0%" }}
+                        />
+                        <div
+                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3d71e9]/60 to-[#799ef3]/60 blur-sm"
+                          style={{ width: poolProgression || "0%" }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {parseFloat(poolProgression.replace('%', '')) >= 100
+                          ? "Pool graduated! Ready for AMM trading"
+                          : "Pool filling up - help it graduate!"
+                        }
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-400">No progression data available</div>
+                  )}
+                </div>
+
+                {/* You Pay Section */}
+                <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-black font-medium text-sm">You pay</span>
+                    <div className="text-right text-black text-xs">
+                      Balance: {solBalance !== null ? solBalance.toFixed(4) : '-'} SOL
+                    </div>
+                  </div>
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="number"
+                      value={solAmount}
+                      onChange={handleSolAmountChange}
+                      className="flex-1 bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
+                      placeholder="0.0"
+                      min="0"
+                      step="0.1"
+                      disabled={isPoolGraduated}
+                    />
+                    <div className="bg-black/20 rounded-lg px-2 py-1">
+                      <span className="font-medium text-black text-sm">SOL</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center border-t border-black/10 pt-2">
+                    <span className="text-black text-sm mr-2">≈</span>
+                    <input
+                      type="number"
+                      value={usdAmount}
+                      onChange={handleUsdAmountChange}
+                      className="flex-1 bg-transparent text-black text-sm font-medium outline-none placeholder-gray-600"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      disabled={isPoolGraduated}
+                    />
+                    <div className="bg-black/20 rounded-lg px-2 py-1">
+                      <span className="font-medium text-black text-xs">USD</span>
+                    </div>
+                  </div>
+                  {solPrice > 0 && (
+                    <div className="text-xs text-black/70 mt-1">1 SOL ≈ ${solPrice.toFixed(2)} USD</div>
+                  )}
+                </div>
+
+                {/* You Receive Section */}
+                <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20">
+                  <span className="text-black font-medium text-sm">You receive</span>
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      value={customPoolQuote ? (parseFloat(customPoolQuote.amountOut) / 1e9).toFixed(4) : isPoolGraduated ? 'Token graduated' : '...'}
+                      readOnly
+                      className="flex-1 bg-transparent text-black text-xl font-medium outline-none"
+                    />
+                    <div className="bg-black/20 rounded-lg px-2 py-1">
+                      <span className="font-medium text-black text-sm">{tokenSymbol}</span>
+                    </div>
+                  </div>
+                  {customPoolQuote && (
+                    <div className="mt-1 text-xs text-black font-medium">
+                      Minimum: {(parseFloat(customPoolQuote.minimumAmountOut) / 1e9).toFixed(4)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Trading Fees */}
+                {customPoolQuote && (
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Trading Fee:</span>
+                      <span className="font-medium text-white">
+                        {(parseFloat(customPoolQuote.tradingFee) / 1e9).toFixed(6)} SOL
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Protocol Fee:</span>
+                      <span className="font-medium text-white">
+                        {(parseFloat(customPoolQuote.protocolFee) / 1e9).toFixed(6)} SOL
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transaction Status */}
+                {txStatus && (
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex items-center space-x-2">
+                    <Loader2 className="animate-spin h-4 w-4 text-[#3d71e9]" />
+                    <span className="text-white text-sm">{txStatus}</span>
                   </div>
                 )}
               </div>
@@ -1169,10 +1177,10 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="p-4 border-t border-black/20 flex-shrink-0">
+        {/* Action Buttons - Fixed Height */}
+        <div className="p-4 border-t border-black/20 flex-shrink-0 h-20">
           {isPoolGraduated ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 h-full">
               <button
                 onClick={onClose}
                 className="flex-1 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-colors text-sm"
@@ -1183,13 +1191,13 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
                 href={`https://jup.ag/swap/SOL-${tokenMintAddress || poolAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm text-center"
+                className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm text-center flex items-center justify-center"
               >
                 Trade on Jupiter
               </a>
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-2 h-full">
               <button
                 onClick={getCustomPoolQuote}
                 disabled={loading || !poolAddress}
@@ -1202,7 +1210,7 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
                 disabled={loading || !isConnected || !customPoolQuote || !poolAddress}
                 className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
               >
-                {loading ? 'Processing...' : 'Swap on Mainnet'}
+                {loading ? 'Processing...' : 'Swap'}
               </button>
             </div>
           )}
