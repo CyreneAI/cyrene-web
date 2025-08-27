@@ -983,3 +983,5 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
     prevProps.index === nextProps.index
   );
 });
+
+LaunchedTokenCard.displayName = 'LaunchedTokenCard';
