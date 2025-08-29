@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -27,6 +27,10 @@ interface TokenLaunchParams {
   symbol: string;
   image: string;
   description: string;
+  // First buy parameters
+  firstBuyAmountSol: number;
+  minimumTokensOut: number;
+  enableFirstBuy: boolean;
 }
 
 interface PriceData {
@@ -80,7 +84,10 @@ export default function LaunchProjectsPage() {
     name: '',
     symbol: '',
     image: '',
-    description: ''
+    description: '',
+    firstBuyAmountSol: 0.1, // Default 0.1 SOL first buy
+    minimumTokensOut: 1000000, // Default minimum tokens expected
+    enableFirstBuy: true // Enable first buy by default
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -104,9 +111,6 @@ export default function LaunchProjectsPage() {
   // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
-
-
-
 
   // Update refs when state changes (no re-render triggers)
   useEffect(() => {
@@ -179,8 +183,6 @@ export default function LaunchProjectsPage() {
       setCurrentLaunchedToken(null);
     }
   }, [address, isConnected, handleMigration, loadLaunchedTokens]);
-
-
 
   // Save launched token to Supabase
   const saveLaunchedToken = async (tokenData: LaunchedTokenData) => {
@@ -344,12 +346,14 @@ export default function LaunchProjectsPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setParams(prev => ({
       ...prev,
-      [name]: name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' 
-        ? Number(value) 
-        : value
+      [name]: type === 'checkbox' 
+        ? (e.target as HTMLInputElement).checked
+        : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
+          ? Number(value) 
+          : value
     }));
   };
 
@@ -366,6 +370,11 @@ export default function LaunchProjectsPage() {
     }));
   };
 
+  const calculateFirstBuyValue = () => {
+    if (!conversionRates) return '$0.00';
+    return `$${(params.firstBuyAmountSol * conversionRates.solToUsd).toFixed(2)}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -376,6 +385,11 @@ export default function LaunchProjectsPage() {
   
     if (!params.name || !params.symbol || !params.image || !params.description) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (params.enableFirstBuy && params.firstBuyAmountSol <= 0) {
+      toast.error('First buy amount must be greater than 0');
       return;
     }
   
@@ -396,15 +410,17 @@ export default function LaunchProjectsPage() {
       }
   
       console.log('Config created successfully:', configResult.configAddress);
-      toast.info('Creating token pool...');
+      toast.info('Creating token pool with first buy...');
   
-      // Updated to pass walletAdapter to createPool
+      // Pass first buy parameters to createPool
       const poolResult = await createPool({
         configAddress: configResult.configAddress,
         name: params.name,
         symbol: params.symbol,
         image: params.image,
-        description: params.description
+        description: params.description,
+        firstBuyAmountSol: params.enableFirstBuy ? params.firstBuyAmountSol : undefined,
+        minimumTokensOut: params.enableFirstBuy ? params.minimumTokensOut : undefined
       }, walletAdapter);
   
       if (!poolResult.success) {
@@ -412,7 +428,13 @@ export default function LaunchProjectsPage() {
       }
   
       console.log('Pool created successfully:', poolResult.dbcPoolAddress);
-      toast.success(`Token launched successfully! Pool: ${poolResult.dbcPoolAddress?.slice(0, 8)}...${poolResult.dbcPoolAddress?.slice(-8)}`);
+      
+      let successMessage = `Token launched successfully! Pool: ${poolResult.dbcPoolAddress?.slice(0, 8)}...${poolResult.dbcPoolAddress?.slice(-8)}`;
+      if (poolResult.firstBuySignature) {
+        successMessage += ` | First buy completed!`;
+      }
+      
+      toast.success(successMessage);
   
       const tokenData: LaunchedTokenData = {
         contractAddress: poolResult.contractAddress || '',
@@ -434,7 +456,10 @@ export default function LaunchProjectsPage() {
         name: '',
         symbol: '',
         image: '',
-        description: ''
+        description: '',
+        firstBuyAmountSol: 0.1,
+        minimumTokensOut: 1000000,
+        enableFirstBuy: true
       });
       
     } catch (error) {
@@ -618,6 +643,83 @@ export default function LaunchProjectsPage() {
                   </div>
                 </div>
 
+                {/* Bot Protection Section */}
+                <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Zap className="w-6 h-6 text-cyan-400" />
+                    <h3 className="text-lg font-semibold text-white">Bot Protection</h3>
+                    <div className="px-2 py-1 bg-cyan-600 text-cyan-100 rounded text-xs font-medium">
+                      RECOMMENDED
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="enableFirstBuy"
+                        name="enableFirstBuy"
+                        checked={params.enableFirstBuy}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
+                        disabled={isLoading}
+                      />
+                      <label htmlFor="enableFirstBuy" className="text-gray-300 text-sm">
+                        Enable instant first buy to prevent bots from front-running your token launch
+                      </label>
+                    </div>
+
+                    {params.enableFirstBuy && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            First Buy Amount (SOL)
+                          </label>
+                          <input
+                            type="number"
+                            name="firstBuyAmountSol"
+                            value={params.firstBuyAmountSol}
+                            onChange={handleInputChange}
+                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                            min="0.001"
+                            max="10"
+                            step="0.001"
+                            disabled={isLoading}
+                            required={params.enableFirstBuy}
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            {conversionRates && `≈ ${calculateFirstBuyValue()}`}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">
+                            Minimum Tokens Expected
+                          </label>
+                          <input
+                            type="number"
+                            name="minimumTokensOut"
+                            value={params.minimumTokensOut}
+                            onChange={handleInputChange}
+                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                            min="1"
+                            disabled={isLoading}
+                            required={params.enableFirstBuy}
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            Slippage protection
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
+                      💡 <strong>Pro tip:</strong> Enabling first buy executes your purchase in the same transaction as pool creation, 
+                      preventing bots from buying before you can get your own tokens.
+                    </div>
+                  </div>
+                </div>
+
                 {/* Advanced Configuration */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-white">Configuration</h3>
@@ -650,7 +752,7 @@ export default function LaunchProjectsPage() {
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                         required
                         disabled={isLoading}
-                        min="1"
+                        min="0.001"
                         step="0.000001"
                       />
                     </div>
@@ -684,13 +786,18 @@ export default function LaunchProjectsPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Launching Token...</span>
+                    </div>
+                  ) : params.enableFirstBuy ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      <span>Launch Token with First Buy</span>
                     </div>
                   ) : (
                     'Launch Token'
