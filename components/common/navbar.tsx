@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown, FaExchangeAlt, FaRocket } from 'react-icons/fa';
+import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown, FaExchangeAlt, FaRocket, FaSearch, FaEye } from 'react-icons/fa';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
@@ -21,11 +21,13 @@ const Navbar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { address, isConnected } = useAppKitAccount();
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
+  const [showExploreDropdown, setShowExploreDropdown] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [erebrusWallet, setErebrusWallet] = useState<string | null>(null);
   const [erebrusToken, setErebrusToken] = useState<string | null>(null);
   const [chainSymbol, setChainSymbol] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dashboardDropdownRef = useRef<HTMLDivElement>(null);
+  const exploreDropdownRef = useRef<HTMLDivElement>(null);
  
   const handleHomeClick = () => {
     localStorage.removeItem('currentAgentId');
@@ -37,8 +39,11 @@ const Navbar = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dashboardDropdownRef.current && !dashboardDropdownRef.current.contains(event.target as Node)) {
         setShowDashboardDropdown(false);
+      }
+      if (exploreDropdownRef.current && !exploreDropdownRef.current.contains(event.target as Node)) {
+        setShowExploreDropdown(false);
       }
     };
 
@@ -112,9 +117,22 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/', label: 'Home', protected: false },
-    { path: '/explore-agents', label: 'Explore Agents', protected: false },
-    // { path: '/launch-agent', label: 'Launch Agent', protected: true },
-    { path: '/launch-projects', label: 'Launch Projects', protected: true }, // NEW ITEM
+    { path: '/launch-projects', label: 'Launch Projects', protected: true },
+  ];
+
+  const exploreItems = [
+    { 
+      path: '/explore-agents', 
+      label: 'Explore Agents', 
+      icon: <FaRobot className="w-4 h-4 mr-2" />,
+      protected: false
+    },
+    { 
+      path: '/explore-projects', 
+      label: 'Explore Projects', 
+      icon: <FaRocket className="w-4 h-4 mr-2" />,
+      protected: false
+    },
   ];
 
   const dashboardItems = [
@@ -146,10 +164,10 @@ const Navbar = () => {
 
   const getNavItemClass = (path: string, isProtected: boolean) => {
     const isActive = pathname === path;
-    const baseClass = `relative px-4 py-2 rounded-full transition-all duration-300 ${
+    const baseClass = `font-outfit relative px-6 py-2.5 rounded-full transition-all duration-300 text-sm font-medium ${
       isActive
-        ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
-        : 'text-white hover:bg-white/10'
+        ? 'text-white bg-white/20 backdrop-blur-md border border-white/30 shadow-lg'
+        : 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-md'
     }`;
     
     return isProtected && !isAuthenticated 
@@ -158,17 +176,17 @@ const Navbar = () => {
   };
 
   const getMobileNavItemClass = (path: string, isProtected: boolean) => {
-    const isActive = pathname === path
-    const baseClass = `px-4 py-2 rounded-full transition-all duration-300 ${
+    const isActive = pathname === path;
+    const baseClass = `font-outfit px-6 py-3 rounded-full transition-all duration-300 text-sm font-medium ${
       isActive
-        ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
-        : 'text-white hover:bg-white/10'
-    }`
+        ? 'text-white bg-white/20 backdrop-blur-md border border-white/30'
+        : 'text-white/90 hover:text-white hover:bg-white/10'
+    }`;
     
     return isProtected && !isAuthenticated 
       ? `${baseClass} opacity-50 cursor-not-allowed`
-      : baseClass
-  }
+      : baseClass;
+  };
 
   // Function to handle protected route clicks
   const handleProtectedRouteClick = (e: React.MouseEvent, isProtected: boolean) => {
@@ -195,25 +213,58 @@ const Navbar = () => {
     }
   };
 
+  // Function to handle explore clicks
+  const handleExploreClick = (e: React.MouseEvent, isProtected: boolean) => {
+    if (isProtected && !isAuthenticated) {
+      e.preventDefault();
+      toast.error('Authentication Required', {
+        description: 'Please connect your wallet to access this page',
+        position: 'top-center',
+      });
+    } else {
+      setIsMobileMenuOpen(false);
+      setShowExploreDropdown(false);
+    }
+  };
+
   return (
     <motion.nav
-      initial={{ width: '120px' }}
+      initial={{ width: '80px' }}
       animate={{
-        width: isExpanded ? '90%' : '120px',
+        width: isExpanded ? '90%' : '80px',
         transition: { duration: 0.8, ease: 'easeInOut' },
       }}
-      className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-blue-500/10 via-transparent to-blue-900/50 shadow-lg lg:rounded-full md:rounded-full rounded-2xl px-2"
+      className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900/98 backdrop-blur-xl border border-white/20 shadow-2xl lg:rounded-3xl md:rounded-3xl rounded-3xl"
+      style={{
+        height: isExpanded ? 'auto' : '68px',
+        minHeight: '68px'
+      }}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center px-4 py-3">
         {/* Logo */}
-        <div onClick={handleHomeClick} className="flex items-center cursor-pointer">
-          <Image
-            src="/CyreneAI_logo-text.png"
-            alt="Cyrene AI"
-            width={120}
-            height={40}
-            className="object-contain"
-          />
+        <div 
+          onClick={handleHomeClick} 
+          className="flex items-center cursor-pointer"
+        >
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800/50 flex items-center justify-center flex-shrink-0">
+            <Image
+              src="/CyreneAI_logo_square.png"
+              alt="Cyrene AI Logo"
+              width={28}
+              height={28}
+              className="object-contain"
+            />
+          </div>
+          {isExpanded && (
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="ml-3 font-moonhouse text-xl font-bold text-white tracking-wide"
+            >
+              CyreneAI
+            </motion.span>
+          )}
         </div>
 
         {/* Desktop Navigation */}
@@ -224,7 +275,7 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="hidden md:flex items-center space-x-1"
+              className="hidden md:flex items-center space-x-2"
             >
               {navItems.map((item) => (
                 <Link 
@@ -236,45 +287,94 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Explore Dropdown */}
+              <div className="relative" ref={exploreDropdownRef}>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowExploreDropdown(!showExploreDropdown)}
+                  className={`font-outfit flex items-center px-6 py-2.5 rounded-full transition-all duration-300 text-sm font-medium ${
+                    pathname.startsWith('/explore-agents') || 
+                    pathname.startsWith('/explore-projects')
+                      ? 'text-white bg-white/20 backdrop-blur-md border border-white/30 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-md'
+                  }`}
+                >
+                  Explore
+                  <FaChevronDown className={`ml-2 w-3 h-3 transition-transform duration-200 ${showExploreDropdown ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                <AnimatePresence>
+                  {showExploreDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="absolute right-0 mt-3 w-56 origin-top-right bg-gray-900 backdrop-blur-xl rounded-2xl shadow-2xl z-50 border border-white/20 overflow-hidden"
+                    >
+                      <div className="py-2">
+                        {exploreItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            href={item.path}
+                            className={`font-outfit flex items-center px-4 py-3 text-sm font-medium text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200 ${
+                              pathname === item.path ? 'bg-white/15 text-white' : ''
+                            }`}
+                            onClick={(e) => {
+                              handleExploreClick(e, item.protected);
+                              setShowExploreDropdown(false);
+                            }}
+                          >
+                            {item.icon}
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               {/* Dashboard Dropdown */}
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={dashboardDropdownRef}>
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowDashboardDropdown(!showDashboardDropdown)}
-                  className={`flex items-center px-4 py-2 rounded-full transition-all duration-300 ${
+                  className={`font-outfit flex items-center px-6 py-2.5 rounded-full transition-all duration-300 text-sm font-medium ${
                     pathname.startsWith('/agents') || 
                     pathname.startsWith('/perks') || 
                     pathname.startsWith('/tokenbalances') ||
                     pathname.startsWith('/swap')
-                      ? 'text-white bg-gradient-to-r from-blue-600 to-blue-400 font-bold'
-                      : 'text-white hover:bg-white/10'
+                      ? 'text-white bg-white/20 backdrop-blur-md border border-white/30 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-md'
                   }`}
                 >
                   Dashboard
-                  <FaChevronDown className={`ml-2 transition-transform duration-200 ${showDashboardDropdown ? 'rotate-180' : ''}`} />
+                  <FaChevronDown className={`ml-2 w-3 h-3 transition-transform duration-200 ${showDashboardDropdown ? 'rotate-180' : ''}`} />
                 </motion.button>
 
                 <AnimatePresence>
                   {showDashboardDropdown && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl z-50 border border-gray-700 overflow-hidden"
+                      className="absolute right-0 mt-3 w-56 origin-top-right bg-gray-900 backdrop-blur-xl rounded-2xl shadow-2xl z-50 border border-white/20 overflow-hidden"
                     >
-                      <div className="py-1">
+                      <div className="py-2">
                         {dashboardItems.map((item) => (
                           <Link
                             key={item.path}
                             href={isAuthenticated ? item.path : '#'}
-                            className={`flex items-center px-4 py-3 text-sm ${
+                            className={`font-outfit flex items-center px-4 py-3 text-sm font-medium ${
                               isAuthenticated 
-                                ? 'text-white hover:bg-blue-500/30 transition-colors'
-                                : 'text-gray-500 cursor-not-allowed'
-                            } ${pathname === item.path ? 'bg-blue-500/30 text-white' : ''}`}
+                                ? 'text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200'
+                                : 'text-white/40 cursor-not-allowed'
+                            } ${pathname === item.path ? 'bg-white/15 text-white' : ''}`}
                             onClick={(e) => {
                               handleDashboardClick(e);
                               setShowDashboardDropdown(false);
@@ -290,7 +390,7 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="flex items-center space-x-2 ml-2">
+              <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-white/20">
                 <ConnectButton />
                 <AuthButton />
               </div>
@@ -308,7 +408,7 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="text-white text-2xl md:hidden transition-colors p-2"
+              className="text-white/90 hover:text-white text-2xl md:hidden transition-colors p-2"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             >
               {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
@@ -325,7 +425,7 @@ const Navbar = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="md:hidden bg-gradient-to-r from-gray-800 via-gray-900 to-black py-4 rounded-2xl"
+            className="md:hidden bg-gray-900/98 backdrop-blur-xl border-t border-white/20 py-6 rounded-b-3xl"
           >
             <div className="flex flex-col items-center space-y-4">
               {navItems.map((item) => (
@@ -340,18 +440,36 @@ const Navbar = () => {
               ))}
 
               <div className="w-full px-4">
-                <div className="border-t border-gray-700 my-2"></div>
-                <h3 className="text-white font-semibold px-4 py-2">Dashboard</h3>
+                <div className="border-t border-white/20 my-4"></div>
+                <h3 className="font-outfit text-white/90 font-semibold px-4 py-2 text-center">Explore</h3>
+                {exploreItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className={`font-outfit flex items-center justify-center px-6 py-3 text-sm font-medium rounded-xl mx-2 mb-2 text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200 ${
+                      pathname === item.path ? 'bg-white/15 text-white' : ''
+                    }`}
+                    onClick={(e) => handleExploreClick(e, item.protected)}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="w-full px-4">
+                <div className="border-t border-white/20 my-4"></div>
+                <h3 className="font-outfit text-white/90 font-semibold px-4 py-2 text-center">Dashboard</h3>
                 {dashboardItems.map((item) => (
                   <Link
                     key={item.path}
                     href={isAuthenticated ? item.path : '#'}
-                    className={`flex items-center justify-center px-4 py-2 text-sm rounded-lg mx-2 mb-1 ${
+                    className={`font-outfit flex items-center justify-center px-6 py-3 text-sm font-medium rounded-xl mx-2 mb-2 ${
                       isAuthenticated 
-                        ? 'text-white hover:bg-blue-500/30 transition-colors'
-                        : 'text-gray-500 cursor-not-allowed'
+                        ? 'text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200'
+                        : 'text-white/40 cursor-not-allowed'
                     } ${
-                      pathname === item.path ? 'bg-blue-500/30 text-white' : ''
+                      pathname === item.path ? 'bg-white/15 text-white' : ''
                     }`}
                     onClick={(e) => handleDashboardClick(e)}
                   >
@@ -361,7 +479,7 @@ const Navbar = () => {
                 ))}
               </div>
 
-              <div className="w-full px-2 py-3 flex flex-col space-y-2">
+              <div className="w-full px-4 py-4 border-t border-white/20 flex flex-col space-y-3">
                 <ConnectButton />
                 <AuthButton />
               </div>

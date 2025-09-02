@@ -1,102 +1,180 @@
 'use client'
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaXTwitter } from "react-icons/fa6";
-import { TbBrandDiscord } from "react-icons/tb";
-import { LiaTelegramPlane } from "react-icons/lia";
+import type React from "react"
+import { Link2, BookOpen, Mail } from "lucide-react"
+import { SiX, SiTelegram, SiDiscord } from "react-icons/si"
+
+function SectionHeader({
+  icon,
+  title,
+}: {
+  icon: React.ReactNode
+  title: string
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        aria-hidden
+        className="flex h-8 w-8 items-center justify-center rounded-lg border bg-[#405084]/40 border-[#405084] text-[#ffffff]"
+      >
+        {icon}
+      </div>
+      <h3 className="text-[#ffffff] text-lg font-semibold">{title}</h3>
+    </div>
+  )
+}
+
+function Wordmark() {
+  return (
+    <div className="mb-4">
+      <Image
+        src='/CyreneAI_logo-text.png'
+        alt='Cyrene AI'
+        width={180}
+        height={60}
+        className='object-contain'
+      />
+    </div>
+  )
+}
 
 const Footer = () => {
   return (
-    <footer className='relative bg-gradient-to-r from-gray-900 via-gray-800 to-black'>
+    <footer className='relative '>
       {/* Background Image with Gradient Overlay */}
-      <div className="absolute inset-0">
-        <Image
-          src='/footer_zoom_out_85.jpg'
-          alt='Cosmic Portal'
-          fill
-          className='object-cover object-center'
-          priority
-          quality={100}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/50 to-transparent"></div>
-      </div>
+
 
       {/* Content */}
-      <div className='relative container mx-auto px-4 py-12'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:pl-36 mb-24'>
-          {/* Brand Section */}
-          <div className=' text-center sm:text-left py-6'>
-            <Image
-              src='/CyreneAI_logo-text.png'
-              alt='Cyrene AI'
-              width={180}
-              height={60}
-              className='object-contain mx-auto sm:mx-0'
-            />
-            <p className='text-gray-100 text-[14px] leading-relaxed py-4'>
-              Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents.
-            </p>
-            <div className='flex justify-center sm:justify-start space-x-4'>
-              <Link href='https://x.com/CyreneAI' target='_blank' className='p-3 rounded-xl hover:bg-white/10 transition-colors'>
-                <FaXTwitter className='w-7 h-7 text-gray-100 hover:text-white' />
-              </Link>
-              <Link href='https://discord.gg/qJ98QZ6EBx' target='_blank' className='p-3 rounded-xl hover:bg-white/10 transition-colors'>
-                <TbBrandDiscord className='w-7 h-7 text-gray-100 hover:text-white' />
-              </Link>
-              <Link href='https://t.me/CyreneAI' target='_blank' className='p-3 rounded-xl hover:bg-white/10 transition-colors'>
-                <LiaTelegramPlane className='w-7 h-7 text-gray-100 hover:text-white' />
-              </Link>
+      <div className='relative container mx-auto px-6 py-12'>
+        <div className="mx-auto max-w-7xl rounded-3xl bg-[#1c2c66]/90 backdrop-blur-sm border border-[#405084]/30 px-6 py-12 md:px-10 md:py-16">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
+            {/* Brand + Description */}
+            <div className="md:col-span-5">
+              <Wordmark />
+              <p className="text-[#7282b6] leading-relaxed max-w-md">
+                Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents.
+              </p>
+
+              <div className="mt-10 flex items-center gap-6">
+                <Link 
+                  aria-label="Follow on X" 
+                  href="https://x.com/CyreneAI" 
+                  target="_blank"
+                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                >
+                  <SiX size={28} />
+                </Link>
+                <Link
+                  aria-label="Join us on Telegram"
+                  href="https://t.me/CyreneAI"
+                  target="_blank"
+                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                >
+                  <SiTelegram size={28} />
+                </Link>
+                <Link
+                  aria-label="Join our Discord"
+                  href="https://discord.gg/qJ98QZ6EBx"
+                  target="_blank"
+                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                >
+                  <SiDiscord size={28} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="md:col-span-2">
+              <SectionHeader icon={<Link2 className="h-4 w-4" />} title="Quick Links" />
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link 
+                    href="https://docs.netsepio.com/latest/cyreneai" 
+                    target="_blank"
+                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                  >
+                    Docs
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div className="md:col-span-3">
+              <SectionHeader icon={<BookOpen className="h-4 w-4" />} title="Resources" />
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link 
+                    href="https://play.google.com/store/apps/details?id=com.erebrus.app" 
+                    target="_blank"
+                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                  >
+                    Erebrus Android
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="https://testflight.apple.com/join/BvdARC75" 
+                    target="_blank"
+                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                  >
+                    Erebrus iOS*
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="" 
+                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                  >
+                    Browser Extension
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div className="md:col-span-2">
+              <SectionHeader icon={<Mail className="h-4 w-4" />} title="Contact" />
+              <div className="mt-4">
+                <Link
+                  href="mailto:support@cyreneai.com"
+                  className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                >
+                  support@cyreneai.com
+                </Link>
+              </div>
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className='lg:pl-12 lg:py-12 md:py-8'>
-            <h3 className='text-white text-lg font-bold text-center sm:text-left lg:mb-4 md:mb-4'>Quick Links</h3>
-            <ul className='space-y-2 text-center sm:text-left'>
-              {/* <li><Link href='/about' className='text-gray-100 hover:text-white transition-colors'>About</Link></li> */}
-              <li><Link href='https://docs.netsepio.com/latest/cyreneai' className='text-gray-100 hover:text-white transition-colors'>Docs</Link></li>
-              {/* <li><Link href='/token' className='text-gray-100 hover:text-white transition-colors'>Token</Link></li> */}
-            </ul>
-          </div>
+          {/* Divider */}
+          <hr className="my-10 border-t border-[#405084]" />
 
-          {/* Resources */}
-          <div className='lg:pl-8 lg:py-12'>
-            <h3 className='text-white text-lg font-bold text-center sm:text-left lg:mb-4 md:mb-4'>Resources</h3>
-            <ul className='space-y-2 text-center sm:text-left'>
-              <li><Link href='https://play.google.com/store/apps/details?id=com.erebrus.app' className='text-gray-100 hover:text-white transition-colors'>Erebrus Android</Link></li>
-              <li><Link href='https://testflight.apple.com/join/BvdARC75' className='text-gray-100 hover:text-white transition-colors'>Erebrus iOS*</Link></li>
-              <li><Link href='' className='text-gray-100 hover:text-white transition-colors'>Browser Extension</Link></li>
-            </ul>
-          </div>
+          {/* Bottom bar */}
+          <div className="flex flex-col items-center justify-between gap-6 text-[#ffffff] md:flex-row">
+            <p className="text-[#7282b6]">© 2025 CyreneAI. All rights reserved.</p>
 
-          {/* Contact */}
-          <div className='lg:-ml-20 lg:py-12'>
-            <h3 className='text-white text-lg font-bold text-center sm:text-left mb-4'>Contact</h3>
-            <ul className='space-y-2 text-center sm:text-left'>
-              <li><Link href='mailto:support@cyreneai.com' className='text-gray-100 hover:text-white transition-colors'>support@cyreneai.com</Link></li>
-            </ul>
-          </div>
-        </div>
+            <div className="flex items-center gap-3 text-[#7282b6]">
+              <span>Powered by</span>
+              <Link href='https://netsepio.com' target='_blank' rel='noopener noreferrer'>
+                <Image
+                  src='/Netsepio_logo_white_with_text 3.png'
+                  alt='NetSepio'
+                  width={100}
+                  height={25}
+                  className='object-contain hover:opacity-100 transition-opacity'
+                />
+              </Link>
+            </div>
 
-        {/* Bottom Section */}
-        <div className='lg:w-[1200px] md:w-[750px] mx-auto h-[1px] bg-white rounded-full mb-4'></div>
-        <div className='flex flex-col sm:flex-row justify-between items-center text-white text-sm mt-4 space-y-4 sm:space-y-0 lg:pl-36'>
-          <div>© 2025 CyreneAI. All rights reserved.</div>
-          <div className='flex items-center space-x-2 lg:-ml-[250px]'>
-            <span>Powered by</span>
-            <Link href='https://netsepio.com' target='_blank' rel='noopener noreferrer'>
-              <Image
-                src='/Netsepio_logo_white_with_text 3.png'
-                alt='NetSepio'
-                width={100}
-                height={25}
-                className='object-contain hover:opacity-100 transition-opacity'
-              />
-            </Link>
-          </div>
-          <div className='flex space-x-6 lg:pr-36'>
-            <Link href='/privacy' className='hover:text-white transition-colors'>Privacy Policy</Link>
-            <Link href='/terms' className='hover:text-white transition-colors'>Terms of Service</Link>
+            <div className="flex items-center gap-8">
+              <Link href="/privacy" className="text-[#ffffff] hover:underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-[#ffffff] hover:underline underline-offset-4">
+                Terms of Service
+              </Link>
+            </div>
           </div>
         </div>
       </div>

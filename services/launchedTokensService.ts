@@ -2,6 +2,78 @@ import { supabase, LaunchedTokenData, LaunchedTokenDB, dbToFrontend, frontendToD
 
 export class LaunchedTokensService {
   /**
+   * Get all launched tokens from all users (for explore page)
+   */
+  static async getAllLaunchedTokens(limit: number = 50, offset: number = 0): Promise<LaunchedTokenData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .select('*')
+        .order('launched_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error fetching all launched tokens:', error);
+        throw new Error(`Failed to fetch launched tokens: ${error.message}`);
+      }
+
+      if (!data) return [];
+
+      return data.map(dbToFrontend);
+    } catch (error) {
+      console.error('Service error fetching all launched tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get launched tokens count (for pagination)
+   */
+  static async getTotalTokensCount(): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('launched_tokens')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error('Error fetching tokens count:', error);
+        throw new Error(`Failed to fetch tokens count: ${error.message}`);
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('Service error fetching tokens count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search tokens by name or symbol
+   */
+  static async searchTokens(query: string, limit: number = 20): Promise<LaunchedTokenData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .select('*')
+        .or(`token_name.ilike.%${query}%,token_symbol.ilike.%${query}%`)
+        .order('launched_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error searching tokens:', error);
+        throw new Error(`Failed to search tokens: ${error.message}`);
+      }
+
+      if (!data) return [];
+
+      return data.map(dbToFrontend);
+    } catch (error) {
+      console.error('Service error searching tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all launched tokens for a specific wallet address
    */
   static async getLaunchedTokens(walletAddress: string): Promise<LaunchedTokenData[]> {

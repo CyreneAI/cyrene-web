@@ -9,10 +9,13 @@ export default {
   ],
   theme: {
   	extend: {
-
 		fontFamily:{
+			// Existing fonts
 			poppins: ["Poppins", "sans-serif"],
 			dmSans: ["DM Sans", "sans-serif"],
+			// New fonts
+			moonhouse: ["var(--font-moonhouse)", "Moonhouse", "cursive"],
+			outfit: ["var(--font-outfit)", "Outfit", "sans-serif"],
 		},
   		colors: {
   			background: 'hsl(var(--background))',

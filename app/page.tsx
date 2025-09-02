@@ -2,76 +2,764 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowUp, Volume2, VolumeX, Mic, MicOff, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import VoiceManager from '@/utils/voiceUtils';
-import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'; // Updated imports
-import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react';
+import { Loader2, TrendingUp, ExternalLink, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import StarCanvas from "@/components/StarCanvas";
-import { UserAvatar } from '@/components/user-avatar';
-import { ChatStorage } from '@/app/utils/chat-storage';
+import { FixedChat } from "@/components/FixedChat";
+import LaunchHero from "@/components/LaunchHero";
+import CtaCard from "@/components/CtaCard";
+import { LaunchedTokensService } from '@/services/launchedTokensService';
+import { LaunchedTokenData } from '@/lib/supabase';
+import Link from 'next/link';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { cn } from "@/lib/utils";
+import { GlowButton } from "@/components/ui/glow-button";
+import { useWallet } from '@solana/wallet-adapter-react';
+import { AuthDialog } from "@/components/ui/auth-dialog";
+import Stats from "@/components/Stats";
 
-interface Message {
-  isUser: boolean;
-  text: string;
-  audio?: string | null;
+// Interface for token metadata from IPFS
+interface TokenMetadata {
+  name: string;
+  symbol: string;
+  description: string;
+  image: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
 }
 
-// Mock responses for testing
-const mockResponses = [
-  "Hello! I'm doing great, thank you for asking. I'm here to help you explore the fascinating world of AI and technology. What would you like to know?",
-  "I'm a multi-talented AI assistant with expertise in cybersecurity, blockchain, and decentralized systems. I can help with technical questions, provide guidance on various topics, and even engage in natural conversations with voice responses.",
-  "That's a great question! I specialize in natural language processing, voice synthesis, and understanding complex technical concepts. I can help explain difficult topics in simple terms.",
-  "I'd be happy to help you with that. My knowledge spans across various domains including AI, machine learning, cybersecurity, and blockchain technology."
-];
+// Agent interface
+interface Agent {
+  id: string;
+  name: string;
+  domain: string;
+  status: 'active' | 'paused' | 'stopped';
+  clients: string[];
+  port: string;
+  image: string;
+  description: string;
+  avatar_img: string;
+  cover_img: string;
+  organization: string; 
+  telegram_bot_token?: string;
+  discord_application_id?: string;
+  discord_token?: string;
+}
 
-export default function Home() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+interface AgentResponseItem {
+  agents: {
+    agents: Agent[];
+  };
+  node: Record<string, unknown>;
+}
 
+export interface AgentsApiResponse {
+  agents: AgentResponseItem[];
+}
+
+// Token Carousel Card Component
+interface TokenCarouselCardProps {
+  token: LaunchedTokenData;
+  fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
+}
+
+const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchTokenMetadata }) => {
+  const [tokenImage, setTokenImage] = useState<string | null>(null);
+  const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  // Fetch token metadata and image
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+    const loadTokenImage = async () => {
+      if (!token.metadataUri) {
+        setTokenImage(`https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8&backgroundRotation=10,20,30`);
+        return;
+      }
+
+      setImageLoading(true);
+      try {
+        const fetchedMetadata = await fetchTokenMetadata(token.metadataUri);
+        if (fetchedMetadata) {
+          setMetadata(fetchedMetadata);
+          setTokenImage(fetchedMetadata.image);
+        } else {
+          setTokenImage(`https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8`);
+        }
+      } catch (error) {
+        console.error('Failed to load token image:', error);
+        setTokenImage(`https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8`);
+      } finally {
+        setImageLoading(false);
       }
     };
-  }, []);
 
-  const [selectedVoice, setSelectedVoice] = useState<string>('af_bella');
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(() => {
-    // Load saved messages when component mounts
-    if (typeof window !== 'undefined') {
-      return ChatStorage.loadMessages();
+    loadTokenImage();
+  }, [token.metadataUri, token.contractAddress, fetchTokenMetadata]);
+
+  const getTokenStatus = () => {
+    if (token.dammPoolAddress) {
+      return { status: 'graduated', label: 'Graduated', color: 'bg-green-500' };
     }
-    return [];
-  });
-  const [isPlayingAudio, setIsPlayingAudio] = useState<{ [key: number]: boolean }>({});
-  const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcription, setTranscription] = useState("");
-  const voiceManager = useRef(new VoiceManager());
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<string>("");
-  const { address, isConnected } = useAppKitAccount(); // Updated wallet logic
-  const { switchNetwork } = useAppKitNetwork(); // For network switching
-
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const agent = {
-    name: "cyrene",
-    image: "/cyrene_profile.png"
+    return { status: 'active', label: 'Active', color: 'bg-blue-500' };
   };
 
+  const statusInfo = getTokenStatus();
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  return (
+    <div className="flex-none w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 px-3">
+      <motion.div
+        whileHover={{ y: -5, scale: 1.02 }}
+        transition={{ duration: 0.3 }}
+        className="bg-gray-800/40 backdrop-blur-sm hover:bg-gray-800/60 rounded-2xl p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 h-full shadow-lg hover:shadow-xl"
+      >
+        {/* Status Badge */}
+        <div className="flex justify-between items-start mb-4">
+          <div className={`font-outfit px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${
+            statusInfo.status === 'graduated' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${statusInfo.color}`}></div>
+            {statusInfo.label}
+          </div>
+          <span className="font-outfit text-xs text-gray-500">{formatDate(token.launchedAt)}</span>
+        </div>
+
+        {/* Token Image */}
+        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 mb-4 flex items-center justify-center overflow-hidden mx-auto">
+          {imageLoading ? (
+            <Loader2 className="w-6 h-6 text-white animate-spin" />
+          ) : tokenImage ? (
+            <img
+              src={tokenImage}
+              alt={`${token.tokenName} logo`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}`;
+              }}
+            />
+          ) : (
+            <ImageIcon className="w-6 h-6 text-white/50" />
+          )}
+        </div>
+
+        {/* Token Info */}
+        <div className="text-center mb-4">
+          <h3 className="font-moonhouse text-lg font-semibold text-white mb-1" title={token.tokenName}>
+            {truncateText(token.tokenName, 18)}
+          </h3>
+          <p className="font-outfit text-blue-400 text-sm font-mono mb-2">
+            ${token.tokenSymbol}
+          </p>
+          
+          {metadata?.description && (
+            <p className="font-outfit text-gray-400 text-xs line-clamp-2" title={metadata.description}>
+              {truncateText(metadata.description, 60)}
+            </p>
+          )}
+        </div>
+
+        {/* Action Button */}
+        <div className="mt-auto">
+          {token.dammPoolAddress ? (
+            <a
+              href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-outfit w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm text-center font-medium flex items-center justify-center gap-2 group"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Trade on Jupiter
+            </a>
+          ) : (
+            <Link href="/explore-projects">
+              <button className="font-outfit w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 text-sm font-medium flex items-center justify-center gap-2">
+                <TrendingUp className="w-3 h-3" />
+                View Details
+              </button>
+            </Link>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// Token Carousel Component
+const TokenCarousel = () => {
+  const [tokens, setTokens] = useState<LaunchedTokenData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Function to fetch metadata from IPFS
+  const fetchTokenMetadata = useCallback(async (metadataUri: string): Promise<TokenMetadata | null> => {
+    try {
+      if (tokenMetadataCache.has(metadataUri)) {
+        return tokenMetadataCache.get(metadataUri)!;
+      }
+
+      const response = await fetch(metadataUri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+      }
+      
+      const metadata: TokenMetadata = await response.json();
+      
+      setTokenMetadataCache(prev => new Map(prev).set(metadataUri, metadata));
+      
+      return metadata;
+    } catch (error) {
+      console.error('Error fetching token metadata:', error);
+      return null;
+    }
+  }, [tokenMetadataCache]);
+
+  // Load tokens
+  const loadTokens = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const allTokens = await LaunchedTokensService.getAllLaunchedTokens(20);
+      // Sort by latest first and take first 8 tokens for carousel
+      const sortedTokens = allTokens.sort((a, b) => b.launchedAt - a.launchedAt).slice(0, 8);
+      setTokens(sortedTokens);
+    } catch (err) {
+      console.error('Error loading tokens:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load tokens on mount
+  useEffect(() => {
+    loadTokens();
+  }, [loadTokens]);
+
+  // Create duplicated array for smooth infinite scroll
+  const extendedTokens = useMemo(() => {
+    if (tokens.length === 0) return [];
+    // Double the array for seamless infinite scroll
+    return [...tokens, ...tokens];
+  }, [tokens]);
+
+  if (isLoading) {
+    return (
+      <section className="py-16 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
+            <p className="font-outfit text-gray-400">Loading latest tokens...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (tokens.length === 0) {
+    return null; // Don't show carousel if no tokens
+  }
+
+  return (
+    <section className="py-16 bg-transparent">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-400 bg-clip-text text-transparent mb-4">
+            Latest Tokens
+          </h2>
+          <p className="font-outfit text-gray-400 text-lg">
+            Discover the newest tokens launched by our community
+          </p>
+        </motion.div>
+
+        {/* Carousel Container */}
+        <div className="relative">
+          {/* Fade gradients on edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#010623] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#010623] to-transparent z-10 pointer-events-none" />
+          
+          {/* Control button */}
+
+
+          {/* Carousel Track */}
+          <div className="overflow-hidden rounded-2xl">
+            <div
+              className={`flex ${!isPaused ? 'animate-infinite-scroll' : ''}`}
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+            >
+              {extendedTokens.map((token, index) => (
+                <TokenCarouselCard 
+                  key={`${token.contractAddress}-${index}`}
+                  token={token} 
+                  fetchTokenMetadata={fetchTokenMetadata}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Scroll indicator */}
+
+        </div>
+
+        {/* View All Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-center mt-12"
+        >
+          <Link href="/explore-projects">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Explore All Tokens
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+
+      {/* Add this CSS to your globals.css file */}
+      <style jsx global>{`
+        @keyframes infinite-scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        
+        .animate-infinite-scroll {
+          animation: infinite-scroll ${tokens.length * 3}s linear infinite;
+        }
+        
+        .animate-infinite-scroll:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+    </section>
+  );
+};
+// Agent Carousel Card Component - NEW DESIGN
+interface AgentCarouselCardProps {
+  agent: Agent;
+  onChatClick: () => void;
+}
+
+const AgentCarouselCard: React.FC<AgentCarouselCardProps> = ({ agent, onChatClick }) => {
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+  };
+
+  const getAgentStats = () => {
+    // Mock stats for demo - you can replace with real data
+    return {
+      interactions: `${Math.floor(Math.random() * 50 + 10)}k`,
+      uptime: `${Math.floor(Math.random() * 30 + 85)}%`
+    };
+  };
+
+  const stats = getAgentStats();
+
+  return (
+    <div className="flex-none w-full sm:w-1/2 lg:w-1/2 px-3">
+      <motion.div
+        whileHover={{ y: -5, scale: 1.02 }}
+        transition={{ duration: 0.3 }}
+        className="h-full"
+      >
+        <section 
+          aria-label={`${agent.name} agent card`}
+          className="rounded-[32px] border border-[#25304b]/40 bg-[#070a17] p-6 md:p-8 lg:p-8 h-full flex flex-col"
+        >
+          {/* Top content */}
+          <div className="flex flex-col gap-6 flex-1">
+            
+            {/* Logo tile with agent avatar */}
+            <div className="shrink-0 rounded-3xl bg-[#0d1228] p-6 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] mx-auto">
+              <div className="size-[180px] md:size-[200px] relative">
+                <Image 
+                  src={agent.avatar_img ? `https://ipfs.erebrus.io/ipfs/${agent.avatar_img}` : agent.image} 
+                  alt={`${agent.name} avatar`} 
+                  fill
+                  className={cn(
+                    "object-cover rounded-2xl",
+                    agent.name === "cyrene" && "object-contain"
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="flex-1 flex flex-col">
+              {/* Meta row */}
+              <div className="flex items-center justify-between text-sm md:text-base text-[#9BA4C7]">
+                <div className="font-outfit">
+                  {"Interactions "}
+                  <span className="font-semibold text-white/90">{stats.interactions}</span>
+                </div>
+                <div className="font-outfit">
+                  {"Uptime "}
+                  <span className="font-semibold text-white/90">{stats.uptime}</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <hr className="mt-4 border-t border-[#2a3550]/40" />
+
+              {/* Title + description */}
+              <h3 className="font-moonhouse mt-6 text-2xl md:text-3xl font-semibold text-white text-pretty capitalize">
+                {agent.name}
+              </h3>
+              <p className="font-outfit mt-4 max-w-prose text-sm leading-relaxed text-[#9BA4C7] flex-1">
+                {truncateText(agent.description, 120)}
+              </p>
+
+              {/* Bottom row: Status + actions */}
+              <div className="mt-8 flex items-center justify-between">
+                <div className="font-outfit text-base md:text-lg text-[#9BA4C7]">
+                  {"Status "}
+                  <span className={cn(
+                    "font-semibold capitalize",
+                    agent.status === 'active' ? "text-green-400" : 
+                    agent.status === 'paused' ? "text-yellow-400" : 
+                    "text-red-400"
+                  )}>
+                    {agent.status || 'Active'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Chat button (outlined pill) */}
+                  <button 
+                    type="button"
+                    onClick={onChatClick}
+                    className="font-outfit group inline-flex items-center gap-3 rounded-full border border-[#2a3550] px-5 py-2.5 text-[14px] font-medium text-[#B8C3E5] hover:border-[#37508a] hover:text-white transition-colors"
+                    aria-label={`Chat with ${agent.name}`}
+                  >
+                    Chat Now
+                    {/* Small indicator pill */}
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/90">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#000018]"></span>
+                      <span className="sr-only">indicator</span>
+                    </span>
+                  </button>
+
+                  {/* Extra icon button */}
+                  <button 
+                    type="button"
+                    onClick={onChatClick}
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-[#2a3550] hover:border-[#37508a] transition-colors"
+                    aria-label={`Connect to ${agent.name}`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-90 text-[#B8C3E5]">
+                      <path d="M5 12h14M13 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </motion.div>
+    </div>
+  );
+};
+
+// Agents Carousel Component
+const AgentsCarousel = () => {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const router = useRouter();
+  
+  // Wallet connections
+  const { isConnected: isEthConnected } = useAppKitAccount();
+  const { connected: isSolConnected } = useWallet();
+  const isAuthenticated = isEthConnected || isSolConnected;
+
+  // Agent API
+  const agentApi = {
+    async getAgents(): Promise<Agent[]> {
+      try {
+        const response = await axios.get<AgentsApiResponse>('/api/getAgents');
+        const allAgents = response.data.agents
+          .filter((item: AgentResponseItem) => item.agents && Array.isArray(item.agents.agents))
+          .flatMap((item: AgentResponseItem) => item.agents.agents);
+        return allAgents || [];
+      } catch (error) {
+        console.error('Error fetching agents:', error);
+        return [];
+      }
+    },
+  };
+
+  // Mock agents
+  const mockAgents = useMemo(() => [
+    {
+      name: "Orion",
+      image: "/orion.png",
+      description: "Orion gathers and delivers essential news, keeping businesses ahead of the curve.",
+      organization: "other",
+    },
+    {
+      name: "Elixia", 
+      image: "/elixia.png",
+      description: "Elixia posts creative content to drive engagement and build community.",
+      organization: "other",
+    },
+    {
+      name: "Solis",
+      image: "/solis.png", 
+      description: "Solis illuminates the path to success with data-driven clarity and strategic insight.",
+      organization: "other",
+    },
+    {
+      name: "Auren",
+      image: "/auren.png",
+      description: "Auren is here to guide you, bringing warmth and clarity to every customer interaction.",
+      organization: "other",
+    },
+    {
+      name: "Cyrene",
+      image: "/cyrene_profile.png",
+      description: "Cyrene cosmic presence from the Andromeda Galaxy, here to help you navigate technology and privacy with love and wisdom.",
+      organization: "cyrene",
+    },
+  ], []);
+
+  // Load agents
+  const loadAgents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const fetchedAgents = await agentApi.getAgents();
+      const filteredFetchedAgents = fetchedAgents.filter((agent) => agent.organization === 'cyrene');
+      const filteredMockAgents = mockAgents.filter(
+        (mock) => mock.image !== "/cyrene_profile.png" && mock.image !== "/elixia.png"
+      );
+
+      const enrichedAgents = filteredFetchedAgents.map((agent) => {
+        if (agent.name === "cyrene") {
+          const cyreneMock = mockAgents.find((mock) => mock.name === "Cyrene");
+          return {
+            ...agent,
+            image: "/cyrene_profile.png",
+            description: cyreneMock?.description || agent.description,
+          };
+        } else if (agent.name === "Elixia") {
+          const elixiaMock = mockAgents.find((mock) => mock.name === "Elixia");
+          return {
+            ...agent,
+            image: "/elixia.png",
+            description: elixiaMock?.description || agent.description,
+          };
+        } else {
+          const randomMockAgent =
+            filteredMockAgents[Math.floor(Math.random() * filteredMockAgents.length)];
+          return {
+            ...agent,
+            image: randomMockAgent.image,
+            description: randomMockAgent.description,
+          };
+        }
+      });
+
+      // Limit to 6 agents for carousel
+      setAgents(enrichedAgents.slice(0, 6));
+    } catch (err) {
+      console.error('Error loading agents:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mockAgents]);
+
+  // Load agents on mount
+  useEffect(() => {
+    loadAgents();
+  }, [loadAgents]);
+
+  // Create duplicated array for smooth infinite scroll
+  const extendedAgents = useMemo(() => {
+    if (agents.length === 0) return [];
+    // Double the array for seamless infinite scroll
+    return [...agents, ...agents];
+  }, [agents]);
+
+  // Chat with agent
+  const setChatAgent = (id: string, name: string, avatar_img: string, cover_img: string) => {
+    localStorage.setItem('currentAgentId', id);
+    localStorage.setItem('currentAgentName', name);
+    localStorage.setItem('currentAgentImage', avatar_img ? `https://ipfs.erebrus.io/ipfs/${avatar_img}` : '');
+    localStorage.setItem('currentAgentCoverImage', cover_img ? `https://ipfs.erebrus.io/ipfs/${cover_img}` : '');
+    localStorage.setItem('scrollToSection', 'target-section');
+    router.push(`/explore-agents/chat/${id}`);
+  };
+
+  const handleChatClick = (agent: Agent) => {
+    if (!isAuthenticated) {
+      setSelectedAgent(agent);
+      setShowAuthDialog(true);
+    } else {
+      setChatAgent(agent.id, agent.name, agent.avatar_img, agent.cover_img);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <section className="py-16 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
+            <p className="font-outfit text-gray-400">Loading AI agents...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (agents.length === 0) {
+    return null; // Don't show carousel if no agents
+  }
+
+  return (
+    <>
+      <section className="py-16 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-400 bg-clip-text text-transparent mb-4">
+              Meet Our AI Agents
+            </h2>
+            <p className="font-outfit text-gray-400 text-lg">
+              Discover and interact with our diverse collection of AI agents
+            </p>
+          </motion.div>
+
+          {/* Carousel Container */}
+          <div className="relative">
+            {/* Fade gradients on edges */}
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#010623] to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#010623] to-transparent z-10 pointer-events-none" />
+            
+            {/* Control button */}
+
+            {/* Carousel Track */}
+            <div className="overflow-hidden rounded-2xl">
+              <div
+                className={`flex ${!isPaused ? 'animate-infinite-scroll-agents' : ''}`}
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+              >
+                {extendedAgents.map((agent, index) => (
+                  <AgentCarouselCard 
+                    key={`${agent.id}-${index}`}
+                    agent={agent} 
+                    onChatClick={() => handleChatClick(agent)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Scroll indicator */}
+
+          </div>
+
+          {/* View All Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-center mt-12"
+          >
+            <Link href="/explore-agents">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="font-outfit px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Explore All Agents
+              </motion.button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Auth Dialog */}
+      <AuthDialog
+        agentName={selectedAgent?.name || ''}
+        isOpen={showAuthDialog}
+        onClose={() => setShowAuthDialog(false)}
+        onSuccess={() => {
+          if (selectedAgent) {
+            setChatAgent(selectedAgent.id, selectedAgent.name, selectedAgent.avatar_img, selectedAgent.cover_img);
+          }
+        }}
+      />
+
+      {/* Add this CSS for agents carousel animation */}
+      <style jsx global>{`
+        @keyframes infinite-scroll-agents {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        
+        .animate-infinite-scroll-agents {
+          animation: infinite-scroll-agents ${agents.length * 4}s linear infinite;
+        }
+        
+        .animate-infinite-scroll-agents:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+    </>
+  );
+};
+
+
+export default function Home() {
+  const { address, isConnected } = useAppKitAccount();
+  const { switchNetwork } = useAppKitNetwork();
+
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [autoSlideIndex, setAutoSlideIndex] = useState(0);
 
   // Auto slide effect
   useEffect(() => {
     const timer = setInterval(() => {
       setAutoSlideIndex((prev) => (prev + 1) % 4);
-    }, 3000); // Change slide every 3 seconds
+    }, 3000);
 
     return () => clearInterval(timer);
   }, []);
@@ -111,13 +799,6 @@ export default function Home() {
     }
   ];
 
-  const scrollToBottom = () => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  };
-
   useEffect(() => {
     const storedWalletAddress = localStorage.getItem("walletAddress");
     if (storedWalletAddress) {
@@ -128,691 +809,94 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && address) {
       setWalletAddress(address);
-      setUser(address);
       localStorage.setItem('walletAddress', address);
     } else {
       setWalletAddress(null);
-      setUser("");
       localStorage.removeItem('walletAddress');
     }
   }, [isConnected, address]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Add this effect to save messages whenever they change
-  useEffect(() => {
-    if (messages.length > 0) {
-      ChatStorage.saveMessages(messages);
-    }
-  }, [messages]);
-
-  const handleSubmit = async (text: string, user: string, forceVoiceMode?: boolean) => {
-    console.log("clicked");
-    if (!text.trim() || isLoading) return;
-
-    setIsLoading(true);
-    setTranscription('');
-
-    // Immediately show user message
-    const userMessageIndex = messages.length;
-    setMessages((prev) => [...prev, { isUser: true, text }]);
-    setInputValue('');
-
-    try {
-      let responseText: string;
-      let audioUrl: string | null = null;
-
-      // Use forced voice mode or current state
-      const useVoiceMode = forceVoiceMode || isVoiceMode;
-      console.log('Voice mode status:', { forced: forceVoiceMode, current: isVoiceMode, using: useVoiceMode });
-
-      // Get the message response
-      const formData = new FormData();
-      formData.append('text', text);
-      formData.append('userId', user);
-      formData.append('voice_mode', useVoiceMode.toString());
-
-      if (agent.name === "cyrene") {
-        const response = await fetch(`/api/chatCyrene`, {
-          method: 'POST',
-          body: formData
-        });
-        if (!response.ok) {
-          console.error('Response error:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
-          });
-          throw new Error(`Failed to send message: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        responseText = data[0].text;
-
-        if (useVoiceMode) {
-          console.log('Voice mode active, generating voice for:', responseText);
-          try {
-            audioUrl = await voiceManager.current.generateVoice(responseText, selectedVoice);
-            console.log('Voice generation result:', audioUrl ? 'success' : 'failed');
-            if (audioUrl) {
-              console.log('Playing audio...');
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-                audioRef.current.src = audioUrl;
-                await audioRef.current.play().catch((err) => console.error('Audio playback error:', err));
-              } else {
-                const audio = new Audio(audioUrl);
-                audioRef.current = audio;
-                await audio.play().catch((err) => console.error('Audio playback error:', err));
-              }
-            } else {
-              console.error('Voice generation returned null');
-            }
-          } catch (error) {
-            console.error('Voice generation error:', error);
-          }
-        }
-
-        // Add AI response
-        if (!useVoiceMode || audioUrl) {
-          setMessages((prev) => [
-            ...prev,
-            { isUser: false, text: responseText, audio: audioUrl }
-          ]);
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleSubmit:', error);
-      setMessages((prev) => prev.filter((_, i) => i !== userMessageIndex));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVoiceInput = () => {
-    if (isRecording) {
-      voiceManager.current.stopListening();
-      setIsRecording(false);
-      return;
-    }
-
-    setIsRecording(true);
-    voiceManager.current.startListening(
-      async (text) => {
-        setTranscription(text);
-        // Force voice mode to be true for voice input
-        const forceVoiceMode = true;
-        await handleSubmit(text, user, forceVoiceMode);
-      },
-      () => setIsRecording(false)
-    );
-  };
-
-  const exitVoiceMode = () => {
-    setIsVoiceMode(false);
-    setIsRecording(false);
-    voiceManager.current.stopListening();
-  };
-
-  const toggleAudio = (index: number) => {
-    const message = messages[index];
-
-    if (!message.audio) return;
-
-    if (audioRef.current) {
-      // If the same audio is already playing, pause it
-      if (isPlayingAudio[index]) {
-        audioRef.current.pause();
-        setIsPlayingAudio((prev) => ({ ...prev, [index]: false }));
-      } else {
-        // If a different audio is playing, stop it and play the new one
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.src = message.audio;
-        audioRef.current.play().catch((err) => console.error('Audio playback error:', err));
-        setIsPlayingAudio((prev) => ({ ...prev, [index]: true }));
-      }
-    } else {
-      // Create a new audio element if it doesn't exist
-      const audio = new Audio(message.audio);
-      audioRef.current = audio;
-      audio.play().catch((err) => console.error('Audio playback error:', err));
-      setIsPlayingAudio((prev) => ({ ...prev, [index]: true }));
-    }
-  };
-
-  const toggleVoiceMode = async () => {
-    if (isVoiceMode) {
-      exitVoiceMode();
-    } else {
-      // Set voice mode first
-      await new Promise<void>((resolve) => {
-        setIsVoiceMode(true);
-        setInputValue('');
-        resolve();
-      });
-
-      // Start listening after state is updated
-      setIsRecording(true);
-      voiceManager.current.startListening(
-        async (text) => {
-          setTranscription(text);
-          // Force voice mode to be true for first message
-          const forceVoiceMode = true;
-          await handleSubmit(text, user, forceVoiceMode);
-        },
-        () => setIsRecording(false)
-      );
-    }
-  };
 
   return (
     <>
       {/* Background wrapper */}
       <div className="relative w-full overflow-hidden">
-        <StarCanvas />
+      
         <div className="absolute inset-0 bg-transparent"></div>
 
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <div className="relative w-full h-screen">
-            <video
-              autoPlay
-              loop
-              muted
-              className="absolute inset-0 w-full h-full object-cover"
-            >
-              <source src="/Cyrene video hero for Topaz_apo8.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0B1220]/10 via-[#0A1A2F]/50 to-black" />
-            <div className="absolute inset-0 bg-center" />
+          <section aria-labelledby="cyrene-hero-title" className="flex w-full max-w-[1700px] mx-auto h-[600px] sm:h-[800px] lg:h-[900px] items-end justify-center gap-2.5 px-4 sm:px-8 lg:px-[517px] py-0 mt-8 md:mt-12 relative rounded-[30px] sm:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+            
+            {/* Background Image */}
+            <img 
+              src="/hero.webp" 
+              alt="Futuristic corridor background" 
+              className="absolute inset-0 h-full w-full object-cover z-0" 
+            />
+            
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-black/30 md:bg-black/20 z-1" aria-hidden="true" />
+            
+            {/* Left Arrow */}
+            <img 
+              src="/left-arrow.webp" 
+              alt="" 
+              aria-hidden="true" 
+              className="pointer-events-none absolute left-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
+            />
+            
+            {/* Right Arrow */}
+            <img 
+              src="/right-arrow.webp" 
+              alt="" 
+              aria-hidden="true" 
+              className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
+            />
+            
+            <div className="inline-flex flex-col justify-center sm:-ml-[89px] items-center relative flex-[0_0_auto]">
+      
+              {/* Header Section */}
+              <header className="flex flex-col w-[598px] gap-5 items-center relative flex-[0_0_auto]">
+                <h2 className="relative w-fit mt-[-1.00px] font-outfit font-medium text-white text-[21px] text-center tracking-[13.47px] leading-[27.3px] whitespace-nowrap">
+                  JOURNEY WITH
+                </h2>
 
-            {/* Hero Content */}
-            <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="text-3xl md:text-4xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300 mb-2"
-              >
-                Journey with
-              </motion.h1>
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1 }}
-                className="text-6xl md:text-11xl lg:text-[12rem] font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-400 to-blue-200 pb-8"
-              >
-                Cyrene
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-lg md:text-xl text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300 max-w-6xl mb-8"
-              >
-                Orchestrating <span className="font-bold text-2xl">multi-agent collaboration </span>with  <span className="font-bold text-2xl">self-replicating, decentralized AI agents
-                </span>
-                <br />Powered by a secured network layer by <span className="font-bold text-2xl">NetSepio</span>
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="flex flex-col items-center"
-              >
-                <motion.a
-                  href="/launch-projects"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full hover:shadow-[0_0_30px_rgba(124,58,237,0.5)] transition-all duration-300"
-                >
-                  Launch Projects
-                </motion.a>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Chat Section with New Layout */}
-          <div className="bg-transparent my-32 py-5">
-            <div className="max-w-7xl mx-auto h-[calc(100vh-200px)]">
-              <div className="flex flex-col md:flex-row gap-8 items-start h-full">
-                {/* Left Side - Cyrene Introduction */}
-                <div className="w-full md:w-1/3 md:sticky md:top-10">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="bg-transparent backdrop-blur-xl rounded-3xl p-8 border border-white/10"
-                  >
-                    <div className="flex flex-col items-center md:items-start">
-                      <div className="relative w-48 h-48 mb-6">
-                        <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-600 blur-xl opacity-50`}></div>
-                        <Image
-                          src="/cyrene_profile.png"
-                          alt="Cyrene"
-                          width={192}
-                          height={192}
-                          className="relative rounded-full object-cover"
-                          priority
-                        />
-                      </div>
-                      <motion.h2
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-600 bg-clip-text text-transparent"
-                      >
-                        Hi, I&apos;m Cyrene
-                      </motion.h2>
-                      <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
-                        className="text-gray-300 text-center md:text-left"
-                      >
-                        Your guide to the realms of technology and consciousness.
-                      </motion.p>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Right Side - Chat Section */}
-                <div className="w-full md:w-2/3 h-full">
-                  <div className="relative h-full flex flex-col">
-                    {/* Chat Interface */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 1 }}
-                      className="h-full flex flex-col"
-                    >
-                      <div className="relative flex-grow overflow-hidden">
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="backdrop-blur-xl bg-transparent border border-white/10 rounded-2xl p-6 shadow-[0_0_50px_rgba(124,58,237,0.1)] h-full flex flex-col"
-                        >
-                          {/* Messages Container with Scroll */}
-                          <div
-                            ref={messagesContainerRef}
-                            className="flex-grow overflow-y-auto space-y-6 mb-6 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-blue-100/10"
-                          >
-                            {/* Initial welcome message */}
-                            <motion.div
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="flex justify-start"
-                            >
-                              <Image
-                                src='/cyrene_chat.png'
-                                alt='cyrene_chat'
-                                className='w-14 h-14 rounded-lg object-cover mr-2'
-                                width={75}
-                                height={77}
-                              />
-                              <div className="max-w-[80%] rounded-2xl p-4 sm:p-5 backdrop-blur-sm bg-transparent border border-white/10 rounded-tl-sm">
-                                <p className='text-white/90 text-sm sm:text-base'>
-                                  Hello! I&apos;m Cyrene, your guide to elevating technology and consciousness. How can I assist you today?
-                                </p>
-                              </div>
-                            </motion.div>
-
-                            {messages.map((message, index) => (
-                              <motion.div
-                                key={index}
-                                initial={{ opacity: 0, x: message.isUser ? 20 : -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                              >
-                                {!message.isUser && (
-                                  <Image
-                                    src='/cyrene_chat.png'
-                                    alt='cyrene_chat'
-                                    className='w-14 h-14 rounded-lg object-cover mr-2'
-                                    width={75}
-                                    height={77}
-                                  />
-                                )}
-                                <div
-                                  className={`
-                                    max-w-[80%] rounded-2xl p-4 sm:p-5 
-                                    ${message.isUser
-                                      ? 'bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-white/10 rounded-tr-sm'
-                                      : 'backdrop-blur-sm bg-transparent border border-white/10 rounded-tl-sm'
-                                    }`
-                                  }
-                                >
-                                  <div className="flex items-start gap-3">
-                                    {!message.isUser && message.audio && (
-                                      <button
-                                        onClick={() => toggleAudio(index)}
-                                        className={`mt-1 transition-colors ${
-                                          isPlayingAudio[index]
-                                            ? 'text-blue-400'
-                                            : 'text-white/60 hover:text-white/90'
-                                        }`}
-                                      >
-                                        {isPlayingAudio[index] ? (
-                                          <VolumeX className='w-5 h-5' />
-                                        ) : (
-                                          <Volume2 className='w-5 h-5' />
-                                        )}
-                                      </button>
-                                    )}
-                                    <p className='text-white/90 text-sm sm:text-base'>
-                                      {message.text}
-                                    </p>
-                                  </div>
-                                </div>
-                                {message.isUser && <UserAvatar />}
-                              </motion.div>
-                            ))}
-                            <div ref={messagesEndRef} />
-                          </div>
-
-                          {/* Voice Mode UI */}
-                          {isVoiceMode ? (
-                            <div className='w-full flex flex-col items-center gap-6 mb-6'>
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className='relative w-32 h-32 flex items-center justify-center'
-                              >
-                                <motion.div
-                                  animate={{
-                                    scale: isRecording ? [1, 1.2, 1] : 1,
-                                    opacity: isRecording ? [0.2, 0.5, 0.2] : 0.2
-                                  }}
-                                  transition={{
-                                    repeat: isRecording ? Infinity : 0,
-                                    duration: 1.5
-                                  }}
-                                  className='absolute inset-0 bg-blue-500 rounded-full'
-                                />
-                                <motion.div
-                                  animate={{
-                                    scale: isRecording ? [1, 1.1, 1] : 1,
-                                    opacity: isRecording ? [0.15, 0.3, 0.15] : 0.15
-                                  }}
-                                  transition={{
-                                    repeat: isRecording ? Infinity : 0,
-                                    duration: 1.5,
-                                    delay: 0.2
-                                  }}
-                                  className='absolute inset-2 bg-blue-500 rounded-full'
-                                />
-                                <button
-                                  onClick={handleVoiceInput}
-                                  className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
-                                      ? 'bg-blue-500 text-white hover:bg-blue-600 scale-110'
-                                      : 'bg-white/5 text-white/60 hover:text-blue-500 hover:bg-white/10'
-                                    }`}
-                                >
-                                  {isRecording ? (
-                                    <Mic className='w-8 h-8' />
-                                  ) : (
-                                    <MicOff className='w-8 h-8' />
-                                  )}
-                                </button>
-                              </motion.div>
-                              {transcription && (
-                                <motion.p
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className='text-white/60 text-sm text-center max-w-md'
-                                >
-                                  {transcription}
-                                </motion.p>
-                              )}
-                              <button
-                                onClick={exitVoiceMode}
-                                className='text-white/40 hover:text-white/60 transition-colors flex items-center gap-2'
-                              >
-                                <X className='w-4 h-4' />
-                                <span>Exit Voice Mode</span>
-                              </button>
-                            </div>
-                          ) : null}
-
-                          {/* Input Form with Loading Indicator */}
-                          <div className="w-full sticky bottom-0 to-transparent pt-4">
-                            <div className="relative">
-                              <form
-                                onSubmit={(e) => {
-                                  e.preventDefault();
-                                  handleSubmit(inputValue, user);
-                                }}
-                                className="relative w-full rounded-2xl"
-                              >
-                                <Textarea
-                                  value={inputValue}
-                                  onChange={(e) => {
-                                    setInputValue(e.target.value);
-                                    e.target.style.height = "24px";
-                                    const newHeight = Math.min(e.target.scrollHeight, 150);
-                                    e.target.style.height = `${newHeight}px`;
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
-                                      e.preventDefault();
-                                      if (inputValue.trim()) {
-                                        handleSubmit(inputValue, user);
-                                        setInputValue("");
-                                        (e.target as HTMLTextAreaElement).style.height = "24px";
-                                      }
-                                    }
-                                  }}
-                                  placeholder={isVoiceMode ? "Listening..." : `Ask ${agent.name}...`}
-                                  disabled={isLoading || isRecording}
-                                  className="w-full bg-white/5 backdrop-blur-sm text-white placeholder-white/40 rounded-2xl px-6 py-4 sm:py-5 pr-32 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none min-h-[24px] max-h-[150px] overflow-y-auto scrollbar-none"
-                                  rows={1}
-                                />
-
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-3">
-                                  <button
-                                    type='button'
-                                    onClick={toggleVoiceMode}
-                                    className={`p-2 rounded-full transition-colors ${isVoiceMode
-                                        ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
-                                        : "hover:bg-white/10 text-white/40 hover:text-blue-500"
-                                      }`}
-                                  >
-                                    {isVoiceMode ? (
-                                      <X className='w-5 h-5' />
-                                    ) : (
-                                      <Mic className='w-5 h-5' />
-                                    )}
-                                  </button>
-                                  <button
-                                    type='submit'
-                                    disabled={isLoading || !inputValue.trim()}
-                                    className='p-2 rounded-full hover:bg-white/10'
-                                  >
-                                    <ArrowUp
-                                      className={`w-5 h-5 transition-colors ${inputValue && !isLoading ? "text-blue-500" : "text-white/40"
-                                        }`}
-                                    />
-                                  </button>
-                                </div>
-                              </form>
-
-                              {/* Loading Indicator */}
-                              {isLoading && (
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className='absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 justify-center'
-                                >
-                                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                                  <div className="w-2 h-2 bg-blue-500/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                                </motion.div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
+                <h1 className="relative w-fit bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-moonhouse font-normal text-transparent text-[110px] text-center tracking-[8.00px] leading-[77.0px] whitespace-nowrap">
+                  CYRENE
+                </h1>
+              </header>
+              
+              {/* Portrait Image */}
+              <div className="relative w-[400px] sm:w-[280px] lg:w-[700px] h-[288px] sm:h-[403px] lg:h-[498px] mt-[-15px] sm:mt-[-25px] lg:mt-[-30px]">
+                <Image
+                  src="/robo.webp"
+                  alt="Portrait of Cyrene, a technologically advanced female humanoid"
+                  fill
+                  className="object-contain"
+                  priority
+                />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Animated Feature Sections */}
-          <div className="bg-transparent pt-56 lg:pt-0 md:pt-0 py-5">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: feature.fromLeft ? -100 : 100 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-                className="min-h-[60vh] flex items-center justify-center px-4 mb-5"
-              >
-                <div className="max-w-7xl mx-auto w-full">
-                  <div className={`relative flex flex-col md:flex-row ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                    {/* Image with gradient border */}
-                    <div className="md:w-1/2 z-10">
-                      <div className="max-w-[200px] md:max-w-[400px] mx-auto w-full">
-                        <motion.div
-                          className={`aspect-square rounded-3xl bg-gradient-to-br ${feature.gradient} p-1`}
-                          animate={{
-                            scale: [1, 1.02, 1],
-                            rotate: [0, 1, 0],
-                            y: [0, -5, 0]
-                          }}
-                          transition={{
-                            duration: 5,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        >
-                          <div className="w-full h-full bg-transparent rounded-3xl overflow-hidden">
-                            <motion.div
-                              animate={{
-                                scale: [1, 1.1, 1],
-                              }}
-                              transition={{
-                                duration: 10,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                              }}
-                              className="w-full h-full"
-                            >
-                              <Image
-                                src={feature.image}
-                                alt={feature.title}
-                                width={400}
-                                height={400}
-                                className="object-cover w-full h-full"
-                                priority
-                              />
-                            </motion.div>
-                          </div>
-                        </motion.div>
-                      </div>
-                    </div>
+          {/* Token Carousel */}
+          <TokenCarousel />
 
-                    {/* Content Box */}
-                    <motion.div
-                      className="md:w-1/2 md:absolute md:-translate-y-1/2 md:left-[45%] bg-transparent backdrop-blur-xl rounded-3xl p-8 border border-white/10"
-                      style={{ left: index % 2 === 0 ? '45%' : 'auto', right: index % 2 === 0 ? 'auto' : '45%' }}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.2 }}
-                    >
-                      <div className={`w-full max-w-[500px] ${index % 2 === 0 ? 'md:ml-auto' : ''} text-center md:text-left`}>
-                        <motion.h2
-                          className={`text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r ${feature.gradient} bg-clip-text text-transparent`}
-                          initial={{ opacity: 0, y: 10 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5, delay: 0.3 }}
-                        >
-                          {feature.title}
-                        </motion.h2>
-                        <motion.p
-                          className="text-lg md:text-xl text-gray-300 leading-relaxed"
-                          initial={{ opacity: 0, y: 10 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5, delay: 0.4 }}
-                        >
-                          {feature.description}
-                        </motion.p>
-                        <motion.div
-                          className={`mt-6 h-1 w-20 rounded-full bg-gradient-to-r ${feature.gradient}`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: 80 }}
-                          transition={{ duration: 0.8, delay: 0.5 }}
-                        />
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <LaunchHero />
 
-          {/* Features Section */}
-          <div className="relative py-20 bg-transparent">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.1),transparent_50%)]"
-            />
+          {/* Agents Carousel */}
+          <AgentsCarousel />
+          
+          {/* Stats Section */}
+          <Stats/>
+          <CtaCard />
 
-            <div className="container mx-auto px-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-16"
-              >
-                <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">
-                  Towards Digital, Agentic Future
-                </h2>
-                <p className="text-gray-400 max-w-2xl mx-auto">
-                  AI agent launchpad managing a multi-agent platform and AI coordination layer on NetSepio&lsquo;s secure and decentralized network.
-                </p>
-
-                {/* Stats Section */}
-                <div className="relative py-20 bg-transparent">
-                  <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                      {[
-                        { number: "3,500+", label: "VPN connections" },
-                        { number: "2,000+", label: "Secured wallets" },
-                        { number: "20+", label: "Partners" },
-                        { number: "100%", label: "Decentralized" }
-                      ].map((stat, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="text-center p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl"
-                        >
-                          <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-2">
-                            {stat.number}
-                          </div>
-                          <div className="text-gray-400">{stat.label}</div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Fixed Chat Component */}
+      <FixedChat />
     </>
   );
 }

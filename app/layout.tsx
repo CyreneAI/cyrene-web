@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { headers } from "next/headers";
 import { AppKit } from '@/context/appkit';
@@ -8,9 +8,14 @@ import { Cursor } from "@/components/ui/cursor";
 import Navbar from "@/components/common/navbar";
 import Footer from "@/components/common/footer";
 import { WalletProviderWrapper } from "@/components/WalletProviderWrapper";
-import ProtectedRoute from "@/components/ProtectedRoute"; // Add this import
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const inter = Inter({ subsets: ["latin"] });
+// Configure Outfit font from Google Fonts
+const outfit = Outfit({ 
+  subsets: ["latin"],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cyreneai.com"),
@@ -62,11 +67,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookies = (await headers()).get('cookie');
-
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-[#030014] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))] cursor-none`}>
+      <body className={`${outfit.variable} font-outfit min-h-screen flex flex-col bg-[#010623] cursor-none`}>
         <div className="absolute inset-0"></div>
         <div className="relative z-10">
           <WalletProviderWrapper>
@@ -74,7 +77,6 @@ export default async function RootLayout({
               <Cursor />
               <Navbar />
               <main className="flex-grow min-h-[calc(100vh-200px)]">
-                {/* Wrap children with ProtectedRoute */}
                 <ProtectedRoute>
                   {children}
                 </ProtectedRoute>

@@ -443,6 +443,7 @@ export default function LaunchProjectsPage() {
         quoteMint: params.quoteMint,
         tokenName: params.name,
         tokenSymbol: params.symbol,
+        metadataUri: poolResult.metadataUri, // Add this line to store IPFS metadata URI
         launchedAt: Date.now()
       };
   
@@ -501,7 +502,7 @@ export default function LaunchProjectsPage() {
   return (
     <>
       <StarCanvas />
-      <div className="min-h-screen bg-[#0B1426] text-white py-20 px-4">
+      <div className="min-h-screen text-white py-20 px-4 mt-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">

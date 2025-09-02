@@ -1,14 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* MOONHOUSE Font Declaration */
+/* Replace your current @font-face declaration with this exact one */
+@font-face {
+  font-family: 'Moonhouse';
+  src: url('/fonts/moonhouse/moonhouse.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --font-moonhouse: 'Moonhouse', 'Brush Script MT', cursive;
+  --font-outfit: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-poppins: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-dm-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
 
 body {
   /* background: rgb(var(--background-rgb)); */
@@ -78,10 +94,32 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    
   }
 }
 
+/* Utility classes for easy font switching */
+/* Utility class - Make sure this has !important */
+.font-moonhouse {
+  font-family: var(--font-moonhouse) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.font-outfit {
+  font-family: var(--font-outfit);
+}
+
+.font-poppins {
+  font-family: var(--font-poppins);
+}
+
+.font-dm-sans {
+  font-family: var(--font-dm-sans);
+}
+
+/* Heading styles - default to Moonhouse for better brand consistency */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-outfit);
+}
 
 .wallet-adapter-button {
   font-size: 1rem !important; /* text-2xl */
