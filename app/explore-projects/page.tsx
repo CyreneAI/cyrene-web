@@ -10,7 +10,6 @@ import { LaunchedTokenData } from '@/lib/supabase';
 import React from 'react';
 import { useAppKitAccount } from "@reown/appkit/react";
 import { DbcTradeModal } from '@/components/DbcTradeModal';
-// Removed usePoolStatus import for better performance
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -334,23 +333,32 @@ export default function ExploreProjectsPage() {
             </div>
           ) : (
             <>
-              {/* Token Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {getCurrentPageTokens().map((token, index) => (
-                  <TokenCard
-                    key={token.contractAddress}
-                    token={token}
-                    index={index}
-                    onTradeClick={() => handleTradeClick(token)}
-                    formatDate={formatDate}
-                    fetchTokenMetadata={fetchTokenMetadata}
-                  />
-                ))}
+              {/* Glass Background Container for Token Grid */}
+              <div className="relative w-full">
+                {/* Glass Background */}
+                <div className="absolute inset-0 bg-[#434a6033] rounded-[40px] backdrop-blur-[35px] backdrop-brightness-[100%]" />
+                
+                {/* Token Grid Content */}
+                <div className="relative z-10 p-8 md:p-12">
+                  {/* Token Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+                    {getCurrentPageTokens().map((token, index) => (
+                      <TokenCard
+                        key={token.contractAddress}
+                        token={token}
+                        index={index}
+                        onTradeClick={() => handleTradeClick(token)}
+                        formatDate={formatDate}
+                        fetchTokenMetadata={fetchTokenMetadata}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Pagination */}
+              {/* Pagination - Outside glass background */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2">
+                <div className="flex justify-center items-center gap-2 mt-8">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
@@ -507,22 +515,22 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="relative bg-[#000010] hover:bg-[#000020] transition-colors duration-300 rounded-[30px] p-6 border border-gray-800 hover:border-gray-600 group"
+      className="relative bg-[#000010] transition-colors duration-300 rounded-3xl p-6 border border-white/10 hover:border-white/20 group backdrop-blur-sm"
     >
       {/* Status indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         {statusInfo.status === 'graduated' ? (
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50"></div>
         ) : (
-          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div className="w-2 h-2 bg-blue-400 rounded-full shadow-lg shadow-blue-400/50"></div>
         )}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-300">
           {statusInfo.label}
         </span>
       </div>
 
       {/* Token Image */}
-      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 mb-4 flex items-center justify-center overflow-hidden relative">
+      <div className="w-20 h-20 rounded-xl  bg-[#000010] flex items-center justify-center overflow-hidden relative shadow-lg">
         {imageLoading ? (
           <Loader2 className="w-8 h-8 text-white animate-spin" />
         ) : tokenImage ? (
@@ -545,25 +553,25 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         <h3 className="text-lg font-semibold text-white mb-1" title={token.tokenName}>
           {truncateText(token.tokenName, 20)}
         </h3>
-        <p className="text-blue-400 text-sm font-mono mb-2">
+        <p className="text-blue-300 text-sm font-mono mb-2">
           ${token.tokenSymbol}
         </p>
         
         {/* Show description if available from metadata */}
         {metadata?.description && (
-          <p className="text-gray-400 text-xs mb-2 line-clamp-2" title={metadata.description}>
+          <p className="text-gray-300 text-xs mb-2 line-clamp-2" title={metadata.description}>
             {truncateText(metadata.description, 80)}
           </p>
         )}
         
         {/* Contract Address with Copy Button */}
-        <div className="flex items-center justify-between text-xs text-gray-400">
+        <div className="flex items-center justify-between text-xs text-gray-300">
           <span>Contract</span>
           <div className="flex items-center gap-2">
             <span className="font-mono">{truncateAddress(token.contractAddress)}</span>
             <button
               onClick={() => copyToClipboard(token.contractAddress, 'Contract Address')}
-              className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+              className="p-1 hover:bg-white/20 rounded text-gray-300 hover:text-white transition-colors"
               title="Copy contract address"
             >
               {copiedField === 'Contract Address' ? (
@@ -577,17 +585,17 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mb-4"></div>
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-4"></div>
 
       {/* Token Stats */}
       <div className="grid grid-cols-2 gap-4 text-xs mb-4">
         <div>
-          <span className="text-gray-400 block">Quote Token</span>
+          <span className="text-gray-300 block">Quote Token</span>
           <span className="text-blue-300 font-medium">{token.quoteMint}</span>
         </div>
         <div>
-          <span className="text-gray-400 block">Launched</span>
-          <span className="text-gray-300 font-medium">{formatDate(token.launchedAt)}</span>
+          <span className="text-gray-300 block">Launched</span>
+          <span className="text-gray-200 font-medium">{formatDate(token.launchedAt)}</span>
         </div>
       </div>
 
@@ -598,7 +606,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
             href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm text-center font-medium flex items-center justify-center gap-1"
+            className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm text-center font-medium flex items-center justify-center gap-1 shadow-lg"
           >
             <ExternalLink className="w-3 h-3" />
             Jupiter
@@ -606,7 +614,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         ) : (
           <button
             onClick={onTradeClick}
-            className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1 group-hover:bg-cyan-500"
+            className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1 group-hover:bg-cyan-500 shadow-lg"
           >
             <TrendingUp className="w-3 h-3" />
             Trade
@@ -617,7 +625,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
           href={`https://solscan.io/token/${token.contractAddress}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm flex items-center justify-center group-hover:bg-gray-600"
+          className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm flex items-center justify-center group-hover:bg-white/20 backdrop-blur-sm shadow-lg"
           title="View on Solscan"
         >
           <ExternalLink className="w-4 h-4" />
@@ -625,7 +633,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       </div>
 
       {/* Hover effect overlay */}
-      <div className="absolute inset-0 rounded-[30px] bg-gradient-to-r from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/5 group-hover:to-purple-600/5 transition-all duration-300 pointer-events-none"></div>
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/10 group-hover:to-purple-600/10 transition-all duration-300 pointer-events-none"></div>
     </motion.article>
   );
 });

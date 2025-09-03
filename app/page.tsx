@@ -19,6 +19,8 @@ import { GlowButton } from "@/components/ui/glow-button";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { AuthDialog } from "@/components/ui/auth-dialog";
 import Stats from "@/components/Stats";
+import DecryptedText from "@/components/ui/DecryptedText";
+import ScrollVelocity from "@/components/ScrollVelocity";
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -31,6 +33,25 @@ interface TokenMetadata {
     value: string;
   }>;
 }
+
+interface DexScreenerPair {
+  fdv?: string;
+  marketCap?: string;
+  volume?: {
+    h24?: string;
+  };
+  txns?: {
+    h24?: {
+      buys?: string;
+      sells?: string;
+    };
+  };
+}
+
+interface DexScreenerResponse {
+  pairs?: DexScreenerPair[];
+}
+
 
 // Agent interface
 interface Agent {
@@ -62,6 +83,14 @@ export interface AgentsApiResponse {
 }
 
 // Token Carousel Card Component
+// Updated Token Carousel Card Component
+interface TokenCarouselCardProps {
+  token: LaunchedTokenData;
+  fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
+}
+
+// Updated Token Carousel Card Component
+// Updated Token Carousel Card Component
 interface TokenCarouselCardProps {
   token: LaunchedTokenData;
   fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
@@ -71,6 +100,13 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
   const [tokenImage, setTokenImage] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
+  const [tokenStats, setTokenStats] = useState({
+    marketCap: 0,
+    volume: 0,
+    holders: 0,
+    loading: true,
+    error: false
+  });
 
   // Fetch token metadata and image
   useEffect(() => {
@@ -100,6 +136,85 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
     loadTokenImage();
   }, [token.metadataUri, token.contractAddress, fetchTokenMetadata]);
 
+  // Fetch real market data from DexScreener
+  useEffect(() => {
+    const fetchTokenData = async () => {
+      if (!token.contractAddress) return;
+
+      try {
+        setTokenStats(prev => ({ ...prev, loading: true, error: false }));
+        
+        // Use a CORS proxy or your own API route if needed
+        const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${token.contractAddress}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('DexScreener API Response:', data); // Debug log
+        
+        if (data.pairs && data.pairs.length > 0) {
+          // Get the most liquid pair (highest volume)
+          const mainPair = data.pairs.reduce((prev: DexScreenerPair, current: DexScreenerPair) => {
+            const prevVol = parseFloat(prev.volume?.h24 || '0');
+            const currentVol = parseFloat(current.volume?.h24 || '0');
+            return currentVol > prevVol ? current : prev;
+          });
+          
+
+          console.log('Main pair data:', mainPair); // Debug log
+
+          // Parse values safely
+          const marketCap = parseFloat(mainPair.fdv || mainPair.marketCap || '0');
+          const volume24h = parseFloat(mainPair.volume?.h24 || '0');
+          const buyTxns = parseInt(mainPair.txns?.h24?.buys || '0');
+          const sellTxns = parseInt(mainPair.txns?.h24?.sells || '0');
+          const transactions24h = buyTxns + sellTxns;
+
+          console.log('Parsed values:', { marketCap, volume24h, transactions24h }); // Debug log
+
+          setTokenStats({
+            marketCap: isNaN(marketCap) ? 0 : marketCap,
+            volume: isNaN(volume24h) ? 0 : volume24h,
+            holders: isNaN(transactions24h) ? 0 : transactions24h,
+            loading: false,
+            error: false
+          });
+        } else {
+          console.log('No pairs found for token:', token.contractAddress);
+          // No pairs found - set to zero but not error state
+          setTokenStats({
+            marketCap: 0,
+            volume: 0,
+            holders: 0,
+            loading: false,
+            error: false
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching token data from DexScreener:', error);
+        setTokenStats({
+          marketCap: 0,
+          volume: 0,
+          holders: 0,
+          loading: false,
+          error: true
+        });
+      }
+    };
+
+    // Add a small delay to prevent rate limiting
+    const timeoutId = setTimeout(fetchTokenData, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [token.contractAddress]);
+
   const getTokenStatus = () => {
     if (token.dammPoolAddress) {
       return { status: 'graduated', label: 'Graduated', color: 'bg-green-500' };
@@ -113,35 +228,64 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
     return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
+  const formatNumber = (num: number) => {
+    if (!num || num === 0 || isNaN(num)) return '-';
+    
+    if (num >= 1_000_000_000) {
+      return `$${(num / 1_000_000_000).toFixed(2)}B`;
+    } else if (num >= 1_000_000) {
+      return `$${(num / 1_000_000).toFixed(2)}M`;
+    } else if (num >= 1_000) {
+      return `$${(num / 1_000).toFixed(2)}K`;
+    }
+    
+    return `$${num.toFixed(2)}`;
+  };
+
+  const formatVolume = (num: number) => {
+    if (!num || num === 0 || isNaN(num)) return '-';
+    
+    if (num >= 1_000_000) {
+      return `$${(num / 1_000_000).toFixed(2)}M`;
+    } else if (num >= 1_000) {
+      return `$${(num / 1_000).toFixed(2)}K`;
+    }
+    
+    return `$${num.toFixed(2)}`;
+  };
+
+  const formatTransactions = (num: number) => {
+    if (!num || num === 0 || isNaN(num)) return '-';
+    
+    if (num >= 1_000) {
+      return `${(num / 1_000).toFixed(1)}k`;
+    }
+    
+    return num.toString();
+  };
+
+  const handleActionClick = () => {
+    if (token.dammPoolAddress) {
+      window.open(`https://jup.ag/swap/SOL-${token.contractAddress}`, '_blank');
+    } else {
+      // Navigate to explore projects or token details
+      window.location.href = '/explore-projects';
+    }
   };
 
   return (
-    <div className="flex-none w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 px-3">
+    <div className="flex-none w-[356px] px-2">
       <motion.div
         whileHover={{ y: -5, scale: 1.02 }}
         transition={{ duration: 0.3 }}
-        className="bg-gray-800/40 backdrop-blur-sm hover:bg-gray-800/60 rounded-2xl p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 h-full shadow-lg hover:shadow-xl"
+        className="relative w-[340px] h-[316px] bg-[#000010] rounded-[30px] overflow-hidden mx-auto"
       >
-        {/* Status Badge */}
-        <div className="flex justify-between items-start mb-4">
-          <div className={`font-outfit px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${
-            statusInfo.status === 'graduated' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
-          }`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${statusInfo.color}`}></div>
-            {statusInfo.label}
-          </div>
-          <span className="font-outfit text-xs text-gray-500">{formatDate(token.launchedAt)}</span>
-        </div>
-
-        {/* Token Image */}
-        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 mb-4 flex items-center justify-center overflow-hidden mx-auto">
+        {/* Token Image Container */}
+        <div className="absolute w-[120px] h-[120px] top-4 left-[15px] rounded-[20px] border border-solid border-[#ffffff0d] bg-gradient-to-br from-blue-600/20 to-purple-600/20 overflow-hidden">
           {imageLoading ? (
-            <Loader2 className="w-6 h-6 text-white animate-spin" />
+            <div className="w-full h-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-[#9daad7] animate-spin" />
+            </div>
           ) : tokenImage ? (
             <img
               src={tokenImage}
@@ -152,52 +296,103 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
               }}
             />
           ) : (
-            <ImageIcon className="w-6 h-6 text-white/50" />
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="w-8 h-8 text-[#9daad7]/50" />
+            </div>
           )}
         </div>
 
-        {/* Token Info */}
-        <div className="text-center mb-4">
-          <h3 className="font-moonhouse text-lg font-semibold text-white mb-1" title={token.tokenName}>
-            {truncateText(token.tokenName, 18)}
-          </h3>
-          <p className="font-outfit text-blue-400 text-sm font-mono mb-2">
-            ${token.tokenSymbol}
-          </p>
-          
-          {metadata?.description && (
-            <p className="font-outfit text-gray-400 text-xs line-clamp-2" title={metadata.description}>
-              {truncateText(metadata.description, 60)}
-            </p>
-          )}
+        {/* Token Name */}
+        <div className="absolute top-[30px] left-[152px] font-outfit font-normal text-white text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
+          {truncateText(token.tokenName, 12)}
         </div>
+
+        {/* Stats Line */}
+        <div className="absolute w-44 h-px top-[134px] left-[146px] bg-gradient-to-r from-[#576592] to-[#9daad7] opacity-30" />
+
+        {/* Volume Stats */}
+        <p className="absolute top-[108px] left-[152px] font-outfit font-normal text-xs tracking-[0] leading-[15.6px] whitespace-nowrap">
+          <span className="text-[#576592]">Volume </span>
+          {tokenStats.loading ? (
+            <span className="font-medium text-[#9daad7]">...</span>
+          ) : (
+            <span className="font-medium text-[#9daad7]">{formatVolume(tokenStats.volume)}</span>
+          )}
+        </p>
+
+        {/* Transactions Stats (instead of holders since holders data isn't available from DexScreener) */}
+        <p className="absolute top-[108px] left-[252px] font-outfit font-normal text-xs tracking-[0] leading-[15.6px] whitespace-nowrap">
+          <span className="text-[#576592]">Txns </span>
+          {tokenStats.loading ? (
+            <span className="font-medium text-[#9daad7]">...</span>
+          ) : (
+            <span className="font-medium text-[#9daad7]">{formatTransactions(tokenStats.holders)}</span>
+          )}
+        </p>
+
+        {/* Description */}
+        <p className="absolute w-[295px] top-[155px] left-[23px] font-outfit font-normal text-[#9daad7] text-xs tracking-[0] leading-[18px]">
+          {metadata?.description 
+            ? truncateText(metadata.description, 120)
+            : "Autonomous token with seamless execution and enhanced reliability for decentralized trading."
+          }
+        </p>
+
+        {/* Market Cap */}
+        <p className="absolute top-[270px] left-[23px] font-outfit font-normal text-sm tracking-[0] leading-[18.2px] whitespace-nowrap">
+          <span className="text-[#576592]">MC </span>
+          {tokenStats.loading ? (
+            <span className="font-semibold text-white">...</span>
+          ) : (
+            <span className="font-semibold text-white">{formatNumber(tokenStats.marketCap)}</span>
+          )}
+        </p>
 
         {/* Action Button */}
-        <div className="mt-auto">
-          {token.dammPoolAddress ? (
-            <a
-              href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-outfit w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm text-center font-medium flex items-center justify-center gap-2 group"
+        <div className="absolute top-[258px] left-[249px]">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleActionClick}
+            className="inline-flex items-center justify-center gap-[14.95px] px-[22.42px] py-[7.47px] bg-[#00000033] rounded-[37.36px] border-none relative overflow-hidden group"
+            style={{
+              background: 'rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            {/* Gradient Border Effect */}
+            <div className="absolute inset-0 p-[0.75px] rounded-[37.36px] bg-gradient-to-r from-[#324172] via-[#36467a] to-[#283061] opacity-60 group-hover:opacity-100 transition-opacity" 
+                 style={{
+                   WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                   WebkitMaskComposite: 'xor',
+                   maskComposite: 'exclude'
+                 }} 
+            />
+            
+            {/* Arrow Icon */}
+            <motion.div
+              whileHover={{ x: 2 }}
+              transition={{ duration: 0.2 }}
             >
-              <ExternalLink className="w-3 h-3" />
-              Trade on Jupiter
-            </a>
-          ) : (
-            <Link href="/explore-projects">
-              <button className="font-outfit w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 text-sm font-medium flex items-center justify-center gap-2">
-                <TrendingUp className="w-3 h-3" />
-                View Details
-              </button>
-            </Link>
-          )}
+              {token.dammPoolAddress ? (
+                <ExternalLink className="relative w-[20.92px] h-[20.92px] aspect-[1] text-[#9daad7] group-hover:text-white transition-colors" />
+              ) : (
+                <TrendingUp className="relative w-[20.92px] h-[20.92px] aspect-[1] text-[#9daad7] group-hover:text-white transition-colors" />
+              )}
+            </motion.div>
+          </motion.button>
+        </div>
+
+        {/* Status Badge (Top Right Corner) */}
+        <div className={`absolute top-4 right-4 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+          statusInfo.status === 'graduated' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
+        }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${statusInfo.color}`}></div>
+          {statusInfo.label}
         </div>
       </motion.div>
     </div>
   );
 };
-
 // Token Carousel Component
 const TokenCarousel = () => {
   const [tokens, setTokens] = useState<LaunchedTokenData[]>([]);
@@ -282,7 +477,7 @@ const TokenCarousel = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-400 bg-clip-text text-transparent mb-4">
+          <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
             Latest Tokens
           </h2>
           <p className="font-outfit text-gray-400 text-lg">
@@ -655,7 +850,7 @@ const AgentsCarousel = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-400 bg-clip-text text-transparent mb-4">
+            <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
               Meet Our AI Agents
             </h2>
             <p className="font-outfit text-gray-400 text-lg">
@@ -818,11 +1013,21 @@ export default function Home() {
 
   return (
     <>
+
+<div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+        CYRENE
+      </div>
+    </div>
+    
       {/* Background wrapper */}
       <div className="relative w-full overflow-hidden">
+
+        
       
         <div className="absolute inset-0 bg-transparent"></div>
 
+       
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
@@ -862,9 +1067,26 @@ export default function Home() {
                   JOURNEY WITH
                 </h2>
 
-                <h1 className="relative w-fit bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-moonhouse font-normal text-transparent text-[110px] text-center tracking-[8.00px] leading-[77.0px] whitespace-nowrap">
-                  CYRENE
-                </h1>
+                <DecryptedText
+  text="CYRENE"
+    animateOn="view"
+  revealDirection="center"
+  className="relative w-fit 
+    bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] 
+    [-webkit-background-clip:text] 
+    bg-clip-text 
+    [-webkit-text-fill-color:transparent] 
+    [text-fill-color:transparent] 
+    font-moonhouse 
+    font-normal 
+    text-transparent 
+    text-[110px] 
+    text-center 
+    tracking-[8.00px] 
+    leading-[77.0px] 
+    whitespace-nowrap"
+/>
+
               </header>
               
               {/* Portrait Image */}
@@ -885,11 +1107,18 @@ export default function Home() {
 
           <LaunchHero />
 
+
+
           {/* Agents Carousel */}
           <AgentsCarousel />
           
           {/* Stats Section */}
           <Stats/>
+          <ScrollVelocity
+  texts={['Self Replicating', 'Decentralized', 'Unstoppable Ecosystem']} 
+  velocity={5} 
+  className="custom-scroll-text text-white/10 "
+/>
           <CtaCard />
 
         </div>

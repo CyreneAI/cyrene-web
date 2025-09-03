@@ -7,6 +7,7 @@ import VoiceManager from '@/utils/voiceUtils';
 import { useAppKitAccount } from '@reown/appkit/react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+// import StarBorder from './ui/StarBorder';
 
 interface Message {
   isUser: boolean;
@@ -198,9 +199,10 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
 
   return (
     <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 ${className}`}>
-      <AnimatePresence>
+  <AnimatePresence>
         {isExpanded ? (
           // Expanded Chat Interface - Fixed sizing and spacing
+
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -208,6 +210,8 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="w-[420px] h-[550px] bg-gray-900/98 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl flex flex-col"
           >
+
+    
             {/* Header - Fixed height */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-3">
@@ -232,7 +236,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
-
+          
             {/* Messages - Flexible height with proper scrolling */}
             <div className="flex-1 min-h-0 flex flex-col">
               <div
@@ -403,6 +407,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
               </div>
             </div>
           </motion.div>
+          
         ) : (
           // Collapsed Chat Button - Your Frame Design (Improved spacing)
           <motion.div
@@ -452,6 +457,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
           </motion.div>
         )}
       </AnimatePresence>
+     
     </div>
   );
 };

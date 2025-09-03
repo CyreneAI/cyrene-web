@@ -259,14 +259,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera on hover-only */
-.scrollbar-hide-on-hover {
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  
-  &:hover::-webkit-scrollbar {
-    display: block;
-  }
+.scrollbar-hide-on-hover::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide-on-hover:hover::-webkit-scrollbar {
+  display: block;
 }
 
 /* Custom scrollbar styles for the chat container */

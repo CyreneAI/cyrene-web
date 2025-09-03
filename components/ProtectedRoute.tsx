@@ -68,7 +68,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
       if (!isAuthenticated) {
         console.log('Redirecting to home due to missing auth');
-        router.push('/explore-agents');
+        router.push('/explore-projects');
       } else {
         console.log('Auth verified successfully');
       }
