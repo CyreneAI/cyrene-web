@@ -21,12 +21,14 @@ const Navbar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { address, isConnected } = useAppKitAccount();
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
+  const [showLaunchDropdown, setShowLaunchDropdown] = useState(false); // NEW - separate state for Launch
   const [showExploreDropdown, setShowExploreDropdown] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [erebrusWallet, setErebrusWallet] = useState<string | null>(null);
   const [erebrusToken, setErebrusToken] = useState<string | null>(null);
   const [chainSymbol, setChainSymbol] = useState<string | null>(null);
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
+  const launchDropdownRef = useRef<HTMLDivElement>(null); // NEW - separate ref for Launch
   const exploreDropdownRef = useRef<HTMLDivElement>(null);
  
   const handleHomeClick = () => {
@@ -41,6 +43,9 @@ const Navbar = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dashboardDropdownRef.current && !dashboardDropdownRef.current.contains(event.target as Node)) {
         setShowDashboardDropdown(false);
+      }
+      if (launchDropdownRef.current && !launchDropdownRef.current.contains(event.target as Node)) {
+        setShowLaunchDropdown(false);
       }
       if (exploreDropdownRef.current && !exploreDropdownRef.current.contains(event.target as Node)) {
         setShowExploreDropdown(false);
@@ -116,8 +121,20 @@ const Navbar = () => {
   }, []);
 
   const navItems = [
-    { path: '/', label: 'Home', protected: false },
-    { path: '/launch-projects', label: 'Launch Projects', protected: true },
+    { path: '/', label: 'Home', protected: false }
+  ];
+
+  const launchItems = [
+    {
+      path: '/launch-agent',
+      label: 'Launch Agents',
+      protected: true
+    },
+    { 
+      path: '/launch-projects', 
+      label: 'Launch Projects', 
+      protected: false
+    },
   ];
 
   const exploreItems = [
@@ -138,9 +155,9 @@ const Navbar = () => {
   const dashboardItems = [
     { 
       path: '/agents', 
-      label: 'My Agents', 
+      label: 'Profile', 
       icon: <FaRobot className="w-4 h-4 mr-2" />,
-      protected: true
+      protected: false
     },
     { 
       path: '/perks', 
@@ -262,8 +279,10 @@ const Navbar = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="ml-3 font-moonhouse text-xl font-bold text-white tracking-wide"
             >
-              CyreneAI
+              CYRENEAI
             </motion.span>
+            
+
           )}
         </div>
 
@@ -287,6 +306,56 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Launch Dropdown */}
+              <div className="relative" ref={launchDropdownRef}>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowLaunchDropdown(!showLaunchDropdown)}
+                  className={`font-outfit flex items-center px-6 py-2.5 rounded-full transition-all duration-300 text-sm font-medium ${
+                    pathname.startsWith('/launch-agents') ||    
+                    pathname.startsWith('/launch-projects')
+                      ? 'text-white bg-white/20 backdrop-blur-md border border-white/30 shadow-lg'
+                      : 'text-white/90 hover:text-white hover:bg-white/10 hover:backdrop-blur-md'
+                  }`}
+                >
+                  Launch
+                  <FaChevronDown className={`ml-2 w-3 h-3 transition-transform duration-200 ${showLaunchDropdown ? 'rotate-180' : ''}`} />
+                </motion.button>
+
+                <AnimatePresence>
+                  {showLaunchDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="absolute right-0 mt-3 w-56 origin-top-right bg-gray-900 backdrop-blur-xl rounded-2xl shadow-2xl z-50 border border-white/20 overflow-hidden"
+                    >
+                      <div className="py-2">
+                        {launchItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            href={item.protected && !isAuthenticated ? '#' : item.path}
+                            className={`font-outfit flex items-center px-4 py-3 text-sm font-medium ${
+                              item.protected && !isAuthenticated
+                                ? 'text-white/40 cursor-not-allowed'
+                                : 'text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200'
+                            } ${pathname === item.path ? 'bg-white/15 text-white' : ''}`}
+                            onClick={(e) => {
+                              handleProtectedRouteClick(e, item.protected);
+                              setShowLaunchDropdown(false);
+                            }}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Explore Dropdown */}
               <div className="relative" ref={exploreDropdownRef}>
@@ -336,6 +405,7 @@ const Navbar = () => {
                   )}
                 </AnimatePresence>
               </div>
+
               
               {/* Dashboard Dropdown */}
               <div className="relative" ref={dashboardDropdownRef}>
@@ -438,6 +508,25 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              <div className='w-full px-4'>
+                <div className="border-t border-white/20 my-4"></div>
+                <h3 className="font-outfit text-white/90 font-semibold px-4 py-2 text-center">Launch</h3>
+                {launchItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.protected && !isAuthenticated ? '#' : item.path}
+                    className={`font-outfit flex items-center justify-center px-6 py-3 text-sm font-medium rounded-xl mx-2 mb-2 ${
+                      item.protected && !isAuthenticated
+                        ? 'text-white/40 cursor-not-allowed'
+                        : 'text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200'
+                    } ${pathname === item.path ? 'bg-white/15 text-white' : ''}`}
+                    onClick={(e) => handleProtectedRouteClick(e, item.protected)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
 
               <div className="w-full px-4">
                 <div className="border-t border-white/20 my-4"></div>

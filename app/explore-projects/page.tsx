@@ -197,8 +197,14 @@ export default function ExploreProjectsPage() {
 
   return (
     <>
-      <StarCanvas />
-      <div className="min-h-screen text-white py-20 px-4 mt-12">
+    <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+        CYRENE
+      </div>
+    </div>
+    
+
+      <div className="min-h-screen text-white py-20 px-4 mt-24">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">

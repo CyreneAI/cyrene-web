@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap } from 'lucide-react';
+import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap, Image as LucidImage } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -18,6 +18,8 @@ import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { LaunchedTokenData } from '@/lib/supabase';
 import React from 'react';
 import { Copy, Check } from 'lucide-react';
+import Image from "next/image";
+import axios from 'axios';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -91,12 +93,19 @@ export default function LaunchProjectsPage() {
   });
   
   const [isLoading, setIsLoading] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<number | null>(null);
+  const [totalTransactions] = useState(2);
   const [conversionRates, setConversionRates] = useState<ConversionRate | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
   const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [currentLaunchedToken, setCurrentLaunchedToken] = useState<LaunchedTokenData | null>(null);
+  
+  // Image upload states
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageHash, setImageHash] = useState<string>('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   
   // Database loading states
   const [tokensLoading, setTokensLoading] = useState(false);
@@ -111,6 +120,73 @@ export default function LaunchProjectsPage() {
   // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
+
+  // Handle file upload to IPFS
+  const uploadToIPFS = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('/api/ipfs', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.file.cid;
+    } catch (error) {
+      console.error('IPFS upload error:', error);
+      toast.error('Failed to upload image to IPFS');
+      throw error;
+    }
+  };
+
+  // Handle image file change
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image size must be less than 10MB');
+        return;
+      }
+
+      setIsUploadingImage(true);
+      
+      try {
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to IPFS
+        const hash = await uploadToIPFS(file);
+        setImageHash(hash);
+        
+        // Update params with IPFS URL
+        const ipfsUrl = `https://ipfs.erebrus.io/ipfs/${hash}`;
+        setParams(prev => ({
+          ...prev,
+          image: ipfsUrl
+        }));
+        
+        toast.success('Image uploaded successfully to IPFS');
+      } catch (error) {
+        toast.error('Failed to upload image');
+        setImagePreview(null);
+        setImageHash('');
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
+  };
 
   // Update refs when state changes (no re-render triggers)
   useEffect(() => {
@@ -384,7 +460,7 @@ export default function LaunchProjectsPage() {
     }
   
     if (!params.name || !params.symbol || !params.image || !params.description) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please fill in all required fields and upload an image');
       return;
     }
 
@@ -417,7 +493,7 @@ export default function LaunchProjectsPage() {
         configAddress: configResult.configAddress,
         name: params.name,
         symbol: params.symbol,
-        image: params.image,
+        image: params.image, // This will now be the IPFS URL
         description: params.description,
         firstBuyAmountSol: params.enableFirstBuy ? params.firstBuyAmountSol : undefined,
         minimumTokensOut: params.enableFirstBuy ? params.minimumTokensOut : undefined
@@ -462,6 +538,10 @@ export default function LaunchProjectsPage() {
         minimumTokensOut: 1000000,
         enableFirstBuy: true
       });
+
+      // Reset image states
+      setImagePreview(null);
+      setImageHash('');
       
     } catch (error) {
       console.error('Token launch error:', error);
@@ -501,8 +581,13 @@ export default function LaunchProjectsPage() {
 
   return (
     <>
-      <StarCanvas />
-      <div className="min-h-screen text-white py-20 px-4 mt-12">
+         <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+        CYRENE
+      </div>
+    </div>
+    
+      <div className="min-h-screen text-white py-20 px-4 mt-24">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
@@ -610,20 +695,75 @@ export default function LaunchProjectsPage() {
                   </div>
                 </div>
 
+                {/* Image Upload Section */}
                 <div>
                   <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Image URL
+                    Project Image
                   </label>
-                  <input
-                    type="url"
-                    name="image"
-                    value={params.image}
-                    onChange={handleInputChange}
-                    placeholder="https://example.com/token-image.png"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Upload Section */}
+                    <div>
+                      <label className="block border-2 border-dashed border-gray-600 rounded-xl p-6 cursor-pointer hover:border-blue-500 transition-all group">
+                        <div className="text-center">
+                          {isUploadingImage ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                              <span className="text-sm text-blue-300">Uploading to IPFS...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                              <p className="text-sm text-gray-400 group-hover:text-white">
+                                Click to upload image
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                PNG, JPG, GIF up to 10MB
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                          disabled={isLoading || isUploadingImage}
+                        />
+                      </label>
+                    </div>
+                    
+                    {/* Preview Section */}
+                    <div className="border border-gray-600 rounded-xl p-6 flex items-center justify-center bg-gray-800/50">
+                      {imagePreview ? (
+                        <div className="text-center">
+                          <Image
+                            src={imagePreview}
+                            alt="Token Preview"
+                            width={120}
+                            height={120}
+                            className="rounded-lg mx-auto mb-2 object-cover"
+                          />
+                          <p className="text-xs text-green-400">✓ Uploaded to IPFS</p>
+                          {imageHash && (
+                            <p className="text-xs text-gray-500 mt-1 truncate">
+                              Hash: {imageHash.slice(0, 8)}...
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          <LucidImage className="w-12 h-12 mx-auto mb-2" />
+                          <p className="text-sm">Image preview</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {params.image && (
+                    <div className="mt-2 p-2 bg-green-900/20 border border-green-500/30 rounded text-xs text-green-300">
+                      ✓ Image URL: {params.image}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -788,13 +928,18 @@ export default function LaunchProjectsPage() {
                 <button
                   type="submit"
                   className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading}
+                  disabled={isLoading || isUploadingImage || !params.image}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Launching Token...</span>
+                      <span>
+                        Transactions ({currentTransaction}/{totalTransactions}) - 
+                        {currentTransaction === 1 ? ' Setting up config...' : ' Creating pool...'}
+                      </span>
                     </div>
+                  ) : !params.image ? (
+                    'Please upload an image first'
                   ) : params.enableFirstBuy ? (
                     <div className="flex items-center justify-center gap-2">
                       <Zap className="w-5 h-5" />

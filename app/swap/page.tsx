@@ -7,13 +7,14 @@ import Image from "next/image";
 export default function SwapPage() {
   return (
     <>
-        <StarCanvas />
+             <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+        CYRENE
+      </div>
+    </div>
 
     <div className="min-h-screen flex flex-col items-center pt-24 pb-12">
-    <div className="absolute top-20 left-10 w-72 h-72 bg-[#0162FF] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
-        <div className="absolute top-40 right-10 w-72 h-72 bg-[#A63FE1] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#3985FF] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000" />
-      {/* Logo Section - Same as your page.tsx */}
+    {/* Logo Section - Same as your page.tsx */}
       <div className="w-full max-w-[1400px] mb-16 flex justify-center">
         <div className="relative w-[300px] h-[100px] sm:w-[600px] sm:h-[200px]">
           <Image

@@ -478,7 +478,7 @@ const TokenCarousel = () => {
           className="text-center mb-12"
         >
           <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
-            Latest Tokens
+           LATEST TOKENS
           </h2>
           <p className="font-outfit text-gray-400 text-lg">
             Discover the newest tokens launched by our community
@@ -851,7 +851,7 @@ const AgentsCarousel = () => {
             className="text-center mb-12"
           >
             <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
-              Meet Our AI Agents
+              MEET OUR AI AGENTS
             </h2>
             <p className="font-outfit text-gray-400 text-lg">
               Discover and interact with our diverse collection of AI agents
@@ -898,7 +898,7 @@ const AgentsCarousel = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="font-outfit px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Explore All Agents
               </motion.button>
@@ -1119,7 +1119,7 @@ export default function Home() {
   velocity={5} 
   className="custom-scroll-text text-white/10 "
 />
-          <CtaCard />
+          {/* <CtaCard /> */}
 
         </div>
       </div>

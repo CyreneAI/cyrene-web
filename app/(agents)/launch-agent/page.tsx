@@ -2027,13 +2027,19 @@ const handleConfirmation = (balance: number) => {
   };
 
   return (
-    <div className="min-h-screen pt-32 text-white py-20">
-      <StarCanvas />
+    <>  
+             <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+        CYRENE
+      </div>
+    </div>
+    <div className="min-h-screen pt-32 text-white py-20 mt-24">
+      
       <div className="max-w-6xl mx-auto px-4">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-16"
+          className="text-5xl font-bold text-center bg-gradient-to-r text-white bg-clip-text text-transparent mb-16"
         >
           Launch Your Agent
         </motion.h1>
@@ -3100,7 +3106,7 @@ const handleConfirmation = (balance: number) => {
   </div>
 )}
     </div>
-
+  </>
     
   );
 }
