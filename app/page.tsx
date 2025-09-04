@@ -477,8 +477,8 @@ const TokenCarousel = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
-           LATEST TOKENS
+          <h2 className="font-outfit text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4 uppercase">
+            Latest Tokens
           </h2>
           <p className="font-outfit text-gray-400 text-lg">
             Discover the newest tokens launched by our community
@@ -850,8 +850,8 @@ const AgentsCarousel = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="font-moonhouse text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4">
-              MEET OUR AI AGENTS
+            <h2 className="font-outfit text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4 uppercase">
+              Meet Our AI Agents
             </h2>
             <p className="font-outfit text-gray-400 text-lg">
               Discover and interact with our diverse collection of AI agents

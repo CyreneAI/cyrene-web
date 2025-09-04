@@ -2,23 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown, FaExchangeAlt, FaRocket, FaSearch, FaEye } from 'react-icons/fa';
-
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ConnectButton from '@/components/common/ConnectBtn';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 import { AuthButton } from './AuthButton';
 
-const Navbar = () => {
+export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
   const { address, isConnected } = useAppKitAccount();
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const [showLaunchDropdown, setShowLaunchDropdown] = useState(false); // NEW - separate state for Launch
@@ -26,7 +19,7 @@ const Navbar = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [erebrusWallet, setErebrusWallet] = useState<string | null>(null);
   const [erebrusToken, setErebrusToken] = useState<string | null>(null);
-  const [chainSymbol, setChainSymbol] = useState<string | null>(null);
+  const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const launchDropdownRef = useRef<HTMLDivElement>(null); // NEW - separate ref for Launch
   const exploreDropdownRef = useRef<HTMLDivElement>(null);
@@ -60,64 +53,29 @@ const Navbar = () => {
     // Check for existing authentication
     const wallet = Cookies.get("erebrus_wallet");
     const token = Cookies.get("erebrus_token");
-    const symbol = Cookies.get("Chain_symbol");
     
     if (wallet && token) {
       setIsAuthenticated(true);
       setErebrusWallet(wallet);
       setErebrusToken(token);
-      setChainSymbol(symbol || null);
     }
 
     if (isConnected && address) {
-      setWalletAddress(address);
       localStorage.setItem('walletAddress', address);
     } else {
-      setWalletAddress(null);
       localStorage.removeItem('walletAddress');
     }
-
-    const timer = setTimeout(() => {
-      setIsExpanded(true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
   }, [isConnected, address]);
 
-  // Add this useEffect to watch for authentication changes
   useEffect(() => {
-    // Check for existing authentication
-    const checkAuth = () => {
-      // Check all possible chain types
-      const chains: ('solana' | 'evm')[] = ['solana', 'evm'];
-      let isAuthFound = false;
-      
-      for (const chainType of chains) {
-        const token = Cookies.get(`erebrus_token_${chainType}`);
-        const wallet = Cookies.get(`erebrus_wallet_${chainType}`);
-        const userId = Cookies.get(`erebrus_userid_${chainType}`);
-        
-        if (token && wallet) {
-          setIsAuthenticated(true);
-          setErebrusWallet(wallet);
-          setErebrusToken(token);
-          isAuthFound = true;
-          break;
-        }
-      }
-      
-      if (!isAuthFound) {
-        setIsAuthenticated(false);
-        setErebrusWallet(null);
-        setErebrusToken(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dashboardDropdownRef.current && !dashboardDropdownRef.current.contains(event.target as Node)) {
+        setShowDashboardDropdown(false);
       }
     };
-  
-    checkAuth();
-    
-    const authCheckInterval = setInterval(checkAuth, 3000);
-    
-    return () => clearInterval(authCheckInterval);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const navItems = [
@@ -225,22 +183,7 @@ const Navbar = () => {
         position: 'top-center',
       });
     } else {
-      setIsMobileMenuOpen(false);
       setShowDashboardDropdown(false);
-    }
-  };
-
-  // Function to handle explore clicks
-  const handleExploreClick = (e: React.MouseEvent, isProtected: boolean) => {
-    if (isProtected && !isAuthenticated) {
-      e.preventDefault();
-      toast.error('Authentication Required', {
-        description: 'Please connect your wallet to access this page',
-        position: 'top-center',
-      });
-    } else {
-      setIsMobileMenuOpen(false);
-      setShowExploreDropdown(false);
     }
   };
 
@@ -568,16 +511,13 @@ const Navbar = () => {
                 ))}
               </div>
 
-              <div className="w-full px-4 py-4 border-t border-white/20 flex flex-col space-y-3">
-                <ConnectButton />
-                <AuthButton />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+        {/* Auth Buttons */}
+        <div className="flex items-center gap-3">
+          <ConnectButton />
+          <AuthButton />
+        </div>
+      </div>
+    </header>
   );
 };
 
-export default Navbar;

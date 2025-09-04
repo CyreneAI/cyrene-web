@@ -2,7 +2,10 @@ import PatternPanel from "./PatternPanel"
 
 export default function Stats() {
   return (
-    <main className="min-h-screen  flex items-center justify-center p-6 font-outfit">
+    <main className="                <h3 className="text-white text-lg md:text-xl font-outfit font-[400] mb-2">Universal Scalability Layer</h3>
+                <p className="mt-2 text-[#8B8B8B] text-sm leading-relaxed max-w-[42ch]">
+                  Cross-chain, adaptive, and seamlessly integrative.
+                </p>h-screen  flex items-center justify-center p-6 font-outfit">
       <div className="w-full max-w-6xl">
         <div className="w-full relative backdrop-blur-sm rounded-[31.5px] bg-gradient-to-br from-slate-900/80 via-slate-800/60 to-slate-900/80 border border-slate-700/30 h-[851.5px]">
           {/* Panel padding to create the thick inner margin seen in the mock */}
@@ -26,9 +29,9 @@ export default function Stats() {
                   className="absolute left-6 top-6 md:left-8 md:top-8 w-24 sm:w-28 md:w-32 h-auto object-contain pointer-events-none select-none opacity-80"
                 />
                 <div className="mt-auto">
-                  <h3 className="text-white text-lg font-outfit font-bold md:text-4xl mb-3">Self-Replicating AI</h3>
+                  <h3 className="text-white text-lg font-outfit font-bold md:text-4xl mb-3 uppercase">AI Agents, Your Launch Partners</h3>
                   <p className="mt-2 text-slate-300/90 leading-relaxed max-w-[34ch] text-base md:text-xl">
-                    Autonomous agents capable of seamless task execution and self-replication for enhanced reliability.
+                    Fundraise, iterate, and build long-term aligned projects with the power of AI Agents.
                   </p>
                 </div>
               </div>
@@ -43,9 +46,9 @@ export default function Stats() {
                   alt="Hyper Coherent Network icon"
                   className="absolute left-6 top-6 md:left-8 md:top-8 w-12 sm:w-14 md:w-16 h-auto object-contain pointer-events-none select-none opacity-90"
                 />
-                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2">Hyper Coherent Network</h3>
+                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2 uppercase">Authentic Communities</h3>
                 <p className="mt-2 text-slate-200/80 text-sm leading-relaxed max-w-[40ch]">
-                  Multi-agent coordination with real-time precision, fault tolerance and context synchronization.
+                  Grow and engage with communities that share your vision and values.
                 </p>
               </div>
 
@@ -59,9 +62,9 @@ export default function Stats() {
                   alt="Unstoppable Ecosystem icon"
                   className="absolute left-6 top-6 md:left-8 md:top-8 w-12 sm:w-14 md:w-16 h-auto object-contain pointer-events-none select-none opacity-90"
                 />
-                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2">Unstoppable Ecosystem</h3>
+                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2 uppercase">Internet Capital Markets</h3>
                 <p className="mt-2 text-slate-200/80 text-sm leading-relaxed max-w-[40ch]">
-                  Blockchain-backed security with VPN technology ensures resilience.
+                  A new financial frontier where projects and ideas are funded, traded, and scaled globally.
                 </p>
               </div>
 
@@ -91,10 +94,9 @@ export default function Stats() {
                   alt="Towards Digital, Agentic Future icon"
                   className="absolute left-6 top-6 md:left-8 md:top-8 w-12 sm:w-14 md:w-18 h-auto object-contain pointer-events-none select-none opacity-90"
                 />
-                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2">Towards Digital, Agentic Future</h3>
+                <h3 className="text-white text-lg md:text-xl font-outfit font-bold mb-2 uppercase">Towards Digital, Agentic Future</h3>
                 <p className="mt-2 text-slate-200/80 text-sm leading-relaxed max-w-[70ch]">
-                  AI agent launchpad managing a multi-agent platform and AI coordination layer on NetSepio&apos;s secure and
-                  decentralized network.
+                  Multi-agent platform and AI coordination layer on NetSepio&apos;s secure and decentralized network.
                 </p>
               </div>
 

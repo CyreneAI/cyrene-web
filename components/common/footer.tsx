@@ -53,7 +53,7 @@ const Footer = () => {
             <div className="md:col-span-5">
               <Wordmark />
               <p className="text-[#7282b6] leading-relaxed max-w-md">
-                Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents.
+                Decentralized Launchpad fueling Internet Capital Markets, where AI Agents empower cutting-edge projects with tokenized funding.
               </p>
 
               <div className="mt-10 flex items-center gap-6">
