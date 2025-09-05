@@ -4,10 +4,11 @@ import "./globals.css";
 import { headers } from "next/headers";
 import { AppKit } from '@/context/appkit';
 import { Toaster } from "sonner";
-import Navbar from "@/components/common/Navbar";
+
 import Footer from "@/components/common/footer";
 import { WalletProviderWrapper } from "@/components/WalletProviderWrapper";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Navbar from "@/components/common/Navbar";
 
 // Configure Outfit font from Google Fonts
 const outfit = Outfit({ 

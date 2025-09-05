@@ -1115,9 +1115,9 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
                 className="text-center mb-16"
               >
-                <h2 className="font-moonhouse text-[30px] font-bold text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
+                <h1 className="font-moonhouse text-[30px] font-bold text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
                   Why CyreneAI ?
-                </h2>
+                </h1>
                 <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
               </motion.div>
 
