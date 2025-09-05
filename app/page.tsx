@@ -8,7 +8,6 @@ import { Loader2, TrendingUp, ExternalLink, ImageIcon, ChevronLeft, ChevronRight
 import StarCanvas from "@/components/StarCanvas";
 import { FixedChat } from "@/components/FixedChat";
 import LaunchHero from "@/components/LaunchHero";
-import CtaCard from "@/components/CtaCard";
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { LaunchedTokenData } from '@/lib/supabase';
 import Link from 'next/link';
@@ -477,11 +476,11 @@ const TokenCarousel = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="font-outfit text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4 uppercase">
-            Latest Tokens
+          <h2 className="font-outfit text-[21px] font-medium text-white mb-4 uppercase tracking-[27px] leading-[130%] text-center">
+            PROJECTS
           </h2>
           <p className="font-outfit text-gray-400 text-lg">
-            Discover the newest tokens launched by our community
+            Discover the newest projects launched by our community
           </p>
         </motion.div>
 
@@ -526,7 +525,7 @@ const TokenCarousel = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Explore All Tokens
             </motion.button>
@@ -571,7 +570,7 @@ const AgentCarouselCard: React.FC<AgentCarouselCardProps> = ({ agent, onChatClic
     // Mock stats for demo - you can replace with real data
     return {
       interactions: `${Math.floor(Math.random() * 50 + 10)}k`,
-      uptime: `${Math.floor(Math.random() * 30 + 85)}%`
+      uptime: `${Math.floor(Math.random() * 16 + 85)}%`
     };
   };
 
@@ -624,7 +623,7 @@ const AgentCarouselCard: React.FC<AgentCarouselCardProps> = ({ agent, onChatClic
               <hr className="mt-4 border-t border-[#2a3550]/40" />
 
               {/* Title + description */}
-              <h3 className="font-moonhouse mt-6 text-2xl md:text-3xl font-semibold text-white text-pretty capitalize">
+              <h3 className="font-outfit mt-6 text-2xl md:text-3xl font-semibold text-white text-pretty capitalize">
                 {agent.name}
               </h3>
               <p className="font-outfit mt-4 max-w-prose text-sm leading-relaxed text-[#9BA4C7] flex-1">
@@ -696,8 +695,8 @@ const AgentsCarousel = () => {
   const { connected: isSolConnected } = useWallet();
   const isAuthenticated = isEthConnected || isSolConnected;
 
-  // Agent API
-  const agentApi = {
+  // Agent API - memoized to prevent infinite re-renders
+  const agentApi = useMemo(() => ({
     async getAgents(): Promise<Agent[]> {
       try {
         const response = await axios.get<AgentsApiResponse>('/api/getAgents');
@@ -710,7 +709,7 @@ const AgentsCarousel = () => {
         return [];
       }
     },
-  };
+  }), []);
 
   // Mock agents
   const mockAgents = useMemo(() => [
@@ -789,7 +788,7 @@ const AgentsCarousel = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [mockAgents]);
+  }, [mockAgents, agentApi]);
 
   // Load agents on mount
   useEffect(() => {
@@ -850,8 +849,8 @@ const AgentsCarousel = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="font-outfit text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent mb-4 uppercase">
-              Meet Our AI Agents
+            <h2 className="font-outfit text-[21px] font-medium text-white mb-6 uppercase tracking-[27px] leading-[130%] text-center">
+              OUR AGENTS
             </h2>
             <p className="font-outfit text-gray-400 text-lg">
               Discover and interact with our diverse collection of AI agents
@@ -898,7 +897,7 @@ const AgentsCarousel = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Explore All Agents
               </motion.button>
@@ -1107,6 +1106,91 @@ export default function Home() {
 
           <LaunchHero />
 
+          {/* Why Launch on CyreneAI Section */}
+          <section className="py-20 px-6">
+            <div className="max-w-7xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-center mb-16"
+              >
+                <h2 className="font-outfit text-[21px] font-semi-bold text-white mb-4 uppercase tracking-[20px] leading-[130%] text-center">
+                  Why Launch on CyreneAI?
+                </h2>
+                <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
+              </motion.div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Earn from Day 1 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="bg-gradient-to-br from-[#2C3C70]/40 via-[#18285C]/30 to-[#2C3C70]/40 backdrop-blur-sm border border-[#2C3C70]/50 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
+                >
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
+                      Earn from Day 1
+                    </h3>
+                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
+                      Get 1% of trading volume as fees — no upfront cost.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Aligned Incentives */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="bg-gradient-to-br from-[#17224A]/50 via-[#2C3C70]/40 to-[#18285C]/50 backdrop-blur-sm border border-[#2C3C70]/60 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
+                >
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
+                      Aligned Incentives
+                    </h3>
+                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
+                      10% team tokens, 6-month cliff, 1-year vesting for long-term growth.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Internet Capital Markets */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="bg-gradient-to-br from-[#0A122E]/95 via-[#17224A]/90 to-[#0A122E]/95 backdrop-blur-sm border border-[#2C3C70]/40 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/20 transition-all duration-500 group"
+                >
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
+                      Internet Capital Markets
+                    </h3>
+                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
+                      Launch early, build community, raise seed — all on-chain, with full control.
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+
 
 
           {/* Agents Carousel */}
@@ -1115,11 +1199,11 @@ export default function Home() {
           {/* Stats Section */}
           <Stats/>
           <ScrollVelocity
-  texts={['Self Replicating', 'Decentralized', 'Unstoppable Ecosystem']} 
-  velocity={5} 
-  className="custom-scroll-text text-white/10 "
-/>
-          {/* <CtaCard /> */}
+            texts={['Orchestrating Multi-agent Collaboration', 'Self-replicating AI Agents']} 
+            velocity={80} 
+            className="text-white opacity-80"
+            withStars={true}
+          />
 
         </div>
       </div>

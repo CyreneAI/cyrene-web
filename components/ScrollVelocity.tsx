@@ -8,6 +8,7 @@ import {
   useVelocity,
   useAnimationFrame
 } from 'motion/react';
+import Image from 'next/image';
 
 interface VelocityMapping {
   input: [number, number];
@@ -27,6 +28,7 @@ interface VelocityTextProps {
   scrollerClassName?: string;
   parallaxStyle?: React.CSSProperties;
   scrollerStyle?: React.CSSProperties;
+  withStars?: boolean;
 }
 
 interface ScrollVelocityProps {
@@ -42,6 +44,7 @@ interface ScrollVelocityProps {
   scrollerClassName?: string;
   parallaxStyle?: React.CSSProperties;
   scrollerStyle?: React.CSSProperties;
+  withStars?: boolean;
 }
 
 function useElementWidth<T extends HTMLElement>(ref: React.RefObject<T | null>): number {
@@ -73,7 +76,8 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
   parallaxClassName,
   scrollerClassName,
   parallaxStyle,
-  scrollerStyle
+  scrollerStyle,
+  withStars = true
 }) => {
   function VelocityText({
     children,
@@ -87,7 +91,8 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
     parallaxClassName,
     scrollerClassName,
     parallaxStyle,
-    scrollerStyle
+    scrollerStyle,
+    withStars
   }: VelocityTextProps) {
     const baseX = useMotionValue(0);
     const scrollOptions = scrollContainerRef ? { container: scrollContainerRef } : {};
@@ -97,6 +102,7 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
       damping: damping ?? 50,
       stiffness: stiffness ?? 400
     });
+    
     const velocityFactor = useTransform(
       smoothVelocity,
       velocityMapping?.input || [0, 1000],
@@ -135,16 +141,33 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
     const spans = [];
     for (let i = 0; i < numCopies!; i++) {
       spans.push(
-        <span className={`flex-shrink-0 ${className}`} key={i} ref={i === 0 ? copyRef : null}>
-          {children}
+        <span 
+          className="flex-shrink-0 flex items-center" 
+          key={i} 
+          ref={i === 0 ? copyRef : null}
+        >
+          <span className={`${className} font-outfit font-normal text-2xl md:text-3xl tracking-normal uppercase`}>
+            {children}
+          </span>
+          {withStars && (
+            <span className="mx-6 md:mx-8 flex items-center">
+              <Image
+                src="/star.png"
+                alt="star separator"
+                width={16}
+                height={16}
+                className="w-4 h-4 md:w-5 md:h-5 opacity-60"
+              />
+            </span>
+          )}
         </span>
       );
     }
 
     return (
-      <div className={`${parallaxClassName} relative overflow-hidden`} style={parallaxStyle}>
+      <div className={`${parallaxClassName} relative overflow-hidden py-4 md:py-6`} style={parallaxStyle}>
         <motion.div
-          className={`${scrollerClassName} flex whitespace-nowrap text-center font-sans text-4xl font-bold tracking-[-0.02em] drop-shadow md:text-[5rem] md:leading-[5rem]`}
+          className={`${scrollerClassName} flex whitespace-nowrap items-center`}
           style={{ x, ...scrollerStyle }}
         >
           {spans}
@@ -154,7 +177,7 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
   }
 
   return (
-    <section>
+    <section className="w-full">
       {texts.map((text: string, index: number) => (
         <VelocityText
           key={index}
@@ -169,8 +192,9 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
           scrollerClassName={scrollerClassName}
           parallaxStyle={parallaxStyle}
           scrollerStyle={scrollerStyle}
+          withStars={withStars}
         >
-          {text}&nbsp;
+          {text}
         </VelocityText>
       ))}
     </section>
@@ -178,3 +202,4 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
 };
 
 export default ScrollVelocity;
+

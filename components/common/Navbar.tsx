@@ -2,41 +2,38 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { FaBars, FaTimes, FaRobot, FaGift, FaBriefcase, FaChevronDown, FaExchangeAlt, FaRocket, FaSearch, FaEye } from 'react-icons/fa';
+
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ConnectButton from '@/components/common/ConnectBtn';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 import { AuthButton } from './AuthButton';
-import { FaChevronDown, FaRobot, FaRocket, FaGift, FaBriefcase, FaExchangeAlt, FaWallet } from 'react-icons/fa';
+import { useWalletAuth } from '@/context/appkit';
+
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [erebrusWallet, setErebrusWallet] = useState<string | null>(null);
-  const [erebrusToken, setErebrusToken] = useState<string | null>(null);
+  const { isAuthenticated } = useWalletAuth();
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const [showExploreDropdown, setShowExploreDropdown] = useState(false);
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const exploreDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check for existing authentication
-    const wallet = Cookies.get("erebrus_wallet");
-    const token = Cookies.get("erebrus_token");
-    
-    if (wallet && token) {
-      setIsAuthenticated(true);
-      setErebrusWallet(wallet);
-      setErebrusToken(token);
-    }
-
     if (isConnected && address) {
       localStorage.setItem('walletAddress', address);
     } else {
       localStorage.removeItem('walletAddress');
+      // Clear any cached wallet state
+      localStorage.removeItem('currentAgentId');
+      localStorage.removeItem('currentAgentName');
+      localStorage.removeItem('currentAgentImage');
     }
   }, [isConnected, address]);
 
@@ -73,21 +70,34 @@ export default function Navbar() {
     }
   };
 
+  // Launch button click handler
+  const handleLaunchClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      toast.error('Authentication Required', {
+        description: 'Please connect your wallet to launch a project',
+        position: 'top-center',
+      });
+    } else {
+      router.push('/launch-projects');
+    }
+  };
+
   return (
     <header role="banner" className="fixed top-[69px] left-1/2 -translate-x-1/2 z-50">
       <div
         className="
-          w-[1000px] h-[80px]
+          min-w-[900px] max-w-[1200px] h-[80px]
           rounded-[40px]
           backdrop-blur-[70px]
-          px-10
+          px-8
           flex items-center justify-between
           shadow-[0_8px_28px_rgba(6,17,54,0.35)]
         "
         style={{ backgroundColor: "rgba(47,55,85,0.5)" }}
       >
         {/* Brand */}
-        <div className="flex items-center" onClick={handleHomeClick}>
+        <div className="flex items-center" onClick={handleHomeClick} style={{ cursor: 'pointer' }}>
           <div className="flex">
             <span
               style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
@@ -105,9 +115,9 @@ export default function Navbar() {
         </div>
 
         {/* Divider + Links */}
-        <div className="flex items-center gap-12 flex-1 mx-6">
-          <div className="flex-1 h-px border-t border-dashed border-[#4D84EE]/60" />
-          <nav className="flex items-center gap-8">
+        <div className="flex items-center gap-8 flex-1 mx-4 min-w-0">
+          <div className="flex-1 h-px border-t border-dashed border-[#4D84EE]/60 min-w-[60px]" />
+          <nav className="flex items-center gap-6 whitespace-nowrap">
             <Link 
               href="/" 
               className={`text-lg font-medium hover:opacity-80 transition ${
@@ -116,7 +126,6 @@ export default function Navbar() {
             >
               Home
             </Link>
-            
             {/* Explore Dropdown */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
@@ -131,7 +140,6 @@ export default function Navbar() {
                 Explore
                 <FaChevronDown className={`w-3 h-3 transition-transform duration-200 ${showExploreDropdown ? 'rotate-180' : ''}`} />
               </button>
-
               {showExploreDropdown && (
                 <div className="absolute right-0 mt-3 w-56 bg-[#2F3755] rounded-xl shadow-2xl z-50 border border-[#4D84EE]/20 overflow-hidden">
                   <div className="py-2">
@@ -155,7 +163,6 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-            
             {/* Dashboard Dropdown */}
             <div className="relative" ref={dashboardDropdownRef}>
               <button
@@ -172,7 +179,6 @@ export default function Navbar() {
                 Dashboard
                 <FaChevronDown className={`w-3 h-3 transition-transform duration-200 ${showDashboardDropdown ? 'rotate-180' : ''}`} />
               </button>
-
               {showDashboardDropdown && (
                 <div className="absolute right-0 mt-3 w-56 bg-[#2F3755] rounded-xl shadow-2xl z-50 border border-[#4D84EE]/20 overflow-hidden">
                   <div className="py-2">
@@ -215,26 +221,39 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Launch Button */}
-        <Link
-          href="#"
-          aria-label="Launch"
-          className="
-            inline-flex items-center
-            bg-white text-[#2C3C70]
-            rounded-[30px]
-            px-6 py-2.5
-            gap-3
-            h-11
-            shadow-[0_4px_18px_rgba(47,55,85,0.25)]
-            hover:opacity-90 transition-opacity
-          "
-        >
-          <span className="text-base font-semibold leading-none">Launch</span>
-          <span className="flex items-center justify-center">
-            <img src="/wallet-add.png" alt="Launch Icon" className="h-5 w-5" />
-          </span>
-        </Link>
+        {/* Launch Button, Wallet Pill, Connect/Verify */}
+        <div className="flex items-center gap-3 ml-4">
+          <button
+            aria-label="Launch"
+            className="inline-flex items-center bg-white text-[#2C3C70] rounded-[30px] px-6 py-2.5 gap-3 h-11 shadow-[0_4px_18px_rgba(47,55,85,0.25)] hover:opacity-90 transition-opacity whitespace-nowrap"
+            onClick={handleLaunchClick}
+          >
+            <span className="text-base font-semibold leading-none">Launch</span>
+            <span className="flex items-center justify-center">
+              <Image src="/wallet-add.png" alt="Launch Icon" width={20} height={20} />
+            </span>
+          </button>
+
+          {/* Wallet pill if connected and authenticated */}
+          {isConnected && isAuthenticated && address && (
+            <div className="flex items-center bg-[#232B4A] rounded-full px-4 py-2 gap-2 text-white text-sm font-medium shadow-inner min-w-0">
+              <div className="w-6 h-6 bg-gradient-to-r from-[#4D84EE] to-[#6366f1] rounded-full flex items-center justify-center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                  <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v13z"/>
+                  <path d="M7 9h10v4H7z"/>
+                </svg>
+              </div>
+              <span className="font-mono truncate max-w-[100px]">{address.slice(0, 4)}...{address.slice(-4)}</span>
+              <span className="ml-1 text-xs text-[#4D84EE] whitespace-nowrap">0.000 SOL</span>
+            </div>
+          )}
+
+          {/* Show Verify button if connected but not authenticated */}
+          {isConnected && !isAuthenticated && <AuthButton />}
+          
+          {/* Show ConnectButton if not connected */}
+          {!isConnected && <ConnectButton />}
+        </div>
       </div>
     </header>
   );

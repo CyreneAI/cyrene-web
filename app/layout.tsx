@@ -4,7 +4,6 @@ import "./globals.css";
 import { headers } from "next/headers";
 import { AppKit } from '@/context/appkit';
 import { Toaster } from "sonner";
-import { Cursor } from "@/components/ui/cursor";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/footer";
 import { WalletProviderWrapper } from "@/components/WalletProviderWrapper";
@@ -69,12 +68,12 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} font-outfit min-h-screen flex flex-col bg-[#010623] cursor-none`}>
+  <body className={`${outfit.variable} font-outfit min-h-screen flex flex-col bg-[#010623]`}>
         <div className="absolute inset-0"></div>
         <div className="relative z-10">
           <WalletProviderWrapper>
             <AppKit>
-              <Cursor />
+              {/* <Cursor /> removed: restore default cursor */}
               <Navbar />
               <main className="flex-grow min-h-[calc(100vh-200px)]">
                 <ProtectedRoute>

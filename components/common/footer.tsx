@@ -13,14 +13,14 @@ function SectionHeader({
   title: string
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 mb-6">
       <div
         aria-hidden
         className="flex h-8 w-8 items-center justify-center rounded-lg border bg-[#405084]/40 border-[#405084] text-[#ffffff]"
       >
         {icon}
       </div>
-      <h3 className="text-[#ffffff] text-lg font-semibold">{title}</h3>
+      <h3 className="text-[#ffffff] text-lg font-outfit font-semibold">{title}</h3>
     </div>
   )
 }
@@ -28,13 +28,29 @@ function SectionHeader({
 function Wordmark() {
   return (
     <div className="mb-4">
-      <Image
-        src='/CyreneAI_logo-text.png'
-        alt='Cyrene AI'
-        width={180}
-        height={60}
-        className='object-contain'
-      />
+      <div className="flex items-center gap-3">
+        <Image
+          src='/CyreneAI_logo_square.png'
+          alt='Cyrene AI Logo'
+          width={40}
+          height={40}
+          className='object-contain'
+        />
+        <div className="flex">
+          <span
+            style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
+            className="text-[#ffffff] uppercase tracking-[0.4em] font-semibold leading-none select-none"
+          >
+            CYRENE
+          </span>
+          <span
+            style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
+            className="text-[#4D84EE] uppercase tracking-[0.4em] font-semibold leading-none select-none"
+          >
+            AI
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -52,7 +68,7 @@ const Footer = () => {
             {/* Brand + Description */}
             <div className="md:col-span-5">
               <Wordmark />
-              <p className="text-[#7282b6] leading-relaxed max-w-md">
+              <p className="text-[#7282b6] leading-relaxed max-w-md font-outfit text-base">
                 Decentralized Launchpad fueling Internet Capital Markets, where AI Agents empower cutting-edge projects with tokenized funding.
               </p>
 
@@ -61,7 +77,7 @@ const Footer = () => {
                   aria-label="Follow on X" 
                   href="https://x.com/CyreneAI" 
                   target="_blank"
-                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                  className="text-[#ffffff] transition-all duration-300 hover:opacity-80 hover:scale-110"
                 >
                   <SiX size={28} />
                 </Link>
@@ -69,7 +85,7 @@ const Footer = () => {
                   aria-label="Join us on Telegram"
                   href="https://t.me/CyreneAI"
                   target="_blank"
-                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                  className="text-[#ffffff] transition-all duration-300 hover:opacity-80 hover:scale-110"
                 >
                   <SiTelegram size={28} />
                 </Link>
@@ -77,7 +93,7 @@ const Footer = () => {
                   aria-label="Join our Discord"
                   href="https://discord.gg/qJ98QZ6EBx"
                   target="_blank"
-                  className="text-[#ffffff] transition-opacity hover:opacity-80"
+                  className="text-[#ffffff] transition-all duration-300 hover:opacity-80 hover:scale-110"
                 >
                   <SiDiscord size={28} />
                 </Link>
@@ -87,12 +103,12 @@ const Footer = () => {
             {/* Quick Links */}
             <div className="md:col-span-2">
               <SectionHeader icon={<Link2 className="h-4 w-4" />} title="Quick Links" />
-              <ul className="mt-4 space-y-3">
+              <ul className="space-y-3">
                 <li>
                   <Link 
                     href="https://docs.netsepio.com/latest/cyreneai" 
                     target="_blank"
-                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                    className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                   >
                     Docs
                   </Link>
@@ -103,12 +119,12 @@ const Footer = () => {
             {/* Resources */}
             <div className="md:col-span-3">
               <SectionHeader icon={<BookOpen className="h-4 w-4" />} title="Resources" />
-              <ul className="mt-4 space-y-3">
+              <ul className="space-y-3">
                 <li>
                   <Link 
                     href="https://play.google.com/store/apps/details?id=com.erebrus.app" 
                     target="_blank"
-                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                    className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                   >
                     Erebrus Android
                   </Link>
@@ -117,7 +133,7 @@ const Footer = () => {
                   <Link 
                     href="https://testflight.apple.com/join/BvdARC75" 
                     target="_blank"
-                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                    className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                   >
                     Erebrus iOS*
                   </Link>
@@ -125,7 +141,7 @@ const Footer = () => {
                 <li>
                   <Link 
                     href="" 
-                    className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                    className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                   >
                     Browser Extension
                   </Link>
@@ -136,10 +152,10 @@ const Footer = () => {
             {/* Contact */}
             <div className="md:col-span-2">
               <SectionHeader icon={<Mail className="h-4 w-4" />} title="Contact" />
-              <div className="mt-4">
+              <div>
                 <Link
                   href="mailto:support@cyreneai.com"
-                  className="text-[#ffffff] text-lg hover:underline underline-offset-4"
+                  className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                 >
                   support@cyreneai.com
                 </Link>
@@ -152,9 +168,9 @@ const Footer = () => {
 
           {/* Bottom bar */}
           <div className="flex flex-col items-center justify-between gap-6 text-[#ffffff] md:flex-row">
-            <p className="text-[#7282b6]">© 2025 CyreneAI. All rights reserved.</p>
+            <p className="text-[#7282b6] font-outfit text-sm">© 2025 CyreneAI. All rights reserved.</p>
 
-            <div className="flex items-center gap-3 text-[#7282b6]">
+            <div className="flex items-center gap-3 text-[#7282b6] font-outfit text-sm">
               <span>Powered by</span>
               <Link href='https://netsepio.com' target='_blank' rel='noopener noreferrer'>
                 <Image
@@ -168,10 +184,10 @@ const Footer = () => {
             </div>
 
             <div className="flex items-center gap-8">
-              <Link href="/privacy" className="text-[#ffffff] hover:underline underline-offset-4">
+              <Link href="/privacy" className="text-[#ffffff] font-outfit text-sm hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="text-[#ffffff] hover:underline underline-offset-4">
+              <Link href="/terms" className="text-[#ffffff] font-outfit text-sm hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4">
                 Terms of Service
               </Link>
             </div>
