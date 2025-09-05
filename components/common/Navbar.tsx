@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { AuthButton } from './AuthButton';
 import { useWalletAuth } from '@/context/appkit';
 
+// Add Connection and PublicKey imports for Solana
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -24,21 +26,66 @@ export default function Navbar() {
   const [showDashboardDropdown, setShowDashboardDropdown] = useState(false);
   const [showLaunchDropdown, setShowLaunchDropdown] = useState(false);
   const [showExploreDropdown, setShowExploreDropdown] = useState(false);
+  const [solBalance, setSolBalance] = useState<number>(0);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const launchDropdownRef = useRef<HTMLDivElement>(null);
   const exploreDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Initialize Solana connection
+  const connection = new Connection(
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, 
+    "confirmed"
+  );
+
+  // Function to fetch SOL balance
+  const fetchSolBalance = async (walletAddress: string) => {
+    try {
+      setIsLoadingBalance(true);
+      const publicKey = new PublicKey(walletAddress);
+      const balance = await connection.getBalance(publicKey);
+      const solBalance = balance / LAMPORTS_PER_SOL;
+      setSolBalance(solBalance);
+    } catch (error) {
+      console.error('Error fetching SOL balance:', error);
+      setSolBalance(0);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
   useEffect(() => {
     if (isConnected && address) {
       localStorage.setItem('walletAddress', address);
+      // Fetch balance when wallet connects or address changes
+      fetchSolBalance(address);
     } else {
       localStorage.removeItem('walletAddress');
+      setSolBalance(0);
       // Clear any cached wallet state
       localStorage.removeItem('currentAgentId');
       localStorage.removeItem('currentAgentName');
       localStorage.removeItem('currentAgentImage');
     }
   }, [isConnected, address]);
+
+  // Periodically update balance every 30 seconds when connected
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (isConnected && address && isAuthenticated) {
+      intervalId = setInterval(() => {
+        fetchSolBalance(address);
+      }, 30000); // Update every 30 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isConnected, address, isAuthenticated]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,6 +135,14 @@ export default function Navbar() {
       setShowLaunchDropdown(false);
       router.push(path);
     }
+  };
+
+  // Format balance display
+  const formatBalance = (balance: number) => {
+    if (isLoadingBalance) return '...';
+    if (balance === 0) return '0.000';
+    if (balance < 0.001) return '<0.001';
+    return balance.toFixed(3);
   };
 
   return (
@@ -274,14 +329,17 @@ export default function Navbar() {
               title="Open account"
               onClick={() => open()}
             >
-              <div className="w-6 h-6 bg-gradient-to-r from-[#4D84EE] to-[#6366f1] rounded-full flex items-center justify-center">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
-                  <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v13z"/>
-                  <path d="M7 9h10v4H7z"/>
-                </svg>
-              </div>
+             <div className="w-6 h-6 bg-gradient-to-r from-[#4D84EE] to-[#6366f1] rounded-full flex items-center justify-center">
+  <svg width="12" height="12" viewBox="0 0 397.7 311.7" fill="currentColor" className="text-white">
+    <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 237.9z"/>
+    <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1L333.1 73.8c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+    <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+  </svg>
+</div>
               <span className="font-mono truncate max-w-[100px]">{address.slice(0, 4)}...{address.slice(-4)}</span>
-              <span className="ml-1 text-xs text-[#4D84EE] whitespace-nowrap">0.000 SOL</span>
+              <span className="ml-1 text-xs text-[#4D84EE] whitespace-nowrap">
+                {formatBalance(solBalance)} SOL
+              </span>
             </div>
           )}
 

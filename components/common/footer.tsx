@@ -140,7 +140,8 @@ const Footer = () => {
                 </li>
                 <li>
                   <Link 
-                    href="" 
+                    href="https://chromewebstore.google.com/detail/netsepio/bbkfclgnbddljhepbfpongcollhocghd?pli=1" 
+                    target="_blank"
                     className="text-[#ffffff] font-outfit text-base hover:text-[#7282b6] transition-colors duration-300 hover:underline underline-offset-4"
                   >
                     Browser Extension
