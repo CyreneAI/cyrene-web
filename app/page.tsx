@@ -525,9 +525,9 @@ const TokenCarousel = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="font-outfit px-8 py-3 bg-[#4D84EE] text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              Explore All Tokens
+              Explore All Projects
             </motion.button>
           </Link>
         </motion.div>
@@ -897,7 +897,7 @@ const AgentsCarousel = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="font-outfit px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="font-outfit px-8 py-3 bg-[#4D84EE] text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Explore All Agents
               </motion.button>
@@ -1115,8 +1115,8 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
                 className="text-center mb-16"
               >
-                <h2 className="font-outfit text-[21px] font-semi-bold text-white mb-4 uppercase tracking-[20px] leading-[130%] text-center">
-                  Why Launch on CyreneAI?
+                <h2 className="font-moonhouse text-[30px] font-bold text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
+                  Why CyreneAI ?
                 </h2>
                 <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
               </motion.div>
