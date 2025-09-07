@@ -20,7 +20,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   metadataBase: new URL("https://cyreneai.com"),
   title: "CyreneAI",
-  description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
+  description: "Decentralized Launchpad fueling Internet Capital Markets, where AI Agents empower cutting-edge projects with tokenized funding. Powered by NetSepio",
   icons: {
     icon: [
       { url: "/CyreneAI_logo_square.png", sizes: "32x32", type: "image/png" },
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "CyreneAI",
-    description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
+    description: "Decentralized Launchpad fueling Internet Capital Markets, where AI Agents empower cutting-edge projects with tokenized funding. Powered by NetSepio",
     url: "https://cyreneai.com/",
     siteName: "CyreneAI",
     images: [
       {
-        url: "/CyreneAI_share.png",
+        url: "/Cyrene_metadata-image.webp",
         width: 1200,
         height: 630,
         alt: "Guiding Humanity to the Agentic Future",
@@ -49,10 +49,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CyreneAI",
-    description: "Powering the future of AI interaction through multi-agent collaboration with self-replicating, decentralized agents. Launch agents, engage with Cyrene, and unlock new frontiers in AI, technology, and consciousness.",
+    description: "Decentralized Launchpad fueling Internet Capital Markets, where AI Agents empower cutting-edge projects with tokenized funding. Powered by NetSepio",
     images: [
       {
-        url: "/CyreneAI_share.png",
+        url: "/Cyrene_metadata-image.webp",
         width: 1200,
         height: 630,
         alt: "Guiding Humanity to the Agentic Future",
