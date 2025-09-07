@@ -20,7 +20,8 @@ export interface LaunchedTokenDB {
   token_name: string;
   token_symbol: string;
   damm_pool_address: string | null;
-  metadata_uri: string | null; // New field for IPFS metadata URI
+  metadata_uri: string | null;
+  trade_status: boolean; // New field for trade status
   launched_at: number;
   created_at: string;
   updated_at: string;
@@ -35,7 +36,8 @@ export interface LaunchedTokenData {
   tokenName: string;
   tokenSymbol: string;
   dammPoolAddress?: string;
-  metadataUri?: string; // New field for IPFS metadata URI
+  metadataUri?: string;
+  tradeStatus: boolean; // New field for trade status
   launchedAt: number;
 }
 
@@ -49,6 +51,7 @@ export const dbToFrontend = (dbToken: LaunchedTokenDB): LaunchedTokenData => ({
   tokenSymbol: dbToken.token_symbol,
   dammPoolAddress: dbToken.damm_pool_address || undefined,
   metadataUri: dbToken.metadata_uri || undefined,
+  tradeStatus: dbToken.trade_status,
   launchedAt: dbToken.launched_at
 });
 
@@ -63,5 +66,6 @@ export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): O
   token_symbol: token.tokenSymbol,
   damm_pool_address: token.dammPoolAddress || null,
   metadata_uri: token.metadataUri || null,
+  trade_status: token.tradeStatus,
   launched_at: token.launchedAt
 });

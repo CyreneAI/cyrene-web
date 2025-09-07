@@ -128,7 +128,7 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Update a launched token (mainly for adding DAMM pool address)
+   * Update a launched token (mainly for adding DAMM pool address or trade status)
    */
   static async updateLaunchedToken(
     contractAddress: string, 
@@ -146,6 +146,12 @@ export class LaunchedTokensService {
       }
       if (updates.tokenSymbol !== undefined) {
         dbUpdates.token_symbol = updates.tokenSymbol;
+      }
+      if (updates.tradeStatus !== undefined) {
+        dbUpdates.trade_status = updates.tradeStatus;
+      }
+      if (updates.metadataUri !== undefined) {
+        dbUpdates.metadata_uri = updates.metadataUri;
       }
       // Add other fields as needed
 
@@ -170,6 +176,40 @@ export class LaunchedTokensService {
       return dbToFrontend(data as LaunchedTokenDB);
     } catch (error) {
       console.error('Service error updating launched token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update trade status for a specific token
+   */
+  static async updateTradeStatus(
+    contractAddress: string, 
+    walletAddress: string, 
+    tradeStatus: boolean
+  ): Promise<LaunchedTokenData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .update({ trade_status: tradeStatus })
+        .eq('contract_address', contractAddress)
+        .eq('wallet_address', walletAddress)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error updating trade status:', error);
+        throw new Error(`Failed to update trade status: ${error.message}`);
+      }
+
+      if (!data) {
+        console.warn('No token found to update trade status');
+        return null;
+      }
+
+      return dbToFrontend(data as LaunchedTokenDB);
+    } catch (error) {
+      console.error('Service error updating trade status:', error);
       throw error;
     }
   }
@@ -247,12 +287,18 @@ export class LaunchedTokensService {
 
       for (const token of tokens) {
         try {
+          // Add default trade status for migrated tokens
+          const tokenWithTradeStatus = {
+            ...token,
+            tradeStatus: token.tradeStatus ?? true // Default to enabled if not set
+          };
+
           // Check if token already exists in database
           const existing = await this.getLaunchedTokenByContract(token.contractAddress, walletAddress);
           
           if (!existing) {
             // Save to database
-            const saved = await this.saveLaunchedToken(token, walletAddress);
+            const saved = await this.saveLaunchedToken(tokenWithTradeStatus, walletAddress);
             migratedTokens.push(saved);
           } else {
             migratedTokens.push(existing);

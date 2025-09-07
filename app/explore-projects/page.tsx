@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Search, RefreshCw, AlertCircle, TrendingUp, ExternalLink, ImageIcon, Copy, Check, Filter, ChevronDown } from 'lucide-react';
+import { Loader2, Search, RefreshCw, AlertCircle, TrendingUp, ExternalLink, ImageIcon, Copy, Check, Filter, ChevronDown, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
@@ -33,7 +33,7 @@ export default function ExploreProjectsPage() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
-  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'alphabetical' | 'alphabetical-desc' | 'graduated-first' | 'active-first'>('latest');
+  const [sortBy, setSortBy] = useState<'latest' | 'oldest' | 'alphabetical' | 'alphabetical-desc' | 'graduated-first' | 'active-first' | 'tradeable-first'>('latest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   
   const itemsPerPage = 12;
@@ -48,6 +48,7 @@ export default function ExploreProjectsPage() {
     { value: 'alphabetical-desc', label: 'Z-A', icon: '🔠' },
     { value: 'graduated-first', label: 'Graduated First', icon: '🎓' },
     { value: 'active-first', label: 'Active First', icon: '⚡' },
+    { value: 'tradeable-first', label: 'Tradeable First', icon: '💰' },
   ];
 
   // Close dropdown when clicking outside
@@ -140,6 +141,12 @@ export default function ExploreProjectsPage() {
           if (a.dammPoolAddress && !b.dammPoolAddress) return 1;
           return b.launchedAt - a.launchedAt; // Secondary sort by latest
         });
+      case 'tradeable-first':
+        return sorted.sort((a, b) => {
+          if (a.tradeStatus && !b.tradeStatus) return -1;
+          if (!a.tradeStatus && b.tradeStatus) return 1;
+          return b.launchedAt - a.launchedAt; // Secondary sort by latest
+        });
       default:
         return sorted.sort((a, b) => b.launchedAt - a.launchedAt);
     }
@@ -177,6 +184,12 @@ export default function ExploreProjectsPage() {
 
   // Handle trade button click
   const handleTradeClick = (token: LaunchedTokenData) => {
+    if (!token.tradeStatus) {
+      // Redirect to Jupiter tokens page if trade is disabled
+      window.open(`https://jup.ag/tokens/${token.contractAddress}`, '_blank');
+      return;
+    }
+    
     setSelectedToken(token);
     setShowTradeModal(true);
   };
@@ -304,7 +317,8 @@ export default function ExploreProjectsPage() {
                   sortBy === 'alphabetical' ? 'A-Z' :
                   sortBy === 'alphabetical-desc' ? 'Z-A' :
                   sortBy === 'graduated-first' ? 'Graduated First' :
-                  sortBy === 'active-first' ? 'Active First' : 'Latest First'
+                  sortBy === 'active-first' ? 'Active First' :
+                  sortBy === 'tradeable-first' ? 'Tradeable First' : 'Latest First'
                 }
               </div>
             </div>
@@ -453,14 +467,18 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Simple status determination without API calls
+  // Enhanced status determination including trade status
   const getTokenStatus = () => {
     // If dammPoolAddress exists, token has graduated
     if (token.dammPoolAddress) {
-      return { status: 'graduated', label: 'Graduated' };
+      return { status: 'graduated', label: 'Graduated', color: 'green' };
     }
-    // Otherwise, it's still active in DBC pool
-    return { status: 'active', label: 'Active' };
+    // Check trade status for active tokens
+    if (!token.tradeStatus) {
+      return { status: 'graduated', label: 'Graduated', color: 'green' };
+    }
+    // Otherwise, it's active and tradeable
+    return { status: 'active', label: 'Active', color: 'blue' };
   };
 
   const statusInfo = getTokenStatus();
@@ -525,11 +543,11 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
     >
       {/* Status indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
-        {statusInfo.status === 'graduated' ? (
-          <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50"></div>
-        ) : (
-          <div className="w-2 h-2 bg-blue-400 rounded-full shadow-lg shadow-blue-400/50"></div>
-        )}
+        <div className={`w-2 h-2 rounded-full shadow-lg ${
+          statusInfo.color === 'green' ? 'bg-green-400 shadow-green-400/50' :
+          statusInfo.color === 'orange' ? 'bg-orange-400 shadow-orange-400/50' :
+          'bg-blue-400 shadow-blue-400/50'
+        }`}></div>
         <span className="text-xs text-gray-300">
           {statusInfo.label}
         </span>
@@ -608,6 +626,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       {/* Action Buttons */}
       <div className="flex gap-2">
         {token.dammPoolAddress ? (
+          // Graduated tokens - always go to Jupiter swap
           <a
             href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
             target="_blank"
@@ -617,7 +636,17 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
             <ExternalLink className="w-3 h-3" />
             Jupiter
           </a>
+        ) : token.tradeStatus ? (
+          // Active tokens with trade enabled - show trade button
+          <button
+            onClick={onTradeClick}
+            className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1 group-hover:bg-cyan-500 shadow-lg"
+          >
+            <TrendingUp className="w-3 h-3" />
+            Trade
+          </button>
         ) : (
+          // Active tokens with trade disabled - show view on Jupiter button
           <button
             onClick={onTradeClick}
             className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1 group-hover:bg-cyan-500 shadow-lg"

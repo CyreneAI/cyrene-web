@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap, Image as LucidImage } from 'lucide-react';
+import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap, Image as LucidImage, Ban, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -33,6 +33,8 @@ interface TokenLaunchParams {
   firstBuyAmountSol: number;
   minimumTokensOut: number;
   enableFirstBuy: boolean;
+  // Trade status parameter
+  tradeStatus: boolean;
 }
 
 interface PriceData {
@@ -89,7 +91,8 @@ export default function LaunchProjectsPage() {
     description: '',
     firstBuyAmountSol: 0.1, // Default 0.1 SOL first buy
     minimumTokensOut: 1000000, // Default minimum tokens expected
-    enableFirstBuy: true // Enable first buy by default
+    enableFirstBuy: true, // Enable first buy by default
+    tradeStatus: true // Enable trading by default
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -378,6 +381,50 @@ export default function LaunchProjectsPage() {
     }
   }, []); // Empty deps - uses refs for current values
 
+  // Function to handle trade status toggle for existing tokens
+  const handleTradeStatusToggle = async (token: LaunchedTokenData) => {
+    const currentAddress = addressRef.current;
+    if (!currentAddress) return;
+    
+    try {
+      const updatedToken = await LaunchedTokensService.updateTradeStatus(
+        token.contractAddress,
+        currentAddress,
+        !token.tradeStatus
+      );
+      
+      if (updatedToken) {
+        // Update both lists and current token
+        setLaunchedTokens(prevTokens => 
+          prevTokens.map(t => 
+            t.contractAddress === token.contractAddress ? updatedToken : t
+          )
+        );
+        
+        if (currentLaunchedToken?.contractAddress === token.contractAddress) {
+          setCurrentLaunchedToken(updatedToken);
+        }
+        
+        toast.success(`Trading ${updatedToken.tradeStatus ? 'enabled' : 'disabled'} for ${updatedToken.tokenName}`);
+      }
+    } catch (error) {
+      console.error('Error updating trade status:', error);
+      toast.error('Failed to update trade status');
+    }
+  };
+
+  // Handle trade button click - now respects trade status
+  const handleTradeClick = (token: LaunchedTokenData) => {
+    if (!token.tradeStatus) {
+      // Redirect to Jupiter tokens page if trade is disabled
+      window.open(`https://jup.ag/tokens/${token.contractAddress}`, '_blank');
+      return;
+    }
+    
+    setSelectedToken(token);
+    setShowTradeModal(true);
+  };
+
   // Fetch real-time prices
   useEffect(() => {
     const fetchPrices = async () => {
@@ -520,6 +567,7 @@ export default function LaunchProjectsPage() {
         tokenName: params.name,
         tokenSymbol: params.symbol,
         metadataUri: poolResult.metadataUri, // Add this line to store IPFS metadata URI
+        tradeStatus: params.tradeStatus, // Include trade status
         launchedAt: Date.now()
       };
   
@@ -536,7 +584,8 @@ export default function LaunchProjectsPage() {
         description: '',
         firstBuyAmountSol: 0.1,
         minimumTokensOut: 1000000,
-        enableFirstBuy: true
+        enableFirstBuy: true,
+        tradeStatus: true // Reset to enabled
       });
 
       // Reset image states
@@ -555,8 +604,7 @@ export default function LaunchProjectsPage() {
   // Handle trade button click for current token
   const handleTradeCurrentToken = () => {
     if (currentLaunchedToken) {
-      setSelectedToken(currentLaunchedToken);
-      setShowTradeModal(true);
+      handleTradeClick(currentLaunchedToken);
     }
   };
 
@@ -784,6 +832,44 @@ export default function LaunchProjectsPage() {
                   </div>
                 </div>
 
+                {/* Trade Settings Section */}
+                {/* <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Settings className="w-6 h-6 text-purple-400" />
+                    <h3 className="text-lg font-semibold text-white">Trade Settings</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label htmlFor="tradeStatus" className="text-gray-300 text-sm font-medium">
+                          Enable Trading
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Allow users to trade your token directly or redirect to Jupiter
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="tradeStatus"
+                          name="tradeStatus"
+                          checked={params.tradeStatus}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                          disabled={isLoading}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
+                      💡 <strong>Trade Status:</strong> When enabled, users can trade your token directly through our platform. 
+                      When disabled, users will be redirected to Jupiter's token information page.
+                    </div>
+                  </div>
+                </div> */}
+
                 {/* Bot Protection Section */}
                 <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -1004,10 +1090,8 @@ export default function LaunchProjectsPage() {
                       token={token}
                       index={index}
                       onDammDerived={handleTokenDammDerived}
-                      onTradeClick={() => {
-                        setSelectedToken(token);
-                        setShowTradeModal(true);
-                      }}
+                      onTradeClick={() => handleTradeClick(token)}
+                      onTradeStatusToggle={() => handleTradeStatusToggle(token)}
                     />
                   ))}
                 </div>
@@ -1059,13 +1143,22 @@ export default function LaunchProjectsPage() {
                         <button disabled className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium cursor-wait">
                           Finalizing AMM...
                         </button>
-                      ) : (
+                      ) : currentLaunchedToken.tradeStatus ? (
                         <button
                           onClick={handleTradeCurrentToken}
                           className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                         >
                           <TrendingUp className="w-4 h-4" />
                           Trade
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleTradeCurrentToken}
+                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                          title="Trading disabled - view on Jupiter"
+                        >
+                          <Ban className="w-4 h-4" />
+                          View on Jupiter
                         </button>
                       )}
                       
@@ -1116,13 +1209,15 @@ interface LaunchedTokenCardProps {
   index: number;
   onDammDerived: (dammPoolAddress: string, tokenIndex: number) => void;
   onTradeClick: () => void;
+  onTradeStatusToggle: () => void;
 }
 
 const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({ 
   token, 
   index, 
   onDammDerived, 
-  onTradeClick 
+  onTradeClick,
+  onTradeStatusToggle
 }) => {
   // Create a stable callback for this specific token using useCallback
   const handleDammDerived = useCallback((dammPoolAddress: string) => {
@@ -1157,6 +1252,19 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
     }
   };
 
+  // Enhanced status determination including trade status
+  const getTokenStatus = () => {
+    if (token.dammPoolAddress) {
+      return { status: 'graduated', label: 'Graduated', color: 'green' };
+    }
+    if (!token.tradeStatus) {
+      return { status: 'trade-disabled', label: 'View Only', color: 'orange' };
+    }
+    return { status: 'active', label: 'Active', color: 'blue' };
+  };
+
+  const statusInfo = getTokenStatus();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1173,64 +1281,78 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
               {token.quoteMint}
             </span>
             <div className="flex items-center gap-2">
-              {isPoolStatusLoading ? (
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              ) : isGraduated ? (
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              ) : (
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              )}
+              <div className={`w-2 h-2 rounded-full ${
+                statusInfo.color === 'green' ? 'bg-green-500' :
+                statusInfo.color === 'orange' ? 'bg-orange-500 animate-pulse' :
+                'bg-blue-500 animate-pulse'
+              }`}></div>
               <span className="text-xs text-gray-500">
-                {isPoolStatusLoading ? 'Checking...' : isGraduated ? 'Graduated' : 'DBC Pool'}
+                {statusInfo.label}
               </span>
             </div>
           </div>
         </div>
-        <p className="text-xs text-gray-500">
-          {formatDate(token.launchedAt)}
-        </p>
+        <div className="flex flex-col items-end gap-2">
+          <p className="text-xs text-gray-500">
+            {formatDate(token.launchedAt)}
+          </p>
+          {/* Trade Status Toggle - only show for non-graduated tokens */}
+          {!token.dammPoolAddress && (
+            <button
+              onClick={onTradeStatusToggle}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                token.tradeStatus 
+                  ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30' 
+                  : 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
+              }`}
+              title={`Click to ${token.tradeStatus ? 'disable' : 'enable'} trading`}
+            >
+              {token.tradeStatus ? 'Trading ON' : 'Trading OFF'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-  <div>
-    <div className="flex items-center gap-2 mb-1">
-      <span className="text-gray-400">Token:</span>
-      <button
-        onClick={() => copyToClipboard(token.contractAddress, 'Contract Address')}
-        className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
-        title="Copy contract address"
-      >
-        {copiedField === 'Contract Address' ? (
-          <Check className="w-3 h-3 text-green-400" />
-        ) : (
-          <Copy className="w-3 h-3" />
-        )}
-      </button>
-    </div>
-    <p className="text-gray-300 font-mono truncate">
-      {token.contractAddress.slice(0, 8)}...{token.contractAddress.slice(-4)}
-    </p>
-  </div>
-  <div>
-    <div className="flex items-center gap-2 mb-1">
-      <span className="text-gray-400">Pool:</span>
-      <button
-        onClick={() => copyToClipboard(token.dbcPoolAddress, 'Pool Address')}
-        className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
-        title="Copy pool address"
-      >
-        {copiedField === 'Pool Address' ? (
-          <Check className="w-3 h-3 text-green-400" />
-        ) : (
-          <Copy className="w-3 h-3" />
-        )}
-      </button>
-    </div>
-    <p className="text-gray-300 font-mono truncate">
-      {token.dbcPoolAddress.slice(0, 8)}...{token.dbcPoolAddress.slice(-4)}
-    </p>
-  </div>
-</div>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-gray-400">Token:</span>
+            <button
+              onClick={() => copyToClipboard(token.contractAddress, 'Contract Address')}
+              className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+              title="Copy contract address"
+            >
+              {copiedField === 'Contract Address' ? (
+                <Check className="w-3 h-3 text-green-400" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
+          </div>
+          <p className="text-gray-300 font-mono truncate">
+            {token.contractAddress.slice(0, 8)}...{token.contractAddress.slice(-4)}
+          </p>
+        </div>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-gray-400">Pool:</span>
+            <button
+              onClick={() => copyToClipboard(token.dbcPoolAddress, 'Pool Address')}
+              className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
+              title="Copy pool address"
+            >
+              {copiedField === 'Pool Address' ? (
+                <Check className="w-3 h-3 text-green-400" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
+          </div>
+          <p className="text-gray-300 font-mono truncate">
+            {token.dbcPoolAddress.slice(0, 8)}...{token.dbcPoolAddress.slice(-4)}
+          </p>
+        </div>
+      </div>
 
       <div className="flex gap-2">
         {isPoolStatusLoading ? (
@@ -1250,13 +1372,22 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
           <button disabled className="flex-1 py-2 bg-blue-600 text-white rounded-lg cursor-wait text-sm">
             Finalizing...
           </button>
-        ) : (
+        ) : token.tradeStatus ? (
           <button
             onClick={onTradeClick}
             className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1"
           >
             <TrendingUp className="w-3 h-3" />
             Trade
+          </button>
+        ) : (
+          <button
+            onClick={onTradeClick}
+            className="flex-1 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1"
+            title="Trading disabled - view on Jupiter"
+          >
+            <Ban className="w-3 h-3" />
+            View Only
           </button>
         )}
         
@@ -1277,6 +1408,7 @@ const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({
   return (
     prevProps.token.contractAddress === nextProps.token.contractAddress &&
     prevProps.token.dammPoolAddress === nextProps.token.dammPoolAddress &&
+    prevProps.token.tradeStatus === nextProps.token.tradeStatus &&
     prevProps.index === nextProps.index
   );
 });
