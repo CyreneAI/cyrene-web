@@ -207,14 +207,14 @@ export default function Navbar() {
                       className="w-full flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all text-left"
                     >
                       <FaRobot className="w-4 h-4 mr-2" />
-                      Launch Agents
+                      Agents
                     </button>
                     <button
                       onClick={(e) => handleLaunchClick(e, '/launch-projects', false)}
                       className="w-full flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all text-left"
                     >
                       <FaRocket className="w-4 h-4 mr-2" />
-                      Launch Projects
+                      Projects
                     </button>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export default function Navbar() {
                       onClick={() => setShowExploreDropdown(false)}
                     >
                       <FaRobot className="w-4 h-4 mr-2" />
-                      Explore Agents
+                      Agents
                     </Link>
                     <Link
                       href="/explore-projects"
@@ -252,7 +252,7 @@ export default function Navbar() {
                       onClick={() => setShowExploreDropdown(false)}
                     >
                       <FaRocket className="w-4 h-4 mr-2" />
-                      Explore Projects
+                      Projects
                     </Link>
                   </div>
                 </div>
@@ -283,7 +283,7 @@ export default function Navbar() {
                       onClick={handleDashboardClick}
                     >
                       <FaRobot className="w-4 h-4 mr-2" />
-                      My Agents
+                      My Profile
                     </Link>
                     <Link
                       href={isAuthenticated ? '/perks' : '#'}

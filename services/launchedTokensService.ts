@@ -1,4 +1,6 @@
+// services/launchedTokensService.ts - Updated to work with project ideas
 import { supabase, LaunchedTokenData, LaunchedTokenDB, dbToFrontend, frontendToDb } from '@/lib/supabase';
+import { ProjectIdeasService } from './projectIdeasService';
 
 export class LaunchedTokensService {
   /**
@@ -99,11 +101,20 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Save a new launched token
+   * Save a new launched token (with optional project idea link)
    */
-  static async saveLaunchedToken(tokenData: LaunchedTokenData, walletAddress: string): Promise<LaunchedTokenData> {
+  static async saveLaunchedToken(
+    tokenData: LaunchedTokenData, 
+    walletAddress: string,
+    projectIdeaId?: string
+  ): Promise<LaunchedTokenData> {
     try {
       const dbData = frontendToDb(tokenData, walletAddress);
+      
+      // Add project idea reference if provided
+      if (projectIdeaId) {
+        (dbData as any).project_idea_id = projectIdeaId;
+      }
 
       const { data, error } = await supabase
         .from('launched_tokens')
@@ -120,9 +131,55 @@ export class LaunchedTokensService {
         throw new Error('No data returned from insert operation');
       }
 
-      return dbToFrontend(data as LaunchedTokenDB);
+      const savedToken = dbToFrontend(data as LaunchedTokenDB);
+
+      // If this token was launched from a project idea, mark the idea as launched
+      if (projectIdeaId) {
+        try {
+          await ProjectIdeasService.markAsLaunched(projectIdeaId, walletAddress, data.id);
+        } catch (ideaError) {
+          console.warn('Failed to update project idea status:', ideaError);
+          // Don't throw error here as the token was successfully saved
+        }
+      }
+
+      return savedToken;
     } catch (error) {
       console.error('Service error saving launched token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Launch token from existing project idea
+   */
+  static async launchTokenFromProjectIdea(
+    ideaId: string,
+    walletAddress: string,
+    tokenData: Omit<LaunchedTokenData, 'projectIdeaId'>
+  ): Promise<LaunchedTokenData> {
+    try {
+      // Get the project idea to ensure it exists and belongs to the user
+      const projectIdea = await ProjectIdeasService.getProjectIdeaById(ideaId, walletAddress);
+      
+      if (!projectIdea) {
+        throw new Error('Project idea not found');
+      }
+
+      if (projectIdea.isLaunched) {
+        throw new Error('Project idea has already been launched');
+      }
+
+      // Save the token with project idea reference
+      const savedToken = await this.saveLaunchedToken(
+        { ...tokenData, projectIdeaId: ideaId }, 
+        walletAddress, 
+        ideaId
+      );
+
+      return savedToken;
+    } catch (error) {
+      console.error('Service error launching token from project idea:', error);
       throw error;
     }
   }
@@ -153,7 +210,9 @@ export class LaunchedTokensService {
       if (updates.metadataUri !== undefined) {
         dbUpdates.metadata_uri = updates.metadataUri;
       }
-      // Add other fields as needed
+      if (updates.projectIdeaId !== undefined) {
+        (dbUpdates as any).project_idea_id = updates.projectIdeaId;
+      }
 
       const { data, error } = await supabase
         .from('launched_tokens')
@@ -266,6 +325,32 @@ export class LaunchedTokensService {
       return dbToFrontend(data as LaunchedTokenDB);
     } catch (error) {
       console.error('Service error fetching launched token by contract:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tokens launched from project ideas
+   */
+  static async getTokensFromProjectIdeas(walletAddress: string): Promise<LaunchedTokenData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .not('project_idea_id', 'is', null)
+        .order('launched_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tokens from project ideas:', error);
+        throw new Error(`Failed to fetch tokens from project ideas: ${error.message}`);
+      }
+
+      if (!data) return [];
+
+      return data.map(dbToFrontend);
+    } catch (error) {
+      console.error('Service error fetching tokens from project ideas:', error);
       throw error;
     }
   }

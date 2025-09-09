@@ -220,14 +220,14 @@ export const QUOTE_MINTS = {
     decimals: 9,
     name: "Solana",
     coingeckoId: "solana"
+  },
+  CYAI: {
+    address: "6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray", // Update this with actual mainnet CYAI address
+    fullSymbol: "CYAI", 
+    decimals: 6,
+    name: "Cyrene AI",
+    coingeckoId: "cyrene-ai"
   }
-  // CYAI: {
-  //   address: "6Tph3SxbAW12BSJdCevVV9Zujh97X69d5MJ4XjwKmray", // Update this with actual mainnet CYAI address
-  //   fullSymbol: "CYAI", 
-  //   decimals: 6,
-  //   name: "Cyrene AI",
-  //   coingeckoId: "cyrene-ai"
-  // }
 } as const;
 
 export type QuoteMintType = keyof typeof QUOTE_MINTS;
