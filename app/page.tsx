@@ -525,7 +525,7 @@ const TokenCarousel = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="font-outfit px-8 py-3 bg-[#4D84EE] text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="flex w-[269px] h-[70px] items-center justify-center font-outfit font-normal text-[21px] text-black bg-white rounded-[50px] border-2 border-solid border-white hover:bg-black hover:text-white transition-colors duration-300 mx-auto"
             >
               Explore All Projects
             </motion.button>
@@ -897,7 +897,7 @@ const AgentsCarousel = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="font-outfit px-8 py-3 bg-[#4D84EE] text-white font-semibold rounded-[50px] transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="flex w-[269px] h-[70px] items-center justify-center font-outfit font-normal text-[21px] text-black bg-white rounded-[50px] border-2 border-solid border-white hover:bg-black hover:text-white transition-colors duration-300 mx-auto"
               >
                 Explore All Agents
               </motion.button>
@@ -1199,7 +1199,11 @@ export default function Home() {
           {/* Stats Section */}
           <Stats/>
           <ScrollVelocity
-            texts={['Orchestrating Multi-agent Collaboration', 'Self-replicating AI Agents']} 
+            texts={[
+              'AI Agents, Your Launch Partners', 
+              'Decentralized Infrastructure', 
+              'Internet Capital Markets',
+            ]} 
             velocity={80} 
             className="text-white opacity-80"
             withStars={true}

@@ -22,6 +22,7 @@ export interface BentoProps {
   glowColor?: string;
   clickEffect?: boolean;
   enableMagnetism?: boolean;
+  customCardData?: BentoCardProps[];
 }
 
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -31,25 +32,25 @@ const MOBILE_BREAKPOINT = 768;
 
 const cardData: BentoCardProps[] = [
   {
-    color: '#060010',
+    color: '#0A122E',
     title: 'Analytics',
     description: 'Track user behavior',
     label: 'Insights'
   },
   {
-    color: '#060010',
+    color: '#18285C',
     title: 'Dashboard',
     description: 'Centralized data view',
     label: 'Overview'
   },
   {
-    color: '#060010',
+    color: '#2C3C70',
     title: 'Collaboration',
     description: 'Work together seamlessly',
     label: 'Teamwork'
   },
   {
-    color: '#060010',
+    color: '#2C3C70',
     title: 'Automation',
     description: 'Streamline workflows',
     label: 'Efficiency'
@@ -100,6 +101,20 @@ const updateCardGlowProperties = (card: HTMLElement, mouseX: number, mouseY: num
   card.style.setProperty('--glow-y', `${relativeY}%`);
   card.style.setProperty('--glow-intensity', glow.toString());
   card.style.setProperty('--glow-radius', `${radius}px`);
+};
+
+// Map for image paths based on card labels from the Figma design
+const getImagePathForLabel = (label: string) => {
+  const imageMap: Record<string, string> = {
+    'Self-Replicating AI': '/Double_L_Shape.png',
+    'Universal Scalability Layer': '/HoneyComb_Shape.png',
+    'Unstoppable Ecosystem': '/Cube_Hollow_Shape.png',
+    'Decentralized Infrastructure': '/Star_Mixer_Abstract_Shape.png',
+    'Towards Digital, Agentic Future': '/Plus_Abstract_Shape 2.png',
+    'Hyper Coherent Network': '/HoneyComb_Shape.png'
+  };
+  
+  return imageMap[label] || '/star.png'; // Fallback image
 };
 
 const ParticleCard: React.FC<{
@@ -492,7 +507,7 @@ const BentoCardGrid: React.FC<{
   gridRef?: React.RefObject<HTMLDivElement | null>;
 }> = ({ children, gridRef }) => (
   <div
-    className="bento-section grid gap-2 p-3 max-w-[54rem] select-none relative"
+    className="bento-section grid gap-2 w-full select-none relative"
     style={{ fontSize: 'clamp(1rem, 0.9rem + 0.5vw, 1.5rem)' }}
     ref={gridRef as React.LegacyRef<HTMLDivElement>}
   >
@@ -526,11 +541,15 @@ const MagicBento: React.FC<BentoProps> = ({
   enableTilt = false,
   glowColor = DEFAULT_GLOW_COLOR,
   clickEffect = true,
-  enableMagnetism = true
+  enableMagnetism = true,
+  customCardData
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
   const shouldDisableAnimations = disableAnimations || isMobile;
+  
+  // Use customCardData if provided, otherwise use the default cardData defined earlier
+  const displayData = customCardData || cardData;
 
   return (
     <>
@@ -551,36 +570,78 @@ const MagicBento: React.FC<BentoProps> = ({
           }
           
           .card-responsive {
+            display: grid;
             grid-template-columns: 1fr;
-            width: 90%;
-            margin: 0 auto;
-            padding: 0.5rem;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            gap: 14px;
           }
           
           @media (min-width: 600px) {
             .card-responsive {
               grid-template-columns: repeat(2, 1fr);
+              gap: 16px;
             }
           }
           
           @media (min-width: 1024px) {
             .card-responsive {
-              grid-template-columns: repeat(4, 1fr);
+              grid-template-columns: repeat(3, 1fr);
+              grid-template-rows: repeat(3, auto);
+              gap: 16px;
+              width: 100%;
             }
             
+            /* Self-Replicating AI - Large card on the left */
+            .card-responsive .card:nth-child(1) {
+              grid-column: 1;
+              grid-row: 1 / span 2;
+              min-height: 480px;
+            }
+            /* Make the first card's icon and title larger */
+            .card-responsive .card:nth-child(1) .card__icon {
+              width: 64px;
+              height: 64px;
+            }
+            .card-responsive .card:nth-child(1) .card__title {
+              font-size: 2rem;
+              line-height: 1.2;
+            }
+            
+            /* Universal Scalability Layer - Top middle */
+            .card-responsive .card:nth-child(2) {
+              grid-column: 2;
+              grid-row: 1;
+              min-height: 230px;
+            }
+            
+            /* Unstoppable Ecosystem - Top right */
             .card-responsive .card:nth-child(3) {
-              grid-column: span 2;
-              grid-row: span 2;
+              grid-column: 3;
+              grid-row: 1;
+              min-height: 230px;
             }
             
+            /* Decentralized Infrastructure - Middle wide card */
             .card-responsive .card:nth-child(4) {
-              grid-column: 1 / span 2;
-              grid-row: 2 / span 2;
+              grid-column: 2 / span 2;
+              grid-row: 2;
+              min-height: 230px;
             }
             
-            .card-responsive .card:nth-child(6) {
-              grid-column: 4;
+            /* Towards Digital, Agentic Future - Bottom wide card */
+            .card-responsive .card:nth-child(5) {
+              grid-column: 1 / span 2;
               grid-row: 3;
+              min-height: 230px;
+            }
+            
+            /* Hyper Coherent Network - Bottom right */
+            .card-responsive .card:nth-child(6) {
+              grid-column: 3;
+              grid-row: 3;
+              min-height: 230px;
             }
           }
           
@@ -645,12 +706,58 @@ const MagicBento: React.FC<BentoProps> = ({
             text-overflow: ellipsis;
           }
           
+          .text-clamp-3 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          /* Custom styles to match Figma design */
+          .card {
+            background-color: #09102F; /* default; overridden by inline per-card color */
+            border-color: rgba(58, 73, 114, 0.2) !important;
+            border-radius: 20px !important;
+            padding: 28px !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          
+          .card__icon {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 1.75rem;
+          }
+          
+          .card__title {
+            font-size: 1.3rem;
+            line-height: 1.3;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.875rem;
+          }
+          
+          .card__description {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.8);
+          }
+          
+          .card:hover {
+            border-color: rgba(132, 0, 255, 0.4) !important;
+            box-shadow: 0 8px 32px rgba(132, 0, 255, 0.2);
+            transform: translateY(-2px);
+          }
+
           @media (max-width: 599px) {
             .card-responsive {
               grid-template-columns: 1fr;
-              width: 90%;
-              margin: 0 auto;
-              padding: 0.5rem;
+              width: 100%;
+              margin: 0;
+              padding: 0;
             }
             
             .card-responsive .card {
@@ -673,13 +780,17 @@ const MagicBento: React.FC<BentoProps> = ({
 
       <BentoCardGrid gridRef={gridRef}>
         <div className="card-responsive grid gap-2">
-          {cardData.map((card, index) => {
-            const baseClassName = `card flex flex-col justify-between relative aspect-[4/3] min-h-[200px] w-full max-w-full p-5 rounded-[20px] border border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] ${
+          {displayData.map((card, index) => {
+            const isFirst = index === 0;
+            // Determine the image path based on the card's label
+            const imagePath = getImagePathForLabel(card.label || '');
+            
+            const baseClassName = `card flex flex-col justify-between relative min-h-[200px] w-full max-w-full p-5 rounded-[20px] border border-solid font-light overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] ${
               enableBorderGlow ? 'card--border-glow' : ''
             }`;
 
             const cardStyle = {
-              backgroundColor: card.color || 'var(--background-dark)',
+              backgroundColor: card.color || '#060010',
               borderColor: 'var(--border-color)',
               color: 'var(--white)',
               '--glow-x': '50%',
@@ -701,16 +812,18 @@ const MagicBento: React.FC<BentoProps> = ({
                   clickEffect={clickEffect}
                   enableMagnetism={enableMagnetism}
                 >
-                  <div className="card__header flex justify-between gap-3 relative text-white">
-                    <span className="card__label text-base">{card.label}</span>
+                  <div className="card__header relative text-white mb-4">
+                    <img 
+                      src={imagePath} 
+                      alt={`${card.label} icon`} 
+                      className="card__icon object-contain"
+                    />
                   </div>
-                  <div className="card__content flex flex-col relative text-white">
-                    <h3 className={`card__title font-normal text-base m-0 mb-1 ${textAutoHide ? 'text-clamp-1' : ''}`}>
+                  <div className="card__content flex flex-col relative text-white mt-auto">
+                    <h3 className={`card__title font-semibold m-0 mb-3 ${textAutoHide ? (isFirst ? 'text-clamp-2' : 'text-clamp-1') : ''}`}>
                       {card.title}
                     </h3>
-                    <p
-                      className={`card__description text-xs leading-5 opacity-90 ${textAutoHide ? 'text-clamp-2' : ''}`}
-                    >
+                    <p className={`card__description opacity-80 ${textAutoHide ? 'text-clamp-3' : ''}`}>
                       {card.description}
                     </p>
                   </div>
@@ -833,14 +946,18 @@ const MagicBento: React.FC<BentoProps> = ({
                   el.addEventListener('click', handleClick);
                 }}
               >
-                <div className="card__header flex justify-between gap-3 relative text-white">
-                  <span className="card__label text-base">{card.label}</span>
+                <div className="card__header relative text-white mb-4">
+                  <img 
+                    src={imagePath} 
+                    alt={`${card.label} icon`} 
+                    className="card__icon object-contain"
+                  />
                 </div>
-                <div className="card__content flex flex-col relative text-white">
-                  <h3 className={`card__title font-normal text-base m-0 mb-1 ${textAutoHide ? 'text-clamp-1' : ''}`}>
+                <div className="card__content flex flex-col relative text-white mt-auto">
+                  <h3 className={`card__title font-semibold m-0 mb-3 ${textAutoHide ? (isFirst ? 'text-clamp-2' : 'text-clamp-1') : ''}`}>
                     {card.title}
                   </h3>
-                  <p className={`card__description text-xs leading-5 opacity-90 ${textAutoHide ? 'text-clamp-2' : ''}`}>
+                  <p className={`card__description opacity-80 ${textAutoHide ? 'text-clamp-3' : ''}`}>
                     {card.description}
                   </p>
                 </div>
