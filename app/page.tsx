@@ -551,6 +551,30 @@ const TokenCarousel = () => {
         .animate-infinite-scroll:hover {
           animation-play-state: paused;
         }
+
+        /* Mobile hero section improvements */
+        @media (max-width: 640px) {
+          .hero-section {
+            min-height: 450px !important;
+          }
+          
+          .hero-content {
+            padding-bottom: 2rem !important;
+          }
+          
+          /* Ensure text doesn't overflow on very small screens */
+          .hero-title {
+            max-width: 90vw;
+            overflow-wrap: break-word;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero-section {
+            min-height: 400px !important;
+            border-radius: 16px !important;
+          }
+        }
       `}</style>
     </section>
   );
@@ -1030,7 +1054,7 @@ export default function Home() {
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <section aria-labelledby="cyrene-hero-title" className="flex w-full max-w-[1700px] mx-auto h-[600px] sm:h-[800px] lg:h-[900px] items-end justify-center gap-2.5 px-4 sm:px-8 lg:px-[517px] py-0 mt-8 md:mt-12 relative rounded-[30px] sm:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-full max-w-[1700px] mx-auto h-[500px] sm:h-[600px] md:h-[800px] lg:h-[900px] items-end justify-center gap-2.5 px-4 sm:px-8 lg:px-[517px] py-4 sm:py-0 mt-4 sm:mt-8 md:mt-12 relative rounded-[20px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
             
             {/* Background Image */}
             <img 
@@ -1040,7 +1064,7 @@ export default function Home() {
             />
             
             {/* Dark overlay */}
-            <div className="absolute inset-0 bg-black/30 md:bg-black/20 z-1" aria-hidden="true" />
+            <div className="absolute inset-0 bg-black/40 sm:bg-black/30 md:bg-black/20 z-1" aria-hidden="true" />
             
             {/* Left Arrow */}
             <img 
@@ -1058,38 +1082,38 @@ export default function Home() {
               className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
             />
             
-            <div className="inline-flex flex-col justify-center sm:-ml-[89px] items-center relative flex-[0_0_auto]">
+            <div className="hero-content inline-flex flex-col justify-center sm:-ml-[89px] items-center relative flex-[0_0_auto] w-full">
       
               {/* Header Section */}
-              <header className="flex flex-col w-[598px] gap-5 items-center relative flex-[0_0_auto]">
-                <h2 className="relative w-fit mt-[-1.00px] font-outfit font-medium text-white text-[21px] text-center tracking-[13.47px] leading-[27.3px] whitespace-nowrap">
+              <header className="flex flex-col w-full max-w-[598px] gap-3 sm:gap-5 items-center relative flex-[0_0_auto]">
+                <h2 className="relative w-fit mt-[-1.00px] font-outfit font-medium text-white text-[14px] sm:text-[18px] md:text-[21px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[18px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap">
                   JOURNEY WITH
                 </h2>
 
                 <DecryptedText
-  text="CYRENE"
-    animateOn="view"
-  revealDirection="center"
-  className="relative w-fit 
-    bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] 
-    [-webkit-background-clip:text] 
-    bg-clip-text 
-    [-webkit-text-fill-color:transparent] 
-    [text-fill-color:transparent] 
-    font-moonhouse 
-    font-normal 
-    text-transparent 
-    text-[110px] 
-    text-center 
-    tracking-[8.00px] 
-    leading-[77.0px] 
-    whitespace-nowrap"
-/>
+                  text="CYRENE"
+                  animateOn="view"
+                  revealDirection="center"
+                  className="hero-title relative w-fit 
+                    bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] 
+                    [-webkit-background-clip:text] 
+                    bg-clip-text 
+                    [-webkit-text-fill-color:transparent] 
+                    [text-fill-color:transparent] 
+                    font-moonhouse 
+                    font-normal 
+                    text-transparent 
+                    text-[60px] sm:text-[80px] md:text-[110px] 
+                    text-center 
+                    tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
+                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    whitespace-nowrap"
+                />
 
               </header>
               
               {/* Portrait Image */}
-              <div className="relative w-[400px] sm:w-[280px] lg:w-[700px] h-[288px] sm:h-[403px] lg:h-[498px] mt-[-15px] sm:mt-[-25px] lg:mt-[-30px]">
+              <div className="relative w-[250px] sm:w-[350px] md:w-[500px] lg:w-[700px] h-[180px] sm:h-[250px] md:h-[350px] lg:h-[498px] mt-[-10px] sm:mt-[-15px] md:mt-[-25px] lg:mt-[-30px]">
                 <Image
                   src="/robo.webp"
                   alt="Portrait of Cyrene, a technologically advanced female humanoid"
