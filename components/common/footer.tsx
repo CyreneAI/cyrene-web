@@ -39,15 +39,9 @@ function Wordmark() {
         <div className="flex">
           <span
             style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
-            className="text-[#ffffff] uppercase tracking-[0.4em] font-semibold leading-none select-none"
+            className="uppercase tracking-[0.4em] font-semibold leading-none select-none"
           >
-            CYRENE
-          </span>
-          <span
-            style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
-            className="text-[#4D84EE] uppercase tracking-[0.4em] font-semibold leading-none select-none"
-          >
-            AI
+            <span className="text-[#ffffff]">CYRENE</span><span className="text-[#4D84EE]">AI</span>
           </span>
         </div>
       </div>

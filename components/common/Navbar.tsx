@@ -28,6 +28,7 @@ export default function Navbar() {
   const [showExploreDropdown, setShowExploreDropdown] = useState(false);
   const [solBalance, setSolBalance] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   
   const dashboardDropdownRef = useRef<HTMLDivElement>(null);
   const launchDropdownRef = useRef<HTMLDivElement>(null);
@@ -146,13 +147,14 @@ export default function Navbar() {
   };
 
   return (
-    <header role="banner" className="fixed top-[50px] left-1/2 -translate-x-1/2 z-50">
+    <header role="banner" className="fixed z-50 md:top-[50px] md:left-1/2 md:-translate-x-1/2 top-3 left-0 right-0">
       <div
         className="
-          min-w-[900px] max-w-[1200px] h-[80px]
-          rounded-[40px]
+          w-[calc(100%-24px)] md:w-auto md:min-w-[900px] md:max-w-[1200px] h-[60px] md:h-[80px]
+          mx-auto
+          rounded-[20px] md:rounded-[40px]
           backdrop-blur-[70px]
-          px-8
+          px-4 md:px-8
           flex items-center justify-between
           shadow-[0_8px_28px_rgba(6,17,54,0.35)]
         "
@@ -163,21 +165,15 @@ export default function Navbar() {
           <div className="flex">
             <span
               style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
-              className="text-[#ffffff] uppercase tracking-[0.4em] font-semibold leading-none select-none"
+              className="uppercase tracking-[0.3em] md:tracking-[0.4em] font-semibold leading-none select-none text-[14px] md:text-base"
             >
-              CYRENE
-            </span>
-            <span
-              style={{ fontFamily: '"Moonhouse", var(--font-sans, ui-sans-serif)' }}
-              className="text-[#4D84EE] uppercase tracking-[0.4em] font-semibold leading-none select-none"
-            >
-              AI
+              <span className="text-[#ffffff]">CYRENE</span><span className="text-[#4D84EE]">AI</span>
             </span>
           </div>
         </div>
 
-        {/* Divider + Links */}
-        <div className="flex items-center gap-8 flex-1 mx-4 min-w-0">
+        {/* Divider + Links (desktop) */}
+        <div className="hidden md:flex items-center gap-8 flex-1 mx-4 min-w-0">
           <div className="flex-1 h-px border-t border-dashed border-[#4D84EE]/60 min-w-[60px]" />
           <nav className="flex items-center gap-6 whitespace-nowrap">
             <Link 
@@ -320,8 +316,8 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* Wallet Pill and Connect/Verify Buttons */}
-        <div className="flex items-center gap-3 ml-4">
+  {/* Wallet Pill and Connect/Verify Buttons (desktop) */}
+  <div className="hidden md:flex items-center gap-3 ml-4">
           {/* Wallet pill if connected and authenticated */}
           {isConnected && isAuthenticated && address && (
             <div
@@ -360,7 +356,130 @@ export default function Navbar() {
           {/* Show ConnectButton if not connected */}
           {!isConnected && <ConnectButton />}
         </div>
+
+        {/* Mobile menu toggle */}
+        <button
+          type="button"
+          className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+          aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          {mobileOpen ? <FaTimes className="w-6 h-6" /> : <FaBars className="w-6 h-6" />}
+        </button>
       </div>
+
+      {/* Mobile menu panel */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            key="mobile-menu"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="md:hidden mx-3 mt-2 rounded-2xl border border-[#4D84EE]/20 bg-[#2F3755]/90 backdrop-blur-xl shadow-2xl overflow-hidden"
+          >
+            <div className="px-4 py-3 border-b border-white/10">
+              <Link
+                href="/"
+                className={`block py-2 text-base font-medium ${pathname === '/' ? 'text-[#4D84EE]' : 'text-white'} hover:opacity-80`}
+                onClick={() => setMobileOpen(false)}
+              >
+                Home
+              </Link>
+            </div>
+
+            {/* Explore */}
+            <div className="px-4 py-3 border-b border-white/10">
+              <div className="text-xs uppercase tracking-widest text-white/60 mb-2">Explore</div>
+              <Link href="/explore-agents" className="block py-2 text-white hover:opacity-80" onClick={() => setMobileOpen(false)}>
+                Explore Agents
+              </Link>
+              <Link href="/explore-projects" className="block py-2 text-white hover:opacity-80" onClick={() => setMobileOpen(false)}>
+                Explore Projects
+              </Link>
+            </div>
+
+            {/* Launch */}
+            <div className="px-4 py-3 border-b border-white/10">
+              <div className="text-xs uppercase tracking-widest text-white/60 mb-2">Launch</div>
+              <button
+                className="block w-full text-left py-2 text-white hover:opacity-80"
+                onClick={(e) => {
+                  handleLaunchClick(e as unknown as React.MouseEvent, '/launch-agent', true);
+                  setMobileOpen(false);
+                }}
+              >
+                Launch Agents
+              </button>
+              <button
+                className="block w-full text-left py-2 text-white hover:opacity-80"
+                onClick={(e) => {
+                  handleLaunchClick(e as unknown as React.MouseEvent, '/launch-projects', false);
+                  setMobileOpen(false);
+                }}
+              >
+                Launch Projects
+              </button>
+            </div>
+
+            {/* Dashboard */}
+            <div className="px-4 py-3 border-b border-white/10">
+              <div className="text-xs uppercase tracking-widest text-white/60 mb-2">Dashboard</div>
+              <Link href={isAuthenticated ? '/agents' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                My Agents
+              </Link>
+              <Link href={isAuthenticated ? '/perks' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                Perks
+              </Link>
+              <Link href={isAuthenticated ? '/tokenbalances' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                Assets
+              </Link>
+              <Link href={isAuthenticated ? '/swap' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                Trade
+              </Link>
+            </div>
+
+            {/* Wallet section */}
+            <div className="px-4 py-4">
+              {isConnected && isAuthenticated && address ? (
+                <div
+                  className="flex items-center justify-between bg-[#232B4A] rounded-xl px-4 py-3 text-white text-sm font-medium shadow-inner"
+                  onClick={() => { open(); setMobileOpen(false); }}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 bg-gradient-to-r from-[#4D84EE] to-[#6366f1] rounded-full flex items-center justify-center">
+                      <svg width="12" height="12" viewBox="0 0 397.7 311.7" fill="currentColor" className="text-white">
+                        <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 237.9z"/>
+                        <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1L333.1 73.8c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+                        <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7 4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+                      </svg>
+                    </div>
+                    <span className="font-mono truncate max-w-[120px]">{address.slice(0, 4)}...{address.slice(-4)}</span>
+                  </div>
+                  <span className="ml-3 text-xs text-[#4D84EE] whitespace-nowrap">{formatBalance(solBalance)} SOL</span>
+                </div>
+              ) : isConnected && !isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <AuthButton />
+                  <button
+                    onClick={() => { open(); setMobileOpen(false); }}
+                    className="rounded-full px-4 py-2 h-11 border border-[#4D84EE]/40 text-white/90 hover:text-white hover:bg-[#4D84EE]/10 transition-colors text-sm"
+                    title="Open account"
+                  >
+                    Account
+                  </button>
+                </div>
+              ) : (
+                <div className="flex">
+                  <ConnectButton />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
