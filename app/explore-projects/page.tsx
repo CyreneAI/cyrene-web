@@ -14,9 +14,9 @@ import { ProjectIdeasService } from '@/services/projectIdeasService';
 import { LaunchedTokenData, ProjectIdeaData } from '@/lib/supabase';
 import React from 'react';
 import { useAppKitAccount } from "@reown/appkit/react";
-import { DbcTradeModal } from '@/components/DbcTradeModal';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -31,6 +31,7 @@ interface TokenMetadata {
 }
 
 export default function ExploreProjectsPage() {
+  const router = useRouter();
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
   const [projectIdeas, setProjectIdeas] = useState<ProjectIdeaData[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<LaunchedTokenData[]>([]);
@@ -38,8 +39,6 @@ export default function ExploreProjectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
-  const [showTradeModal, setShowTradeModal] = useState(false);
   const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
   
   const { address } = useAppKitAccount();
@@ -130,15 +129,20 @@ export default function ExploreProjectsPage() {
     setFilteredIdeas(sortedIdeas);
   }, [searchQuery, launchedTokens, projectIdeas]);
 
-  // Handle trade button click
+  // Handle trade button click - UPDATED to navigate to trade page
   const handleTradeClick = (token: LaunchedTokenData) => {
-    if (!token.tradeStatus) {
-      window.open(`https://jup.ag/tokens/${token.contractAddress}`, '_blank');
-      return;
-    }
+    // Create query parameters for the trade page
+    const params = new URLSearchParams({
+      tokenAddress: token.contractAddress,
+      tokenName: token.tokenName,
+      tokenSymbol: token.tokenSymbol,
+      poolAddress: token.dbcPoolAddress || '',
+      metadataUri: token.metadataUri || '',
+      tradeStatus: token.tradeStatus ? 'active' : 'graduated'
+    });
     
-    setSelectedToken(token);
-    setShowTradeModal(true);
+    // Navigate to trade page with token data
+    router.push(`/trade?${params.toString()}`);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,7 +162,6 @@ export default function ExploreProjectsPage() {
   return (
     <>
       {/* Enhanced Background with Glassmorphism */}
-
 
       {/* Background Text */}
       <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
@@ -323,25 +326,12 @@ export default function ExploreProjectsPage() {
             </>
           )}
         </div>
-
-        {/* Trade Modal */}
-        {selectedToken && (
-          <DbcTradeModal
-            isOpen={showTradeModal}
-            onClose={() => setShowTradeModal(false)}
-            poolAddress={selectedToken.dbcPoolAddress}
-            tokenMintAddress={selectedToken.contractAddress}
-            tokenName={selectedToken.tokenName}
-            tokenSymbol={selectedToken.tokenSymbol}
-            creatorName="Community"
-          />
-        )}
       </div>
     </>
   );
 }
 
-// Project Idea Card Component
+// Project Idea Card Component (unchanged)
 interface ProjectIdeaCardProps {
   idea: ProjectIdeaData;
   index: number;
@@ -426,7 +416,7 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
   );
 };
 
-// Token Card Component
+// Token Card Component (updated to use router navigation)
 interface TokenCardProps {
   token: LaunchedTokenData;
   index: number;
@@ -546,23 +536,12 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1">
-          {token.dammPoolAddress ? (
-            <a
-              href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-green-600/80 hover:bg-green-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-green-500/30"
-            >
-              Trade
-            </a>
-          ) : (
-            <button
-              onClick={onTradeClick}
-              className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-blue-500/30"
-            >
-              Trade
-            </button>
-          )}
+          <button
+            onClick={onTradeClick}
+            className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-blue-500/30"
+          >
+            Trade
+          </button>
           
           <button
             onClick={() => copyToClipboard(token.contractAddress, 'Contract')}
