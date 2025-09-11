@@ -38,6 +38,11 @@ export default function ProjectPreviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  
+  // One-liner states
+  const [oneLiner, setOneLiner] = useState<string>('');
+  const [isGeneratingOneLiner, setIsGeneratingOneLiner] = useState(false);
+  const [oneLinerError, setOneLinerError] = useState<string | null>(null);
 
   // Social interactions hook
   const {
@@ -48,6 +53,45 @@ export default function ProjectPreviewPage() {
     toggleLike,
     toggleFollow
   } = useSocialInteractions(currentProjectId || '', isConnected ? address : undefined);
+
+  // Generate one-liner from description
+  const generateOneLiner = async (description: string) => {
+    if (!description || description.trim().length === 0) {
+      return;
+    }
+
+    setIsGeneratingOneLiner(true);
+    setOneLinerError(null);
+
+    try {
+      const response = await fetch('/api/one-liner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate one-liner: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.oneLiner) {
+        setOneLiner(data.oneLiner);
+      } else {
+        throw new Error('No one-liner returned from API');
+      }
+    } catch (error) {
+      console.error('Error generating one-liner:', error);
+      setOneLinerError('Failed to generate tagline');
+      // Fallback to original description
+      setOneLiner(description);
+    } finally {
+      setIsGeneratingOneLiner(false);
+    }
+  };
 
   // Fetch token metadata from IPFS
   const fetchTokenMetadata = async (metadataUri: string): Promise<TokenMetadata | null> => {
@@ -118,6 +162,14 @@ export default function ProjectPreviewPage() {
 
     loadProjectData();
   }, [ideaId, tokenAddress]);
+
+  // Generate one-liner when project data is loaded
+  useEffect(() => {
+    const projectData = getProjectData();
+    if (projectData && projectData.description) {
+      generateOneLiner(projectData.description);
+    }
+  }, [projectIdea, launchedToken, tokenMetadata]);
 
   // Get project data for display
   const getProjectData = () => {
@@ -255,9 +307,20 @@ export default function ProjectPreviewPage() {
             <div className="lg:col-span-2 space-y-6">
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                 <h1 className="text-4xl md:text-5xl font-bold">{projectData.name}</h1>
-                <p className="text-gray-300 mt-3 max-w-3xl">
-                  {projectData.description}
-                </p>
+                <div className="mt-3 max-w-3xl">
+                  {isGeneratingOneLiner ? (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Tagline...</span>
+                    </div>
+                  ) : oneLinerError ? (
+                    <p className="text-gray-300">{projectData.description}</p>
+                  ) : oneLiner ? (
+                    <p className="text-gray-300 text-lg italic">"{oneLiner}"</p>
+                  ) : (
+                    <p className="text-gray-300">{projectData.description}</p>
+                  )}
+                </div>
               </motion.div>
 
               {/* Badges */}
@@ -343,33 +406,30 @@ export default function ProjectPreviewPage() {
 
             {/* Right: Hero image / poster */}
             <div className="lg:col-span-1">
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-gray-600/50">
-  {/* Blurred background */}
-  <div
-    className="absolute inset-0"
-    style={{
-      backgroundImage: `url(${projectData.image || "/Cyrene cover_85 2.png"})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      filter: "blur(20px) brightness(0.7)", // blur only bg
-      transform: "scale(1.2)", // prevent edge cut-off
-    }}
-  />
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-gray-600/50">
+                {/* Blurred background */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${projectData.image || "/Cyrene cover_85 2.png"})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    filter: "blur(20px) brightness(0.7)", // blur only bg
+                    transform: "scale(1.2)", // prevent edge cut-off
+                  }}
+                />
 
-  {/* Foreground crisp image */}
-  <Image
-    src={projectData.image || "/Cyrene cover_85 2.png"}
-    alt="Project cover"
-    fill
-    className="object-contain p-[7.5%] relative z-10 rounded-2xl"
-    onError={(e) => {
-      (e.target as HTMLImageElement).src = "/Cyrene cover_85 2.png";
-    }}
-  />
-</div>
-
-
-
+                {/* Foreground crisp image */}
+                <Image
+                  src={projectData.image || "/Cyrene cover_85 2.png"}
+                  alt="Project cover"
+                  fill
+                  className="object-contain p-[7.5%] relative z-10 rounded-2xl"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/Cyrene cover_85 2.png";
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -485,17 +545,16 @@ export default function ProjectPreviewPage() {
                             </div>
                           </div>
                           <div
-  onClick={() => {
-    navigator.clipboard.writeText(member.walletAddress)
-  }}
-  className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/60 border border-gray-600/50 cursor-pointer hover:bg-gray-700/80 transition"
->
-  <Wallet className="w-3 h-3 text-gray-300" />
-  <span className="font-mono text-gray-300">
-    {member.walletAddress.slice(0, 4)}...{member.walletAddress.slice(-4)}
-  </span>
-</div>
-
+                            onClick={() => {
+                              navigator.clipboard.writeText(member.walletAddress)
+                            }}
+                            className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700/60 border border-gray-600/50 cursor-pointer hover:bg-gray-700/80 transition"
+                          >
+                            <Wallet className="w-3 h-3 text-gray-300" />
+                            <span className="font-mono text-gray-300">
+                              {member.walletAddress.slice(0, 4)}...{member.walletAddress.slice(-4)}
+                            </span>
+                          </div>
                         </div>
 
                         {member.bio && (
@@ -568,12 +627,11 @@ export default function ProjectPreviewPage() {
                   </button>
                   
                   <button
-  onClick={() => toast.info("Adding soon 🚀")}
-  className="bg-white text-black rounded-full px-6 py-3 hover:bg-gray-100 transition font-medium"
->
-  Contact Team
-</button>
-
+                    onClick={() => toast.info("Adding soon 🚀")}
+                    className="bg-white text-black rounded-full px-6 py-3 hover:bg-gray-100 transition font-medium"
+                  >
+                    Contact Team
+                  </button>
                   
                   {launchedToken && (
                     <button 

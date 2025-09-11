@@ -28,7 +28,7 @@ export interface TwitterUser {
   
     constructor() {
       this.clientId = process.env.NEXT_PUBLIC_TWITTER_CLIENT_ID!;
-      this.clientSecret = process.env.TWITTER_CLIENT_SECRET!;
+      this.clientSecret = process.env.NEXT_PUBLIC_TWITTER_CLIENT_SECRET!;
       this.redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`;
     }
   
