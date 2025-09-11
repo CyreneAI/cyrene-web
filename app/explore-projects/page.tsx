@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Loader2, Search, RefreshCw, AlertCircle, TrendingUp, ExternalLink, 
   ImageIcon, Copy, Check, Filter, ChevronDown, Ban, Lightbulb, 
-  Rocket, Users, Clock, Eye, Github, Globe, FileText 
+  Rocket, Users, Clock, Eye, Github, Globe, FileText, 
+  Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
@@ -17,6 +18,7 @@ import { useAppKitAccount } from "@reown/appkit/react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSocialInteractions } from '@/hooks/useSocialInteractions';
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -331,7 +333,7 @@ export default function ExploreProjectsPage() {
   );
 }
 
-// Project Idea Card Component (unchanged)
+// Project Idea Card Component - UPDATED with navigation
 interface ProjectIdeaCardProps {
   idea: ProjectIdeaData;
   index: number;
@@ -339,8 +341,26 @@ interface ProjectIdeaCardProps {
 }
 
 const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDate }) => {
+  const router = useRouter();
+  const { address, isConnected } = useAppKitAccount();
+  
+  // Get social stats for this project
+  const { stats, isLoading: socialLoading } = useSocialInteractions(
+    idea.id || '', 
+    isConnected ? address : undefined
+  );
+  
   const truncateText = (text: string, maxLength: number) => {
     return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+  };
+
+  const handleCardClick = () => {
+    router.push(`/preview-page?ideaId=${idea.id}`);
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, url: string) => {
+    e.stopPropagation();
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -348,7 +368,8 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl p-4 hover:bg-gray-800/90 hover:border-gray-600/60 transition-all duration-300 group shadow-lg"
+      onClick={handleCardClick}
+      className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl p-4 hover:bg-gray-800/90 hover:border-gray-600/60 transition-all duration-300 group shadow-lg cursor-pointer"
     >
       {/* Project header */}
       <div className="flex items-center gap-3 mb-3">
@@ -368,7 +389,7 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate" title={idea.projectName}>
+          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={idea.projectName}>
             {idea.projectName}
           </h3>
           <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -379,44 +400,61 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
 
         <div className="flex items-center gap-1">
-          <Link
-            href={`/launch-projects?ideaId=${idea.id}`}
-            className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
-            title="View Details"
-          >
-            <Eye className="w-4 h-4" />
-          </Link>
           {idea.githubUrl && (
-            <a
-              href={idea.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
               className="p-1 text-gray-400 hover:text-white transition-colors"
               title="GitHub"
             >
               <Github className="w-4 h-4" />
-            </a>
+            </button>
           )}
         </div>
       </div>
 
       {/* Description */}
       {idea.projectDescription && (
-        <p className="text-gray-300 text-xs mb-2 line-clamp-2" title={idea.projectDescription}>
+        <p className="text-gray-300 text-xs mb-3 line-clamp-2" title={idea.projectDescription}>
           {truncateText(idea.projectDescription, 80)}
         </p>
       )}
+
+      {/* Social Stats */}
+      <div className="flex items-center gap-3 mb-2">
+        {socialLoading ? (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span>Loading stats...</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Heart className="w-3 h-3 text-rose-400" />
+              <span>{stats.likeCount}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Users className="w-3 h-3 text-blue-400" />
+              <span>{stats.followerCount}</span>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>{formatDate(idea.createdAt!)}</span>
         <span>{idea.projectIndustry}</span>
       </div>
+
+      {/* Hover indicator */}
+      <div className="mt-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        Click to view details →
+      </div>
     </motion.div>
   );
 };
-
-// Token Card Component (updated to use router navigation)
+// Token Card Component - UPDATED with navigation
+// Fixed TokenCard Component - Updated social stats logic
 interface TokenCardProps {
   token: LaunchedTokenData;
   index: number;
@@ -432,10 +470,21 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
   formatDate, 
   fetchTokenMetadata 
 }) => {
+  const router = useRouter();
+  const { address, isConnected } = useAppKitAccount();
   const [tokenImage, setTokenImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Get social stats for this token
+  // If token has projectIdeaId, use that; otherwise use contract address
+  const projectIdForSocial = token.projectIdeaId || token.contractAddress;
+  
+  const { stats, isLoading: socialLoading } = useSocialInteractions(
+    projectIdForSocial, 
+    isConnected ? address : undefined
+  );
 
   const getTokenStatus = () => {
     if (token.dammPoolAddress) {
@@ -449,7 +498,8 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
 
   const statusInfo = getTokenStatus();
 
-  const copyToClipboard = async (text: string, fieldName: string) => {
+  const copyToClipboard = async (text: string, fieldName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldName);
@@ -458,6 +508,15 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
     } catch (err) {
       toast.error('Failed to copy');
     }
+  };
+
+  const handleCardClick = () => {
+    router.push(`/preview-page?tokenAddress=${token.contractAddress}`);
+  };
+
+  const handleTradeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTradeClick();
   };
 
   useEffect(() => {
@@ -477,7 +536,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
           setTokenImage(`https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8`);
         }
       } catch (error) {
-        console.error('Failed to load token image:', error);
+        // Remove console.error to avoid linting issues
         setTokenImage(`https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8`);
       } finally {
         setImageLoading(false);
@@ -496,7 +555,8 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-gray-900/90 backdrop-blur-md border border-gray-700/60 rounded-xl p-4 hover:bg-gray-800/95 hover:border-gray-600/70 transition-all duration-300 group shadow-xl"
+      onClick={handleCardClick}
+      className="bg-gray-900/90 backdrop-blur-md border border-gray-700/60 rounded-xl p-4 hover:bg-gray-800/95 hover:border-gray-600/70 transition-all duration-300 group shadow-xl cursor-pointer"
     >
       {/* Token header */}
       <div className="flex items-center gap-3 mb-3">
@@ -518,7 +578,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate" title={token.tokenName}>
+          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={token.tokenName}>
             {token.tokenName}
           </h3>
           <div className="flex items-center gap-2 text-xs text-gray-300">
@@ -537,14 +597,14 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
 
         <div className="flex items-center gap-1">
           <button
-            onClick={onTradeClick}
+            onClick={handleTradeClick}
             className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-blue-500/30"
           >
             Trade
           </button>
           
           <button
-            onClick={() => copyToClipboard(token.contractAddress, 'Contract')}
+            onClick={(e) => copyToClipboard(token.contractAddress, 'Contract', e)}
             className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700/40"
             title="Copy contract"
           >
@@ -558,8 +618,35 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       </div>
 
       {/* Contract Address */}
-      <div className="text-xs text-gray-400 font-mono mb-2 bg-gray-800/60 backdrop-blur-sm rounded px-2 py-1 border border-gray-700/40">
+      <div className="text-xs text-gray-400 font-mono mb-3 bg-gray-800/60 backdrop-blur-sm rounded px-2 py-1 border border-gray-700/40">
         {truncateAddress(token.contractAddress)}
+      </div>
+
+      {/* Social Stats */}
+      <div className="flex items-center gap-3 mb-2">
+        {socialLoading ? (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span>Loading stats...</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Heart className="w-3 h-3 text-rose-400" />
+              <span>{stats.likeCount}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Users className="w-3 h-3 text-blue-400" />
+              <span>{stats.followerCount}</span>
+            </div>
+            {/* Show indicator if this token was launched from a project idea */}
+            {/* {token.projectIdeaId && (
+              <div className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
+                Project
+              </div>
+            )} */}
+          </>
+        )}
       </div>
 
       {/* Footer */}
@@ -567,8 +654,14 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         <span>{formatDate(token.launchedAt)}</span>
         <span>{token.quoteMint}</span>
       </div>
+
+      {/* Hover indicator */}
+      <div className="mt-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        Click to view details →
+      </div>
     </motion.div>
   );
 });
 
 TokenCard.displayName = 'TokenCard';
+

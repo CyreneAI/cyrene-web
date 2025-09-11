@@ -1,5 +1,5 @@
 // services/launchedTokensService.ts - Updated to work with project ideas
-import { supabase, LaunchedTokenData, LaunchedTokenDB, dbToFrontend, frontendToDb } from '@/lib/supabase';
+import { supabase, LaunchedTokenData, LaunchedTokenDB, ProjectIdeaData, dbToFrontend, frontendToDb } from '@/lib/supabase';
 import { ProjectIdeasService } from './projectIdeasService';
 
 export class LaunchedTokensService {
@@ -351,6 +351,65 @@ export class LaunchedTokensService {
       return data.map(dbToFrontend);
     } catch (error) {
       console.error('Service error fetching tokens from project ideas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific launched token by contract address (public access)
+   */
+  static async getPublicLaunchedTokenByContract(contractAddress: string): Promise<LaunchedTokenData | null> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .select('*')
+        .eq('contract_address', contractAddress)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        console.error('Error fetching public launched token by contract:', error);
+        throw new Error(`Failed to fetch launched token: ${error.message}`);
+      }
+
+      if (!data) return null;
+
+      return dbToFrontend(data as LaunchedTokenDB);
+    } catch (error) {
+      console.error('Service error fetching public launched token by contract:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get launched token with project idea details (public access)
+   */
+  static async getPublicTokenWithProjectIdea(contractAddress: string): Promise<{
+    token: LaunchedTokenData;
+    projectIdea?: ProjectIdeaData;
+  } | null> {
+    try {
+      const token = await this.getPublicLaunchedTokenByContract(contractAddress);
+      if (!token) return null;
+
+      let projectIdea: ProjectIdeaData | undefined;
+      
+      if (token.projectIdeaId) {
+        try {
+          const idea = await ProjectIdeasService.getPublicProjectIdeaById(token.projectIdeaId);
+          if (idea) {
+            projectIdea = idea;
+          }
+        } catch (error) {
+          console.warn('Failed to load project idea for token:', error);
+        }
+      }
+
+      return { token, projectIdea };
+    } catch (error) {
+      console.error('Service error fetching token with project idea:', error);
       throw error;
     }
   }
