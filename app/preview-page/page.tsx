@@ -316,7 +316,7 @@ export default function ProjectPreviewPage() {
                   ) : oneLinerError ? (
                     <p className="text-gray-300">{projectData.description}</p>
                   ) : oneLiner ? (
-                    <p className="text-gray-300 text-lg italic">"{oneLiner}"</p>
+                    <p className="text-gray-300 text-lg italic">{oneLiner}</p>
                   ) : (
                     <p className="text-gray-300">{projectData.description}</p>
                   )}

@@ -1,4 +1,4 @@
-// app/api/one-liner/route.ts  (Next.js App Router)
+// app/api/one-liner/route.ts (Next.js App Router)
 // OR adapt to pages/api/one-liner.ts if you're using pages router
 
 import { NextResponse } from 'next/server';
@@ -34,8 +34,17 @@ export async function POST(request: Request) {
     const oneLiner = completion.choices?.[0]?.message?.content?.trim() ?? '';
 
     return NextResponse.json({ oneLiner });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('one-liner error:', err);
-    return NextResponse.json({ error: 'OpenAI request failed' }, { status: 500 });
+    
+    // Handle different error types
+    let errorMessage = 'OpenAI request failed';
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    } else if (typeof err === 'string') {
+      errorMessage = err;
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
