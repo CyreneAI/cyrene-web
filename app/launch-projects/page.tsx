@@ -1,9 +1,14 @@
-// app/launch-projects/page.tsx
+// app/launch-projects/page.tsx - COMPLETE FIXED VERSION
 'use client';
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, RefreshCw, DollarSign, Zap, Image as LucidImage, Ban, Settings } from 'lucide-react';
+import { 
+  Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, 
+  RefreshCw, DollarSign, Zap, Image as LucidImage, Ban, Settings, 
+  Users, Globe, Github, FileText, Plus, X, User, Lightbulb, 
+  Rocket, Coins, MapPin, Linkedin, Twitter
+} from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import ConnectButton from '@/components/common/ConnectBtn';
@@ -15,11 +20,13 @@ import type { Provider } from "@reown/appkit-adapter-solana/vue";
 import { usePoolStatus } from '@/hooks/usePoolStatus';
 import { DbcTradeModal } from '@/components/DbcTradeModal';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
-import { LaunchedTokenData } from '@/lib/supabase';
+import { ProjectIdeasService } from '@/services/projectIdeasService';
+import { LaunchedTokenData, ProjectIdeaData, TeamMember, ProjectCategory, ProjectIndustry } from '@/lib/supabase';
 import React from 'react';
 import { Copy, Check } from 'lucide-react';
 import Image from "next/image";
 import axios from 'axios';
+import { useSearchParams } from 'next/navigation';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -34,6 +41,33 @@ interface TokenLaunchParams {
   minimumTokensOut: number;
   enableFirstBuy: boolean;
   // Trade status parameter
+  tradeStatus: boolean;
+}
+
+interface ProjectFormData {
+  // Project Information
+  projectName: string;
+  projectDescription: string;
+  projectCategory: string;
+  projectIndustry: string;
+  projectImage: string;
+  githubUrl: string;
+  websiteUrl: string;
+  whitepaperUrl: string;
+  
+  // Team Details
+  teamMembers: TeamMember[];
+  projectStage: 'ideation' | 'cooking';
+  
+  // Token Details (for cooking stage)
+  tokenName: string;
+  tokenSymbol: string;
+  totalTokenSupply: number;
+  migrationQuoteThreshold: number;
+  quoteMint: QuoteMintType;
+  enableFirstBuy: boolean;
+  firstBuyAmountSol: number;
+  minimumTokensOut: number;
   tradeStatus: boolean;
 }
 
@@ -80,49 +114,172 @@ const useReownWalletAdapter = () => {
 };
 
 export default function LaunchProjectsPage() {
-  const [activeTab, setActiveTab] = useState<'launch' | 'tokens' | 'swap'>('launch');
-  const [params, setParams] = useState<TokenLaunchParams>({
+  const searchParams = useSearchParams();
+  const ideaId = searchParams.get('ideaId');
+  
+  const [activeTab, setActiveTab] = useState<'info' | 'team' | 'fundraise'>('info');
+  const [projectData, setProjectData] = useState<ProjectFormData>({
+    // Project Information
+    projectName: '',
+    projectDescription: '',
+    projectCategory: '',
+    projectIndustry: '',
+    projectImage: '',
+    githubUrl: '',
+    websiteUrl: '',
+    whitepaperUrl: '',
+    
+    // Team Details
+    teamMembers: [],
+    projectStage: 'ideation',
+    
+    // Token Details
+    tokenName: '',
+    tokenSymbol: '',
     totalTokenSupply: 1000000000,
     migrationQuoteThreshold: 210,
     quoteMint: 'SOL' as QuoteMintType,
-    name: '',
-    symbol: '',
-    image: '',
-    description: '',
-    firstBuyAmountSol: 0.1, // Default 0.1 SOL first buy
-    minimumTokensOut: 1000000, // Default minimum tokens expected
-    enableFirstBuy: true, // Enable first buy by default
-    tradeStatus: true // Enable trading by default
+    enableFirstBuy: true,
+    firstBuyAmountSol: 0.1,
+    minimumTokensOut: 1000000,
+    tradeStatus: true
   });
   
+  const [existingIdeaId, setExistingIdeaId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTransaction, setCurrentTransaction] = useState<number | null>(null);
-  const [totalTransactions] = useState(2);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingIdea, setIsLoadingIdea] = useState(false);
+  const [categories, setCategories] = useState<ProjectCategory[]>([]);
+  const [industries, setIndustries] = useState<ProjectIndustry[]>([]);
   const [conversionRates, setConversionRates] = useState<ConversionRate | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
+  const [projectIdeas, setProjectIdeas] = useState<ProjectIdeaData[]>([]);
   const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
-  const [currentLaunchedToken, setCurrentLaunchedToken] = useState<LaunchedTokenData | null>(null);
   
   // Image upload states
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageHash, setImageHash] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   
-  // Database loading states
-  const [tokensLoading, setTokensLoading] = useState(false);
-  const [tokensError, setTokensError] = useState<string | null>(null);
-  const [migrationStatus, setMigrationStatus] = useState<'idle' | 'migrating' | 'completed' | 'error'>('idle');
-
-  // Stable refs to prevent callback recreation
-  const launchedTokensRef = useRef<LaunchedTokenData[]>([]);
-  const addressRef = useRef<string>('');
-  const currentLaunchedTokenRef = useRef<LaunchedTokenData | null>(null);
+  // Team member form state
+  const [newTeamMember, setNewTeamMember] = useState<TeamMember>({
+    name: '',
+    role: '',
+    walletAddress: '',
+    linkedinUrl: '',
+    twitterUrl: '',
+    githubUrl: '',
+    bio: '',
+    profileImage: ''
+  });
+  const [showAddMember, setShowAddMember] = useState(false);
 
   // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
+
+  // Load existing project idea if ideaId is provided
+  useEffect(() => {
+    const loadExistingIdea = async () => {
+      if (ideaId && address && isConnected) {
+        setIsLoadingIdea(true);
+        try {
+          const existingIdea = await ProjectIdeasService.getProjectIdeaById(ideaId, address);
+          if (existingIdea) {
+            setExistingIdeaId(ideaId);
+            // Populate form with existing data
+            setProjectData({
+              projectName: existingIdea.projectName,
+              projectDescription: existingIdea.projectDescription,
+              projectCategory: existingIdea.projectCategory,
+              projectIndustry: existingIdea.projectIndustry,
+              projectImage: existingIdea.projectImage || '',
+              githubUrl: existingIdea.githubUrl || '',
+              websiteUrl: existingIdea.websiteUrl || '',
+              whitepaperUrl: existingIdea.whitepaperUrl || '',
+              teamMembers: existingIdea.teamMembers,
+              projectStage: 'cooking', // Always set to cooking when upgrading
+              tokenName: existingIdea.tokenName || existingIdea.projectName,
+              tokenSymbol: existingIdea.tokenSymbol || existingIdea.projectName.substring(0, 5).toUpperCase(),
+              totalTokenSupply: existingIdea.totalTokenSupply,
+              migrationQuoteThreshold: existingIdea.migrationQuoteThreshold,
+              quoteMint: existingIdea.quoteMint as QuoteMintType,
+              enableFirstBuy: existingIdea.enableFirstBuy,
+              firstBuyAmountSol: existingIdea.firstBuyAmountSol,
+              minimumTokensOut: existingIdea.minimumTokensOut,
+              tradeStatus: existingIdea.tradeStatus
+            });
+
+            // Set image preview if exists
+            if (existingIdea.projectImage) {
+              setImagePreview(existingIdea.projectImage);
+            }
+
+            // If upgrading from ideation, start on fundraise tab
+            if (existingIdea.projectStage === 'ideation') {
+              setActiveTab('fundraise');
+            }
+            
+            toast.success('Project data loaded successfully!');
+          } else {
+            toast.error('Project idea not found');
+          }
+        } catch (error) {
+          console.error('Error loading project idea:', error);
+          toast.error('Failed to load project idea');
+        } finally {
+          setIsLoadingIdea(false);
+        }
+      }
+    };
+
+    loadExistingIdea();
+  }, [ideaId, address, isConnected]);
+
+  // Load categories and industries on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [categoriesData, industriesData] = await Promise.all([
+          ProjectIdeasService.getProjectCategories(),
+          ProjectIdeasService.getProjectIndustries()
+        ]);
+        setCategories(categoriesData);
+        setIndustries(industriesData);
+      } catch (error) {
+        console.error('Error loading categories/industries:', error);
+        toast.error('Failed to load form data');
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Load user's projects when wallet connects
+  useEffect(() => {
+    if (address && isConnected) {
+      loadUserProjects();
+    }
+  }, [address, isConnected]);
+
+  const loadUserProjects = async () => {
+    if (!address) return;
+    
+    try {
+      const [tokens, ideas] = await Promise.all([
+        LaunchedTokensService.getLaunchedTokens(address),
+        ProjectIdeasService.getProjectIdeas(address)
+      ]);
+      
+      setLaunchedTokens(tokens);
+      setProjectIdeas(ideas);
+    } catch (error) {
+      console.error('Error loading user projects:', error);
+      toast.error('Failed to load your projects');
+    }
+  };
 
   // Handle file upload to IPFS
   const uploadToIPFS = async (file: File): Promise<string> => {
@@ -147,13 +304,11 @@ export default function LaunchProjectsPage() {
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select a valid image file');
         return;
       }
 
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast.error('Image size must be less than 10MB');
         return;
@@ -162,22 +317,19 @@ export default function LaunchProjectsPage() {
       setIsUploadingImage(true);
       
       try {
-        // Create preview
         const reader = new FileReader();
         reader.onload = (e) => {
           setImagePreview(e.target?.result as string);
         };
         reader.readAsDataURL(file);
 
-        // Upload to IPFS
         const hash = await uploadToIPFS(file);
         setImageHash(hash);
         
-        // Update params with IPFS URL
         const ipfsUrl = `https://ipfs.erebrus.io/ipfs/${hash}`;
-        setParams(prev => ({
+        setProjectData(prev => ({
           ...prev,
-          image: ipfsUrl
+          projectImage: ipfsUrl
         }));
         
         toast.success('Image uploaded successfully to IPFS');
@@ -191,238 +343,287 @@ export default function LaunchProjectsPage() {
     }
   };
 
-  // Update refs when state changes (no re-render triggers)
-  useEffect(() => {
-    launchedTokensRef.current = launchedTokens;
-  }, [launchedTokens]);
-
-  useEffect(() => {
-    addressRef.current = address || '';
-  }, [address]);
-
-  useEffect(() => {
-    currentLaunchedTokenRef.current = currentLaunchedToken;
-  }, [currentLaunchedToken]);
-
-  // Load launched tokens from Supabase
-  const loadLaunchedTokens = useCallback(async (showLoading = true) => {
-    const currentAddress = addressRef.current;
-    if (!currentAddress) return;
-    
-    try {
-      if (showLoading) setTokensLoading(true);
-      setTokensError(null);
-      
-      const tokens = await LaunchedTokensService.getLaunchedTokens(currentAddress);
-      setLaunchedTokens(tokens);
-      
-      if (tokens.length > 0) {
-        setCurrentLaunchedToken(tokens[0]);
-      }
-    } catch (error) {
-      console.error('Error loading launched tokens:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load tokens';
-      setTokensError(errorMessage);
-      toast.error(`Failed to load tokens: ${errorMessage}`);
-    } finally {
-      if (showLoading) setTokensLoading(false);
-    }
-  }, []); // Empty deps - uses ref for current address
-
-  // Migrate from localStorage on first connection
-  const handleMigration = useCallback(async () => {
-    const currentAddress = addressRef.current;
-    if (!currentAddress || migrationStatus !== 'idle') return;
-    
-    try {
-      setMigrationStatus('migrating');
-      const migratedTokens = await LaunchedTokensService.migrateFromLocalStorage(currentAddress);
-      
-      if (migratedTokens.length > 0) {
-        toast.success(`Migrated ${migratedTokens.length} token(s) from local storage`);
-        await loadLaunchedTokens(false); // Reload from database
-      }
-      
-      setMigrationStatus('completed');
-    } catch (error) {
-      console.error('Migration error:', error);
-      setMigrationStatus('error');
-      toast.error('Failed to migrate local data');
-    }
-  }, [migrationStatus, loadLaunchedTokens]);
-
-  // Load tokens when wallet connects
-  useEffect(() => {
-    if (address && isConnected) {
-      handleMigration().then(() => {
-        loadLaunchedTokens();
-      });
-    } else {
-      setLaunchedTokens([]);
-      setCurrentLaunchedToken(null);
-    }
-  }, [address, isConnected, handleMigration, loadLaunchedTokens]);
-
-  // Save launched token to Supabase
-  const saveLaunchedToken = async (tokenData: LaunchedTokenData) => {
-    const currentAddress = addressRef.current;
-    if (!currentAddress) return;
-    
-    try {
-      const savedToken = await LaunchedTokensService.saveLaunchedToken(tokenData, currentAddress);
-      
-      // Update local state
-      setLaunchedTokens(prev => [savedToken, ...prev]);
-      setCurrentLaunchedToken(savedToken);
-      
-      toast.success('Token saved successfully!');
-    } catch (error) {
-      console.error('Error saving token:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save token';
-      toast.error(`Failed to save token: ${errorMessage}`);
-      
-      // Fallback to localStorage as backup
-      try {
-        const key = `launched_tokens_${currentAddress}`;
-        const existing = localStorage.getItem(key);
-        const tokens = existing ? JSON.parse(existing) : [];
-        tokens.unshift(tokenData);
-        localStorage.setItem(key, JSON.stringify(tokens));
-        
-        setLaunchedTokens(prev => [tokenData, ...prev]);
-        setCurrentLaunchedToken(tokenData);
-        
-        toast.info('Token saved to local storage as backup');
-      } catch (localError) {
-        console.error('Fallback save failed:', localError);
-      }
-    }
+  // Handle project info changes
+  const handleProjectInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setProjectData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Stable callback for current token DAMM derivation using refs
-  const handleCurrentTokenDammDerived = useCallback(async (dammPoolAddress: string) => {
-    const currentAddress = addressRef.current;
-    const currentToken = currentLaunchedTokenRef.current;
-    
-    if (!currentAddress || !currentToken) return;
-    
-    try {
-      const updatedToken = await LaunchedTokensService.updateLaunchedToken(
-        currentToken.contractAddress, 
-        currentAddress, 
-        { dammPoolAddress }
-      );
-      
-      if (updatedToken) {
-        // Update both lists and current token using functional updates
-        setLaunchedTokens(prevTokens => 
-          prevTokens.map(token => 
-            token.contractAddress === currentToken.contractAddress ? updatedToken : token
-          )
-        );
-        
-        setCurrentLaunchedToken(updatedToken);
-        
-        toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
-      }
-    } catch (error) {
-      console.error('Error updating token with DAMM pool:', error);
-      toast.error('Failed to update token graduation status');
-    }
-  }, []); // Empty deps - uses refs for current values
-
-  // Use the custom hook to monitor the current token's pool status
-  const { isGraduated: currentTokenGraduated, isLoading: isCurrentPoolStatusLoading } = usePoolStatus({
-    configAddress: currentLaunchedToken?.configAddress || null,
-    contractAddress: currentLaunchedToken?.contractAddress || null,
-    dbcPoolAddress: currentLaunchedToken?.dbcPoolAddress || null,
-    quoteMint: currentLaunchedToken?.quoteMint || null,
-    onDammDerive: handleCurrentTokenDammDerived,
-  });
-
-  // Stable callback for token list DAMM derivation using refs
-  const handleTokenDammDerived = useCallback(async (dammPoolAddress: string, tokenIndex: number) => {
-    const currentAddress = addressRef.current;
-    const currentTokens = launchedTokensRef.current;
-    
-    if (!currentAddress) return;
-    
-    const token = currentTokens[tokenIndex];
-    if (!token) return;
-    
-    try {
-      const updatedToken = await LaunchedTokensService.updateLaunchedToken(
-        token.contractAddress,
-        currentAddress,
-        { dammPoolAddress }
-      );
-      
-      if (updatedToken) {
-        // Update state using functional update to ensure we get latest state
-        setLaunchedTokens(prevTokens => {
-          const updatedTokens = [...prevTokens];
-          const currentIndex = updatedTokens.findIndex(t => t.contractAddress === token.contractAddress);
-          if (currentIndex !== -1) {
-            updatedTokens[currentIndex] = updatedToken;
-          }
-          return updatedTokens;
-        });
-        
-        // Update current token if it matches
-        setCurrentLaunchedToken(prev => 
-          prev?.contractAddress === token.contractAddress ? updatedToken : prev
-        );
-        
-        toast.success(`Token ${updatedToken.tokenName} graduated! AMM Pool is ready.`);
-      }
-    } catch (error) {
-      console.error('Error updating token with DAMM pool:', error);
-      toast.error('Failed to update token graduation status');
-    }
-  }, []); // Empty deps - uses refs for current values
-
-  // Function to handle trade status toggle for existing tokens
-  const handleTradeStatusToggle = async (token: LaunchedTokenData) => {
-    const currentAddress = addressRef.current;
-    if (!currentAddress) return;
-    
-    try {
-      const updatedToken = await LaunchedTokensService.updateTradeStatus(
-        token.contractAddress,
-        currentAddress,
-        !token.tradeStatus
-      );
-      
-      if (updatedToken) {
-        // Update both lists and current token
-        setLaunchedTokens(prevTokens => 
-          prevTokens.map(t => 
-            t.contractAddress === token.contractAddress ? updatedToken : t
-          )
-        );
-        
-        if (currentLaunchedToken?.contractAddress === token.contractAddress) {
-          setCurrentLaunchedToken(updatedToken);
-        }
-        
-        toast.success(`Trading ${updatedToken.tradeStatus ? 'enabled' : 'disabled'} for ${updatedToken.tokenName}`);
-      }
-    } catch (error) {
-      console.error('Error updating trade status:', error);
-      toast.error('Failed to update trade status');
-    }
+  // Handle team member changes
+  const handleTeamMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewTeamMember(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Handle trade button click - now respects trade status
-  const handleTradeClick = (token: LaunchedTokenData) => {
-    if (!token.tradeStatus) {
-      // Redirect to Jupiter tokens page if trade is disabled
-      window.open(`https://jup.ag/tokens/${token.contractAddress}`, '_blank');
+  // Add team member
+  const addTeamMember = () => {
+    if (!newTeamMember.name || !newTeamMember.role || !newTeamMember.walletAddress) {
+      toast.error('Please fill in required fields (Name, Role, Wallet Address)');
       return;
     }
+
+    setProjectData(prev => ({
+      ...prev,
+      teamMembers: [...prev.teamMembers, { ...newTeamMember }]
+    }));
+
+    setNewTeamMember({
+      name: '',
+      role: '',
+      walletAddress: '',
+      linkedinUrl: '',
+      twitterUrl: '',
+      githubUrl: '',
+      bio: '',
+      profileImage: ''
+    });
+    setShowAddMember(false);
+    toast.success('Team member added successfully');
+  };
+
+  // Remove team member
+  const removeTeamMember = (index: number) => {
+    setProjectData(prev => ({
+      ...prev,
+      teamMembers: prev.teamMembers.filter((_, i) => i !== index)
+    }));
+    toast.success('Team member removed');
+  };
+
+  // Handle project stage change
+  const handleStageChange = (stage: 'ideation' | 'cooking') => {
+    setProjectData((prev) => ({
+      ...prev,
+      projectStage: stage
+    }));
     
-    setSelectedToken(token);
-    setShowTradeModal(true);
+    // If switching to cooking, sync token name/symbol with project name
+    if (stage === 'cooking') {
+      setProjectData((prev) => ({
+        ...prev,
+        tokenName: prev.tokenName || prev.projectName,
+        tokenSymbol: prev.tokenSymbol || prev.projectName.substring(0, 5).toUpperCase()
+      }));
+    }
+  };
+
+  // Save project (for ideation or cooking stage)
+  const saveProject = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    // Validate basic project info
+    if (!projectData.projectName || !projectData.projectDescription || 
+        !projectData.projectCategory || !projectData.projectIndustry) {
+      toast.error('Please fill in all required project information');
+      return;
+    }
+
+    // Validate team members
+    if (projectData.teamMembers.length === 0) {
+      toast.error('Please add at least one team member');
+      return;
+    }
+
+    // Validate cooking stage requirements
+    if (projectData.projectStage === 'cooking') {
+      if (!projectData.tokenName || !projectData.tokenSymbol) {
+        toast.error('Please fill in token details for cooking stage');
+        return;
+      }
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const ideaData: ProjectIdeaData = {
+        projectName: projectData.projectName,
+        projectDescription: projectData.projectDescription,
+        projectCategory: projectData.projectCategory,
+        projectIndustry: projectData.projectIndustry,
+        projectImage: projectData.projectImage,
+        githubUrl: projectData.githubUrl,
+        websiteUrl: projectData.websiteUrl,
+        whitepaperUrl: projectData.whitepaperUrl,
+        projectStage: projectData.projectStage,
+        teamMembers: projectData.teamMembers,
+        tokenName: projectData.tokenName,
+        tokenSymbol: projectData.tokenSymbol,
+        totalTokenSupply: projectData.totalTokenSupply,
+        migrationQuoteThreshold: projectData.migrationQuoteThreshold,
+        quoteMint: projectData.quoteMint,
+        enableFirstBuy: projectData.enableFirstBuy,
+        firstBuyAmountSol: projectData.firstBuyAmountSol,
+        minimumTokensOut: projectData.minimumTokensOut,
+        tradeStatus: projectData.tradeStatus,
+        isLaunched: false
+      };
+
+      let savedIdea: ProjectIdeaData;
+
+      if (existingIdeaId) {
+        // Update existing project idea
+        const updatedIdea = await ProjectIdeasService.updateProjectIdea(existingIdeaId, address, ideaData);
+        if (!updatedIdea) {
+          throw new Error('Failed to update project idea');
+        }
+        savedIdea = updatedIdea;
+        toast.success('Project updated successfully!');
+      } else {
+        // Create new project idea
+        savedIdea = await ProjectIdeasService.saveProjectIdea(ideaData, address);
+        setExistingIdeaId(savedIdea.id!);
+        toast.success('Project idea saved!');
+      }
+      
+      // Update local state
+      setProjectIdeas(prev => {
+        const filtered = prev.filter(p => p.id !== savedIdea.id);
+        return [savedIdea, ...filtered];
+      });
+      
+      if (projectData.projectStage === 'ideation') {
+        // Reset form for new project
+        resetForm();
+      } else {
+        // Move to fundraise tab for cooking stage
+        setActiveTab('fundraise');
+      }
+      
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast.error('Failed to save project');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setProjectData({
+      projectName: '',
+      projectDescription: '',
+      projectCategory: '',
+      projectIndustry: '',
+      projectImage: '',
+      githubUrl: '',
+      websiteUrl: '',
+      whitepaperUrl: '',
+      teamMembers: [],
+      projectStage: 'ideation',
+      tokenName: '',
+      tokenSymbol: '',
+      totalTokenSupply: 1000000000,
+      migrationQuoteThreshold: 210,
+      quoteMint: 'SOL' as QuoteMintType,
+      enableFirstBuy: true,
+      firstBuyAmountSol: 0.1,
+      minimumTokensOut: 1000000,
+      tradeStatus: true
+    });
+    setImagePreview(null);
+    setImageHash('');
+    setExistingIdeaId(null);
+    setActiveTab('info');
+  };
+
+  // Launch token (for cooking stage)
+  const launchToken = async () => {
+    if (!walletAdapter.publicKey || !walletAdapter.isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (projectData.projectStage !== 'cooking') {
+      toast.error('You can only launch tokens in cooking stage');
+      return;
+    }
+
+    if (!projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (!existingIdeaId) {
+      toast.error('Please save the project first');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      toast.info('Setting up configuration...');
+      const configResult = await setupConfigWithWallet(walletAdapter, {
+        totalTokenSupply: projectData.totalTokenSupply,
+        migrationQuoteThreshold: projectData.migrationQuoteThreshold,
+        quoteMint: projectData.quoteMint
+      });
+      
+      if (!configResult.success || !configResult.configAddress) {
+        throw new Error(configResult.error || 'Failed to create config');
+      }
+
+      toast.info('Creating token pool with first buy...');
+
+      const poolResult = await createPool({
+        configAddress: configResult.configAddress,
+        name: projectData.tokenName,
+        symbol: projectData.tokenSymbol,
+        image: projectData.projectImage,
+        description: projectData.projectDescription,
+        firstBuyAmountSol: projectData.enableFirstBuy ? projectData.firstBuyAmountSol : undefined,
+        minimumTokensOut: projectData.enableFirstBuy ? projectData.minimumTokensOut : undefined
+      }, walletAdapter);
+
+      if (!poolResult.success) {
+        throw new Error(poolResult.error || 'Failed to create pool');
+      }
+
+      const tokenData: LaunchedTokenData = {
+        contractAddress: poolResult.contractAddress || '',
+        dbcPoolAddress: poolResult.dbcPoolAddress || '',
+        configAddress: configResult.configAddress,
+        quoteMint: projectData.quoteMint,
+        tokenName: projectData.tokenName,
+        tokenSymbol: projectData.tokenSymbol,
+        metadataUri: poolResult.metadataUri,
+        tradeStatus: projectData.tradeStatus,
+        launchedAt: Date.now(),
+        projectIdeaId: existingIdeaId // IMPORTANT: Link to project idea
+      };
+
+      // Save to database with project idea reference
+      const savedToken = await LaunchedTokensService.launchTokenFromProjectIdea(
+        existingIdeaId,
+        address,
+        tokenData
+      );
+      
+      setLaunchedTokens(prev => [savedToken, ...prev]);
+      
+      // Refresh project ideas to reflect the launched status
+      await loadUserProjects();
+      
+      toast.success('Token launched successfully!');
+      
+      // Redirect to profile page
+      window.location.href = '/dashboard/agents?tab=tokens';
+      
+    } catch (error) {
+      console.error('Token launch error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to launch token';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Fetch real-time prices
@@ -462,155 +663,25 @@ export default function LaunchProjectsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const formatPrice = (price: number) => {
-    if (price < 0.01) return price.toFixed(6);
-    if (price < 1) return price.toFixed(4);
-    return price.toFixed(2);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setParams(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' 
-        ? (e.target as HTMLInputElement).checked
-        : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
-          ? Number(value) 
-          : value
-    }));
-  };
-
-  const handleQuoteMintChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newQuoteMint = e.target.value as QuoteMintType;
-    setParams(prev => ({
-      ...prev,
-      quoteMint: newQuoteMint,
-      migrationQuoteThreshold: conversionRates ? 
-        (newQuoteMint === 'SOL' ? 
-          Math.round(prev.migrationQuoteThreshold * conversionRates.cyaiToSol) : 
-          Math.round(prev.migrationQuoteThreshold * conversionRates.solToCyai)
-        ) : prev.migrationQuoteThreshold
-    }));
-  };
-
   const calculateFirstBuyValue = () => {
     if (!conversionRates) return '$0.00';
-    return `$${(params.firstBuyAmountSol * conversionRates.solToUsd).toFixed(2)}`;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!walletAdapter.publicKey || !walletAdapter.isConnected) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-  
-    if (!params.name || !params.symbol || !params.image || !params.description) {
-      toast.error('Please fill in all required fields and upload an image');
-      return;
-    }
-
-    if (params.enableFirstBuy && params.firstBuyAmountSol <= 0) {
-      toast.error('First buy amount must be greater than 0');
-      return;
-    }
-  
-    setIsLoading(true);
-    
-    try {
-      console.log('Starting token launch process...');
-      
-      toast.info('Setting up configuration...');
-      const configResult = await setupConfigWithWallet(walletAdapter, {
-        totalTokenSupply: params.totalTokenSupply,
-        migrationQuoteThreshold: params.migrationQuoteThreshold,
-        quoteMint: params.quoteMint
-      });
-      
-      if (!configResult.success || !configResult.configAddress) {
-        throw new Error(configResult.error || 'Failed to create config');
-      }
-  
-      console.log('Config created successfully:', configResult.configAddress);
-      toast.info('Creating token pool with first buy...');
-  
-      // Pass first buy parameters to createPool
-      const poolResult = await createPool({
-        configAddress: configResult.configAddress,
-        name: params.name,
-        symbol: params.symbol,
-        image: params.image, // This will now be the IPFS URL
-        description: params.description,
-        firstBuyAmountSol: params.enableFirstBuy ? params.firstBuyAmountSol : undefined,
-        minimumTokensOut: params.enableFirstBuy ? params.minimumTokensOut : undefined
-      }, walletAdapter);
-  
-      if (!poolResult.success) {
-        throw new Error(poolResult.error || 'Failed to create pool');
-      }
-  
-      console.log('Pool created successfully:', poolResult.dbcPoolAddress);
-      
-      let successMessage = `Token launched successfully! Pool: ${poolResult.dbcPoolAddress?.slice(0, 8)}...${poolResult.dbcPoolAddress?.slice(-8)}`;
-      if (poolResult.firstBuySignature) {
-        successMessage += ` | First buy completed!`;
-      }
-      
-      toast.success(successMessage);
-  
-      const tokenData: LaunchedTokenData = {
-        contractAddress: poolResult.contractAddress || '',
-        dbcPoolAddress: poolResult.dbcPoolAddress || '',
-        configAddress: configResult.configAddress,
-        quoteMint: params.quoteMint,
-        tokenName: params.name,
-        tokenSymbol: params.symbol,
-        metadataUri: poolResult.metadataUri, // Add this line to store IPFS metadata URI
-        tradeStatus: params.tradeStatus, // Include trade status
-        launchedAt: Date.now()
-      };
-  
-      await saveLaunchedToken(tokenData);
-      
-      // Reset form
-      setParams({
-        totalTokenSupply: 1000000000,
-        migrationQuoteThreshold: 210,
-        quoteMint: 'SOL' as QuoteMintType,
-        name: '',
-        symbol: '',
-        image: '',
-        description: '',
-        firstBuyAmountSol: 0.1,
-        minimumTokensOut: 1000000,
-        enableFirstBuy: true,
-        tradeStatus: true // Reset to enabled
-      });
-
-      // Reset image states
-      setImagePreview(null);
-      setImageHash('');
-      
-    } catch (error) {
-      console.error('Token launch error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to launch token';
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle trade button click for current token
-  const handleTradeCurrentToken = () => {
-    if (currentLaunchedToken) {
-      handleTradeClick(currentLaunchedToken);
-    }
+    return `$${(projectData.firstBuyAmountSol * conversionRates.solToUsd).toFixed(2)}`;
   };
 
   if (!isConnected) {
     return (
       <>
+        {/* Background Image */}
+        <div className="fixed inset-0 w-full h-full -z-20">
+          <Image
+            src="/abstract-luxury-gradient-blue-background-smooth-dark-blue-with-black-vignette-studio-banner 2 (1).png"
+            alt="Background"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+
         <StarCanvas/>
         <div className="flex flex-col items-center justify-center min-h-[60vh] pt-20">
           <div className="text-center space-y-4">
@@ -627,790 +698,1014 @@ export default function LaunchProjectsPage() {
     );
   }
 
+  if (isLoadingIdea) {
+    return (
+      <>
+        {/* Background Image */}
+        <div className="fixed inset-0 w-full h-full -z-20">
+          <Image
+            src="/abstract-luxury-gradient-blue-background-smooth-dark-blue-with-black-vignette-studio-banner 2 (1).png"
+            alt="Background"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+
+        <StarCanvas/>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] pt-20">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-400 mx-auto" />
+            <h2 className="text-2xl font-bold text-white">Loading Project</h2>
+            <p className="text-gray-400">
+              Loading your project data...
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-         <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
-      <div className="w-[2661px]  text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
-        CYRENE
+      {/* Background Image */}
+      <div className="fixed inset-0 w-full h-full -z-20">
+        <Image
+          src="/abstract-luxury-gradient-blue-background-smooth-dark-blue-with-black-vignette-studio-banner 2 (1).png"
+          alt="Background"
+          fill
+          className="object-cover"
+          priority
+        />
       </div>
-    </div>
+
+      <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+        <div className="w-[2661px] text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+          CYRENE
+        </div>
+      </div>
     
       <div className="min-h-screen text-white py-20 px-4 mt-24">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">Launch Your Project</h1>
-            <p className="text-gray-400">Discover and interact with our diverse collection of AI agents</p>
-            
-            {/* Migration Status */}
-            {migrationStatus === 'migrating' && (
-              <div className="mt-4 p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                <span className="text-blue-300 text-sm">Migrating your data...</span>
+            <h1 className="text-4xl font-bold text-white mb-4">
+              {existingIdeaId ? 'Launch Your Project' : 'Launch Your Project'}
+            </h1>
+            <p className="text-gray-400">
+              {existingIdeaId ? 'Continue with your project and launch your token' : 'Build the future of Web3 with our comprehensive launch platform'}
+            </p>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center space-x-4">
+              <div className={`flex items-center space-x-2 ${activeTab === 'info' ? 'text-blue-400' : 'text-green-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  activeTab === 'info' ? 'border-blue-400 bg-blue-400/20' : 'border-green-400 bg-green-400/20'
+                }`}>
+                  
+                </div>
+                
               </div>
-            )}
-            
-            {migrationStatus === 'error' && (
-              <div className="mt-4 p-3 bg-red-600/20 border border-red-500/30 rounded-lg flex items-center justify-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400" />
-                <span className="text-red-300 text-sm">Migration failed - using local backup</span>
-              </div>
-            )}
+              
+              {(projectData.projectStage === 'cooking' || existingIdeaId) && (
+                <>
+                  <div className="w-12 h-0.5 bg-gray-600"></div>
+                  
+                  <div className={`flex items-center space-x-2 ${activeTab === 'fundraise' ? 'text-blue-400' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      activeTab === 'fundraise' ? 'border-blue-400 bg-blue-400/20' : 'border-gray-400'
+                    }`}>
+                      2
+                    </div>
+                    <span className="font-medium">Fundraise</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Tabs */}
           <div className="flex justify-center mb-8">
             <div className="flex bg-gray-800/50 rounded-full p-1">
               <button
-                onClick={() => setActiveTab('launch')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'launch'
+                onClick={() => setActiveTab('info')}
+                className={`px-6 py-3 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  activeTab === 'info'
                     ? 'bg-white text-black'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Basic Information
+                <Lightbulb className="w-4 h-4" />
+                Project Info & Team
               </button>
-              <button
-                onClick={() => setActiveTab('tokens')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'tokens'
-                    ? 'bg-white text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Launched Tokens {launchedTokens.length > 0 && `(${launchedTokens.length})`}
-              </button>
-              <button
-                onClick={() => setActiveTab('swap')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'swap'
-                    ? 'bg-white text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Swap
-              </button>
+              {(projectData.projectStage === 'cooking' || existingIdeaId) && (
+                <button
+                  onClick={() => setActiveTab('fundraise')}
+                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                    activeTab === 'fundraise'
+                      ? 'bg-white text-black'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Rocket className="w-4 h-4" />
+                  Fundraise
+                </button>
+              )}
             </div>
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'launch' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900/50 rounded-2xl p-8 border border-gray-700"
-            >
-              <div className="mb-6">
-                <div className="text-sm text-gray-400 bg-blue-600 px-3 py-1 rounded-full inline-block mb-4">
-                  1 of 3
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Basic Information</h2>
-              </div>
+          <div className="relative bg-gradient-to-br from-gray-900/90 via-gray-800/80 to-gray-900/90 backdrop-blur-lg rounded-2xl p-8 border border-gray-600/50 shadow-2xl">
+            {/* Subtle overlay effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900/10 via-transparent to-purple-900/10 rounded-2xl pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-800/20 to-transparent rounded-2xl pointer-events-none"></div>
+            
+            {/* Content */}
+            <div className="relative z-10">{activeTab === 'info' && (
+              <ProjectInfoTab
+                projectData={projectData}
+                categories={categories}
+                industries={industries}
+                onProjectInfoChange={handleProjectInfoChange}
+                onImageChange={handleImageChange}
+                imagePreview={imagePreview}
+                isUploadingImage={isUploadingImage}
+                newTeamMember={newTeamMember}
+                showAddMember={showAddMember}
+                onStageChange={handleStageChange}
+                onTeamMemberChange={handleTeamMemberChange}
+                onAddTeamMember={addTeamMember}
+                onRemoveTeamMember={removeTeamMember}
+                setShowAddMember={setShowAddMember}
+                onSaveProject={saveProject}
+                isSaving={isSaving}
+                isExistingIdea={!!existingIdeaId}
+              />
+            )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-gray-300 text-sm font-medium mb-2">
-                      Enter Project Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={params.name}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-300 text-sm font-medium mb-2">
-                      Ticker
-                    </label>
-                    <input
-                      type="text"
-                      name="symbol"
-                      value={params.symbol}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 uppercase"
-                      required
-                      disabled={isLoading}
-                      maxLength={10}
-                    />
-                  </div>
-                </div>
-
-                {/* Image Upload Section */}
-                <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Project Image
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Upload Section */}
-                    <div>
-                      <label className="block border-2 border-dashed border-gray-600 rounded-xl p-6 cursor-pointer hover:border-blue-500 transition-all group">
-                        <div className="text-center">
-                          {isUploadingImage ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                              <span className="text-sm text-blue-300">Uploading to IPFS...</span>
-                            </div>
-                          ) : (
-                            <>
-                              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                              <p className="text-sm text-gray-400 group-hover:text-white">
-                                Click to upload image
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                PNG, JPG, GIF up to 10MB
-                              </p>
-                            </>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                          disabled={isLoading || isUploadingImage}
-                        />
-                      </label>
-                    </div>
-                    
-                    {/* Preview Section */}
-                    <div className="border border-gray-600 rounded-xl p-6 flex items-center justify-center bg-gray-800/50">
-                      {imagePreview ? (
-                        <div className="text-center">
-                          <Image
-                            src={imagePreview}
-                            alt="Token Preview"
-                            width={120}
-                            height={120}
-                            className="rounded-lg mx-auto mb-2 object-cover"
-                          />
-                          <p className="text-xs text-green-400">✓ Uploaded to IPFS</p>
-                          {imageHash && (
-                            <p className="text-xs text-gray-500 mt-1 truncate">
-                              Hash: {imageHash.slice(0, 8)}...
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500">
-                          <LucidImage className="w-12 h-12 mx-auto mb-2" />
-                          <p className="text-sm">Image preview</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {params.image && (
-                    <div className="mt-2 p-2 bg-green-900/20 border border-green-500/30 rounded text-xs text-green-300">
-                      ✓ Image URL: {params.image}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={params.description}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 min-h-[100px] resize-y"
-                    required
-                    disabled={isLoading}
-                    maxLength={50000}
-                  />
-                  <div className="text-right text-xs text-gray-500 mt-1">
-                    {params.description.length}/50000 characters
-                  </div>
-                </div>
-
-                {/* Trade Settings Section */}
-                {/* <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Settings className="w-6 h-6 text-purple-400" />
-                    <h3 className="text-lg font-semibold text-white">Trade Settings</h3>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label htmlFor="tradeStatus" className="text-gray-300 text-sm font-medium">
-                          Enable Trading
-                        </label>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Allow users to trade your token directly or redirect to Jupiter
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          id="tradeStatus"
-                          name="tradeStatus"
-                          checked={params.tradeStatus}
-                          onChange={handleInputChange}
-                          className="sr-only peer"
-                          disabled={isLoading}
-                        />
-                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
-                      </label>
-                    </div>
-
-                    <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
-                      💡 <strong>Trade Status:</strong> When enabled, users can trade your token directly through our platform. 
-                      When disabled, users will be redirected to Jupiter's token information page.
-                    </div>
-                  </div>
-                </div> */}
-
-                {/* Bot Protection Section */}
-                <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Zap className="w-6 h-6 text-cyan-400" />
-                    <h3 className="text-lg font-semibold text-white">Bot Protection</h3>
-                    <div className="px-2 py-1 bg-cyan-600 text-cyan-100 rounded text-xs font-medium">
-                      RECOMMENDED
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="enableFirstBuy"
-                        name="enableFirstBuy"
-                        checked={params.enableFirstBuy}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
-                        disabled={isLoading}
-                      />
-                      <label htmlFor="enableFirstBuy" className="text-gray-300 text-sm">
-                        Enable instant first buy to prevent bots from front-running your token launch
-                      </label>
-                    </div>
-
-                    {params.enableFirstBuy && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
-                        <div>
-                          <label className="block text-gray-300 text-sm font-medium mb-2">
-                            First Buy Amount (SOL)
-                          </label>
-                          <input
-                            type="number"
-                            name="firstBuyAmountSol"
-                            value={params.firstBuyAmountSol}
-                            onChange={handleInputChange}
-                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                            min="0.001"
-                            max="10"
-                            step="0.001"
-                            disabled={isLoading}
-                            required={params.enableFirstBuy}
-                          />
-                          <div className="text-xs text-gray-500 mt-1">
-                            {conversionRates && `≈ ${calculateFirstBuyValue()}`}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-gray-300 text-sm font-medium mb-2">
-                            Minimum Tokens Expected
-                          </label>
-                          <input
-                            type="number"
-                            name="minimumTokensOut"
-                            value={params.minimumTokensOut}
-                            onChange={handleInputChange}
-                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                            min="1"
-                            disabled={isLoading}
-                            required={params.enableFirstBuy}
-                          />
-                          <div className="text-xs text-gray-500 mt-1">
-                            Slippage protection
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
-                      💡 <strong>Pro tip:</strong> Enabling first buy executes your purchase in the same transaction as pool creation, 
-                      preventing bots from buying before you can get your own tokens.
-                    </div>
-                  </div>
-                </div>
-
-                {/* Advanced Configuration */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white">Configuration</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Total Token Supply
-                      </label>
-                      <input
-                        type="number"
-                        name="totalTokenSupply"
-                        value={params.totalTokenSupply}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                        required
-                        disabled={isLoading}
-                        min="1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Migration Quote Threshold
-                      </label>
-                      <input
-                        type="number"
-                        name="migrationQuoteThreshold"
-                        value={params.migrationQuoteThreshold}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                        required
-                        disabled={isLoading}
-                        min="0.001"
-                        step="0.000001"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Quote Token
-                      </label>
-                      <div className="relative">
-                        <select
-                          name="quoteMint"
-                          value={params.quoteMint}
-                          onChange={handleQuoteMintChange}
-                          className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-                          required
-                          disabled={isLoading}
-                        >
-                          {Object.entries(QUOTE_MINTS).map(([key, mint]) => (
-                            <option key={key} value={key} className="bg-gray-800 text-white">
-                              {mint.name} ({mint.fullSymbol})
-                              {conversionRates && ` - $${formatPrice(key === 'SOL' ? conversionRates.solToUsd : conversionRates.cyaiToUsd)}`}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading || isUploadingImage || !params.image}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>
-                        Transactions ({currentTransaction}/{totalTransactions}) - 
-                        {currentTransaction === 1 ? ' Setting up config...' : ' Creating pool...'}
-                      </span>
-                    </div>
-                  ) : !params.image ? (
-                    'Please upload an image first'
-                  ) : params.enableFirstBuy ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Zap className="w-5 h-5" />
-                      <span>Launch Token with First Buy</span>
-                    </div>
-                  ) : (
-                    'Launch Token'
-                  )}
-                </button>
-              </form>
-            </motion.div>
-          )}
-
-          {activeTab === 'tokens' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900/50 rounded-2xl p-8 border border-gray-700"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Your Launched Tokens</h2>
-                <button
-                  onClick={() => loadLaunchedTokens()}
-                  disabled={tokensLoading}
-                  className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
-                  title="Refresh tokens"
-                >
-                  <RefreshCw className={`w-4 h-4 text-white ${tokensLoading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-              
-              {tokensLoading ? (
-                <div className="text-center py-12">
-                  <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
-                  <p className="text-gray-400">Loading your tokens...</p>
-                </div>
-              ) : tokensError ? (
-                <div className="text-center py-12">
-                  <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
-                  <p className="text-red-400 mb-2">Failed to load tokens</p>
-                  <p className="text-gray-500 text-sm mb-4">{tokensError}</p>
-                  <button
-                    onClick={() => loadLaunchedTokens()}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              ) : launchedTokens.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🚀</div>
-                  <p className="text-gray-400">No tokens launched yet</p>
-                  <p className="text-gray-500 text-sm mt-2">
-                    Launch your first token to see it here
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {launchedTokens.map((token, index) => (
-                    <LaunchedTokenCard 
-                      key={token.contractAddress} 
-                      token={token}
-                      index={index}
-                      onDammDerived={handleTokenDammDerived}
-                      onTradeClick={() => handleTradeClick(token)}
-                      onTradeStatusToggle={() => handleTradeStatusToggle(token)}
-                    />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'swap' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900/50 rounded-2xl p-8 border border-gray-700"
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">Swap Tokens</h2>
-              
-              {tokensLoading ? (
-                <div className="text-center py-12">
-                  <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
-                  <p className="text-gray-400">Loading tokens...</p>
-                </div>
-              ) : currentLaunchedToken ? (
-                <div className="space-y-6">
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-600">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white">{currentLaunchedToken.tokenName}</h3>
-                        <p className="text-gray-400">{currentLaunchedToken.tokenSymbol}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-gray-400 text-sm">Contract</p>
-                        <p className="text-white font-mono text-sm">
-                          {currentLaunchedToken.contractAddress.slice(0, 8)}...{currentLaunchedToken.contractAddress.slice(-4)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      {currentLaunchedToken.dammPoolAddress ? (
-                        <a
-                          href={`https://jup.ag/swap/SOL-${currentLaunchedToken.contractAddress}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg text-center font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Trade on Jupiter
-                        </a>
-                      ) : currentTokenGraduated ? (
-                        <button disabled className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium cursor-wait">
-                          Finalizing AMM...
-                        </button>
-                      ) : currentLaunchedToken.tradeStatus ? (
-                        <button
-                          onClick={handleTradeCurrentToken}
-                          className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                          <TrendingUp className="w-4 h-4" />
-                          Trade
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleTradeCurrentToken}
-                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                          title="Trading disabled - view on Jupiter"
-                        >
-                          <Ban className="w-4 h-4" />
-                          View on Jupiter
-                        </button>
-                      )}
-                      
-                      <a
-                        href={`https://solscan.io/token/${currentLaunchedToken.contractAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
-                        title="View on Solscan"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-400">No tokens available for swapping</p>
-                  <p className="text-gray-500 text-sm mt-2">
-                    Launch a token first to enable swapping
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          )}
+            {activeTab === 'fundraise' && (projectData.projectStage === 'cooking' || existingIdeaId) && (
+              <FundraiseTab
+                projectData={projectData}
+                conversionRates={conversionRates}
+                onProjectInfoChange={handleProjectInfoChange}
+                onLaunchToken={launchToken}
+                isLoading={isLoading}
+                calculateFirstBuyValue={calculateFirstBuyValue}
+                hasUnsavedChanges={!existingIdeaId}
+                onSaveProject={saveProject}
+                isSaving={isSaving}
+              />
+            )}
+            </div>
+          </div>
         </div>
-
-        {/* Trade Modal */}
-        {selectedToken && (
-          <DbcTradeModal
-            isOpen={showTradeModal}
-            onClose={() => setShowTradeModal(false)}
-            poolAddress={selectedToken.dbcPoolAddress}
-            tokenMintAddress={selectedToken.contractAddress}
-            tokenName={selectedToken.tokenName}
-            tokenSymbol={selectedToken.tokenSymbol}
-            creatorName="Project"
-          />
-        )}
       </div>
     </>
   );
 }
 
-// Memoized LaunchedTokenCard component with stable callbacks
-interface LaunchedTokenCardProps {
-  token: LaunchedTokenData;
-  index: number;
-  onDammDerived: (dammPoolAddress: string, tokenIndex: number) => void;
-  onTradeClick: () => void;
-  onTradeStatusToggle: () => void;
+// Project Info Tab Component
+interface ProjectInfoTabProps {
+  projectData: ProjectFormData;
+  categories: ProjectCategory[];
+  industries: ProjectIndustry[];
+  onProjectInfoChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  imagePreview: string | null;
+  isUploadingImage: boolean;
+  newTeamMember: TeamMember;
+  showAddMember: boolean;
+  onStageChange: (stage: 'ideation' | 'cooking') => void;
+  onTeamMemberChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onAddTeamMember: () => void;
+  onRemoveTeamMember: (index: number) => void;
+  setShowAddMember: (show: boolean) => void;
+  onSaveProject: () => void;
+  isSaving: boolean;
+  isExistingIdea: boolean;
 }
 
-const LaunchedTokenCard: React.FC<LaunchedTokenCardProps> = React.memo(({ 
-  token, 
-  index, 
-  onDammDerived, 
-  onTradeClick,
-  onTradeStatusToggle
+const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
+  projectData,
+  categories,
+  industries,
+  onProjectInfoChange,
+  onImageChange,
+  imagePreview,
+  isUploadingImage,
+  newTeamMember,
+  showAddMember,
+  onStageChange,
+  onTeamMemberChange,
+  onAddTeamMember,
+  onRemoveTeamMember,
+  setShowAddMember,
+  onSaveProject,
+  isSaving,
+  isExistingIdea
 }) => {
-  // Create a stable callback for this specific token using useCallback
-  const handleDammDerived = useCallback((dammPoolAddress: string) => {
-    onDammDerived(dammPoolAddress, index);
-  }, [onDammDerived, index]);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white mb-2">Project Information</h2>
+        <p className="text-gray-400">Tell us about your project vision and goals</p>
+      </div>
 
-  const { isGraduated, isLoading: isPoolStatusLoading } = usePoolStatus({
-    configAddress: token.configAddress,
-    contractAddress: token.contractAddress,
-    dbcPoolAddress: token.dbcPoolAddress,
-    quoteMint: token.quoteMint,
-    onDammDerive: handleDammDerived,
-  });
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Project Name *
+          </label>
+          <input
+            type="text"
+            name="projectName"
+            value={projectData.projectName}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="Enter your project name"
+            required
+          />
+        </div>
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            Project Category *
+          </label>
+          <select
+            name="projectCategory"
+            value={projectData.projectCategory}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+            required
+          >
+            <option value="">Select category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Industry *
+        </label>
+        <select
+          name="projectIndustry"
+          value={projectData.projectIndustry}
+          onChange={onProjectInfoChange}
+          className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+          required
+        >
+          <option value="">Select industry</option>
+          {industries.map((industry) => (
+            <option key={industry.id} value={industry.name}>
+              {industry.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Project Description *
+        </label>
+        <textarea
+          name="projectDescription"
+          value={projectData.projectDescription}
+          onChange={onProjectInfoChange}
+          className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 min-h-[120px] resize-y"
+          placeholder="Describe your project, its purpose, and unique value proposition..."
+          required
+          maxLength={5000}
+        />
+        <div className="text-right text-xs text-gray-500 mt-1">
+          {projectData.projectDescription.length}/5000 characters
+        </div>
+      </div>
+
+      {/* Project Image Upload */}
+      <div>
+        <label className="block text-gray-300 text-sm font-medium mb-2">
+          Project Image
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block border-2 border-dashed border-gray-600 rounded-xl p-6 cursor-pointer hover:border-blue-500 transition-all group">
+              <div className="text-center">
+                {isUploadingImage ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                    <span className="text-sm text-blue-300">Uploading to IPFS...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                    <p className="text-sm text-gray-400 group-hover:text-white">
+                      Click to upload image
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG, JPG, GIF up to 10MB
+                    </p>
+                  </>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onImageChange}
+                className="hidden"
+                disabled={isUploadingImage}
+              />
+            </label>
+          </div>
+          
+          <div className="border border-gray-600 rounded-xl p-6 flex items-center justify-center bg-gray-800/50">
+            {imagePreview ? (
+              <div className="text-center">
+                <Image
+                  src={imagePreview}
+                  alt="Project Preview"
+                  width={120}
+                  height={120}
+                  className="rounded-lg mx-auto mb-2 object-cover"
+                />
+                <p className="text-xs text-green-400">✓ Uploaded to IPFS</p>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                <LucidImage className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-sm">Image preview</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Optional URLs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            <Github className="w-4 h-4 inline mr-1" />
+            GitHub URL
+          </label>
+          <input
+            type="url"
+            name="githubUrl"
+            value={projectData.githubUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://github.com/..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            <Globe className="w-4 h-4 inline mr-1" />
+            Website URL
+          </label>
+          <input
+            type="url"
+            name="websiteUrl"
+            value={projectData.websiteUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://yourproject.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-gray-300 text-sm font-medium mb-2">
+            <FileText className="w-4 h-4 inline mr-1" />
+            Whitepaper URL
+          </label>
+          <input
+            type="url"
+            name="whitepaperUrl"
+            value={projectData.whitepaperUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://docs.yourproject.com"
+          />
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-gray-600"></div>
+
+      {/* Project Stage Section - Only show if not an existing idea */}
+      {!isExistingIdea && (
+        <>
+          <div>
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-white mb-2">Project Stage</h3>
+              <p className="text-gray-400">Choose your current project development stage</p>
+            </div>
+
+            <div className="bg-gray-800/30 border border-gray-600/50 rounded-xl p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => onStageChange('ideation')}
+                  className={`p-4 rounded-xl border transition-all text-left ${
+                    projectData.projectStage === 'ideation'
+                      ? 'border-white bg-white text-black'
+                      : 'border-gray-600 hover:border-gray-500 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Lightbulb className={`w-6 h-6 ${projectData.projectStage === 'ideation' ? 'text-yellow-600' : 'text-yellow-400'}`} />
+                    <h4 className={`font-semibold ${projectData.projectStage === 'ideation' ? 'text-black' : 'text-white'}`}>Ideation</h4>
+                  </div>
+                  <p className={`text-sm ${projectData.projectStage === 'ideation' ? 'text-gray-700' : 'text-gray-300'}`}>
+                    Project is in early stages. Save your idea and launch token later.
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => onStageChange('cooking')}
+                  className={`p-4 rounded-xl border transition-all text-left ${
+                    projectData.projectStage === 'cooking'
+                      ? 'border-white bg-white text-black'
+                      : 'border-gray-600 hover:border-gray-500 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Rocket className={`w-6 h-6 ${projectData.projectStage === 'cooking' ? 'text-green-600' : 'text-green-400'}`} />
+                    <h4 className={`font-semibold ${projectData.projectStage === 'cooking' ? 'text-black' : 'text-white'}`}>Cooking</h4>
+                  </div>
+                  <p className={`text-sm ${projectData.projectStage === 'cooking' ? 'text-gray-700' : 'text-gray-300'}`}>
+                    Ready to launch! Has traffic and ready for token launch.
+                  </p>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-600"></div>
+        </>
+      )}
+
+      {/* Show current stage if existing idea */}
+      {isExistingIdea && (
+        <>
+          <div>
+            <div className="bg-gray-800/30 border border-gray-600/50 rounded-xl p-6">
+              <div className="flex items-center gap-3">
+                <Rocket className="w-6 h-6 text-green-400" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Project Stage: Cooking</h3>
+                  <p className="text-gray-400">This project is ready for token launch</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-600"></div>
+        </>
+      )}
+
+      {/* Team Members Section */}
+      <div>
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-white mb-2">Team Members</h3>
+          <p className="text-gray-400">Add your team members and their roles</p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-400">
+              {projectData.teamMembers.length} team member{projectData.teamMembers.length !== 1 ? 's' : ''} added
+            </div>
+            <button
+              onClick={() => setShowAddMember(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-100 text-black rounded-full transition-colors font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Add Member
+            </button>
+          </div>
+
+          {/* Existing Team Members */}
+          {projectData.teamMembers.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {projectData.teamMembers.map((member, index) => (
+                <div key={index} className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 rounded-lg p-4 border border-gray-600/50">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-semibold text-white">{member.name}</h4>
+                      <p className="text-sm text-blue-400">{member.role}</p>
+                    </div>
+                    <button
+                      onClick={() => onRemoveTeamMember(index)}
+                      className="text-gray-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 font-mono mb-2">
+                    {member.walletAddress.slice(0, 8)}...{member.walletAddress.slice(-8)}
+                  </p>
+                  {member.bio && (
+                    <p className="text-sm text-gray-300 mb-2">{member.bio}</p>
+                  )}
+                  <div className="flex gap-2">
+                    {member.linkedinUrl && (
+                      <a href={member.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        <Linkedin className="w-4 h-4" />
+                      </a>
+                    )}
+                    {member.twitterUrl && (
+                      <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        <Twitter className="w-4 h-4" />
+                      </a>
+                    )}
+                    {member.githubUrl && (
+                      <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                        <Github className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add Team Member Form */}
+          {showAddMember && (
+            <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-lg p-6 border border-gray-600/50">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-semibold text-white">Add Team Member</h4>
+                <button
+                  onClick={() => setShowAddMember(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-300 text-sm font-medium mb-2">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={newTeamMember.name}
+                      onChange={onTeamMemberChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 text-sm font-medium mb-2">
+                      Role *
+                    </label>
+                    <input
+                      type="text"
+                      name="role"
+                      value={newTeamMember.role}
+                      onChange={onTeamMemberChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="e.g., Developer, Designer, Marketing"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    Wallet Address *
+                  </label>
+                  <input
+                    type="text"
+                    name="walletAddress"
+                    value={newTeamMember.walletAddress}
+                    onChange={onTeamMemberChange}
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 font-mono"
+                    placeholder="Enter Solana wallet address"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-gray-300 text-sm font-medium mb-2">
+                      <Linkedin className="w-4 h-4 inline mr-1" />
+                      LinkedIn
+                    </label>
+                    <input
+                      type="url"
+                      name="linkedinUrl"
+                      value={newTeamMember.linkedinUrl}
+                      onChange={onTeamMemberChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 text-sm font-medium mb-2">
+                      <Twitter className="w-4 h-4 inline mr-1" />
+                      Twitter
+                    </label>
+                    <input
+                      type="url"
+                      name="twitterUrl"
+                      value={newTeamMember.twitterUrl}
+                      onChange={onTeamMemberChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="https://twitter.com/..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 text-sm font-medium mb-2">
+                      <Github className="w-4 h-4 inline mr-1" />
+                      GitHub
+                    </label>
+                    <input
+                      type="url"
+                      name="githubUrl"
+                      value={newTeamMember.githubUrl}
+                      onChange={onTeamMemberChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    Bio
+                  </label>
+                  <textarea
+                    name="bio"
+                    value={newTeamMember.bio}
+                    onChange={onTeamMemberChange}
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 min-h-[80px] resize-y"
+                    placeholder="Brief description of experience and role..."
+                    maxLength={500}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={onAddTeamMember}
+                    className="flex-1 bg-white hover:bg-gray-100 text-black py-3 px-6 rounded-full transition-colors font-medium"
+                  >
+                    Add Member
+                  </button>
+                  <button
+                    onClick={() => setShowAddMember(false)}
+                    className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-black rounded-full transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {projectData.teamMembers.length === 0 && !showAddMember && (
+            <div className="text-center py-8 bg-gradient-to-br from-gray-800/30 to-gray-900/30 rounded-lg border border-gray-600/50">
+              <Users className="w-12 h-12 mx-auto mb-3 text-gray-500" />
+              <p className="text-gray-400 mb-3">No team members added yet</p>
+              <button
+                onClick={() => setShowAddMember(true)}
+                className="px-6 py-3 bg-white hover:bg-gray-100 text-black rounded-full transition-colors font-medium"
+              >
+                Add First Member
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Save Project Button */}
+      <div className="flex justify-end pt-6 border-t border-gray-600">
+        <button
+          onClick={onSaveProject}
+          disabled={isSaving || projectData.teamMembers.length === 0}
+          className="px-8 py-4 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-full font-medium transition-all"
+        >
+          {isSaving ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving...
+            </div>
+          ) : isExistingIdea ? (
+            'Update Project'
+          ) : (
+            `Save ${projectData.projectStage === 'ideation' ? 'Project Idea' : 'Project & Continue'}`
+          )}
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+// Fundraise Tab Component - UPDATED
+interface FundraiseTabProps {
+  projectData: ProjectFormData;
+  conversionRates: ConversionRate | null;
+  onProjectInfoChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onLaunchToken: () => void;
+  isLoading: boolean;
+  calculateFirstBuyValue: () => string;
+  hasUnsavedChanges: boolean;
+  onSaveProject: () => void;
+  isSaving: boolean;
+}
+
+const FundraiseTab: React.FC<FundraiseTabProps> = ({
+  projectData,
+  conversionRates,
+  onProjectInfoChange,
+  onLaunchToken,
+  isLoading,
+  calculateFirstBuyValue,
+  hasUnsavedChanges,
+  onSaveProject,
+  isSaving
+}) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    onProjectInfoChange({
+      ...e,
+      target: {
+        ...e.target,
+        name,
+        value: type === 'checkbox' 
+          ? (e.target as HTMLInputElement).checked.toString()
+          : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
+            ? Number(value).toString()
+            : value
+      }
+    } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>);
   };
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const copyToClipboard = async (text: string, fieldName: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(fieldName);
-      toast.success(`${fieldName} copied!`);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      toast.error('Failed to copy');
-    }
-  };
-
-  // Enhanced status determination including trade status
-  const getTokenStatus = () => {
-    if (token.dammPoolAddress) {
-      return { status: 'graduated', label: 'Graduated', color: 'green' };
-    }
-    if (!token.tradeStatus) {
-      return { status: 'trade-disabled', label: 'View Only', color: 'orange' };
-    }
-    return { status: 'active', label: 'Active', color: 'blue' };
-  };
-
-  const statusInfo = getTokenStatus();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="bg-gray-800/30 rounded-xl p-6 border border-gray-600 hover:border-gray-500 transition-colors"
+      className="space-y-6"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h4 className="text-lg font-semibold text-white truncate">{token.tokenName}</h4>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-gray-400">{token.tokenSymbol}</span>
-            <span className="px-2 py-1 bg-blue-900/50 text-blue-300 rounded text-xs">
-              {token.quoteMint}
-            </span>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                statusInfo.color === 'green' ? 'bg-green-500' :
-                statusInfo.color === 'orange' ? 'bg-orange-500 animate-pulse' :
-                'bg-blue-500 animate-pulse'
-              }`}></div>
-              <span className="text-xs text-gray-500">
-                {statusInfo.label}
-              </span>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white mb-2">Launch Your Token</h2>
+        <p className="text-gray-400">Configure and launch your project token</p>
+      </div>
+
+      {/* Show warning if there are unsaved changes */}
+      {hasUnsavedChanges && (
+        <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400" />
+            <div>
+              <h4 className="font-semibold text-yellow-300">Unsaved Changes</h4>
+              <p className="text-sm text-yellow-200">Please save your project before launching the token.</p>
+            </div>
+          </div>
+          <button
+            onClick={onSaveProject}
+            disabled={isSaving}
+            className="mt-3 px-6 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 text-black rounded-full transition-colors font-medium"
+          >
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </div>
+            ) : (
+              'Save Project First'
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Token Information */}
+      <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Token Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Token Name *
+            </label>
+            <input
+              type="text"
+              name="tokenName"
+              value={projectData.tokenName}
+              onChange={handleInputChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Token Symbol *
+            </label>
+            <input
+              type="text"
+              name="tokenSymbol"
+              value={projectData.tokenSymbol}
+              onChange={handleInputChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 uppercase"
+              required
+              maxLength={10}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bot Protection Section */}
+      <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Zap className="w-6 h-6 text-cyan-400" />
+          <h3 className="text-lg font-semibold text-white">Bot Protection</h3>
+          <div className="px-2 py-1 bg-cyan-600 text-cyan-100 rounded text-xs font-medium">
+            RECOMMENDED
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="enableFirstBuy"
+              name="enableFirstBuy"
+              checked={projectData.enableFirstBuy}
+              onChange={(e) => handleInputChange({
+                ...e,
+                target: { 
+                  ...e.target, 
+                  name: 'enableFirstBuy',
+                  value: e.target.checked.toString(),
+                  type: 'checkbox'
+                }
+              } as React.ChangeEvent<HTMLInputElement>)}
+              className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
+              disabled={isLoading}
+            />
+            <label htmlFor="enableFirstBuy" className="text-gray-300 text-sm">
+              Enable instant first buy to prevent bots from front-running your token launch
+            </label>
+          </div>
+
+          {projectData.enableFirstBuy && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">
+                  First Buy Amount (SOL)
+                </label>
+                <input
+                  type="number"
+                  name="firstBuyAmountSol"
+                  value={projectData.firstBuyAmountSol}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                  min="0.001"
+                  max="10"
+                  step="0.001"
+                  disabled={isLoading}
+                  required={projectData.enableFirstBuy}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {conversionRates && `≈ ${calculateFirstBuyValue()}`}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 text-sm font-medium mb-2">
+                  Minimum Tokens Expected
+                </label>
+                <input
+                  type="number"
+                  name="minimumTokensOut"
+                  value={projectData.minimumTokensOut}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                  min="1"
+                  disabled={isLoading}
+                  required={projectData.enableFirstBuy}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Slippage protection
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
+            💡 <strong>Pro tip:</strong> Enabling first buy executes your purchase in the same transaction as pool creation, 
+            preventing bots from buying before you can get your own tokens.
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Configuration */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-white">Advanced Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Total Token Supply
+            </label>
+            <input
+              type="number"
+              name="totalTokenSupply"
+              value={projectData.totalTokenSupply}
+              onChange={handleInputChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+              required
+              disabled={isLoading}
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Migration Quote Threshold
+            </label>
+            <input
+              type="number"
+              name="migrationQuoteThreshold"
+              value={projectData.migrationQuoteThreshold}
+              onChange={handleInputChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+              required
+              disabled={isLoading}
+              min="0.001"
+              step="0.000001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              Quote Token
+            </label>
+            <div className="relative">
+              <select
+                name="quoteMint"
+                value={projectData.quoteMint}
+                onChange={handleInputChange}
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                required
+                disabled={isLoading}
+              >
+                {Object.entries(QUOTE_MINTS).map(([key, mint]) => (
+                  <option key={key} value={key} className="bg-gray-800 text-white">
+                    {mint.name} ({mint.fullSymbol})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <p className="text-xs text-gray-500">
-            {formatDate(token.launchedAt)}
-          </p>
-          {/* Trade Status Toggle - only show for non-graduated tokens */}
-          {!token.dammPoolAddress && (
-            <button
-              onClick={onTradeStatusToggle}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                token.tradeStatus 
-                  ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30' 
-                  : 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
-              }`}
-              title={`Click to ${token.tradeStatus ? 'disable' : 'enable'} trading`}
-            >
-              {token.tradeStatus ? 'Trading ON' : 'Trading OFF'}
-            </button>
-          )}
-        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-gray-400">Token:</span>
-            <button
-              onClick={() => copyToClipboard(token.contractAddress, 'Contract Address')}
-              className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
-              title="Copy contract address"
-            >
-              {copiedField === 'Contract Address' ? (
-                <Check className="w-3 h-3 text-green-400" />
-              ) : (
-                <Copy className="w-3 h-3" />
-              )}
-            </button>
+      {/* Launch Button */}
+      <button
+        onClick={onLaunchToken}
+        className="w-full bg-white hover:bg-gray-100 text-black py-4 rounded-full font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage || hasUnsavedChanges}
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Launching Token...</span>
           </div>
-          <p className="text-gray-300 font-mono truncate">
-            {token.contractAddress.slice(0, 8)}...{token.contractAddress.slice(-4)}
-          </p>
-        </div>
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-gray-400">Pool:</span>
-            <button
-              onClick={() => copyToClipboard(token.dbcPoolAddress, 'Pool Address')}
-              className="p-1 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-colors"
-              title="Copy pool address"
-            >
-              {copiedField === 'Pool Address' ? (
-                <Check className="w-3 h-3 text-green-400" />
-              ) : (
-                <Copy className="w-3 h-3" />
-              )}
-            </button>
+        ) : hasUnsavedChanges ? (
+          <div className="flex items-center justify-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>Save Project First</span>
           </div>
-          <p className="text-gray-300 font-mono truncate">
-            {token.dbcPoolAddress.slice(0, 8)}...{token.dbcPoolAddress.slice(-4)}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        {isPoolStatusLoading ? (
-          <button disabled className="flex-1 py-2 bg-gray-600 text-white rounded-lg cursor-wait text-sm">
-            <Loader2 className="w-4 h-4 mx-auto animate-spin" />
-          </button>
-        ) : token.dammPoolAddress ? (
-          <a
-            href={`https://jup.ag/swap/SOL-${token.contractAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm text-center font-medium"
-          >
-            Trade on Jupiter
-          </a>
-        ) : isGraduated ? (
-          <button disabled className="flex-1 py-2 bg-blue-600 text-white rounded-lg cursor-wait text-sm">
-            Finalizing...
-          </button>
-        ) : token.tradeStatus ? (
-          <button
-            onClick={onTradeClick}
-            className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1"
-          >
-            <TrendingUp className="w-3 h-3" />
-            Trade
-          </button>
+        ) : projectData.enableFirstBuy ? (
+          <div className="flex items-center justify-center gap-2">
+            <Rocket className="w-5 h-5" />
+            <span>Launch Token with First Buy</span>
+          </div>
         ) : (
-          <button
-            onClick={onTradeClick}
-            className="flex-1 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-1"
-            title="Trading disabled - view on Jupiter"
-          >
-            <Ban className="w-3 h-3" />
-            View Only
-          </button>
+          <div className="flex items-center justify-center gap-2">
+            <Rocket className="w-5 h-5" />
+            <span>Launch Token</span>
+          </div>
         )}
-        
-        <a
-          href={`https://solscan.io/token/${token.contractAddress}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm flex items-center justify-center"
-          title="View on Solscan"
-        >
-          <ExternalLink className="w-4 h-4" />
-        </a>
-      </div>
+      </button>
     </motion.div>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  return (
-    prevProps.token.contractAddress === nextProps.token.contractAddress &&
-    prevProps.token.dammPoolAddress === nextProps.token.dammPoolAddress &&
-    prevProps.token.tradeStatus === nextProps.token.tradeStatus &&
-    prevProps.index === nextProps.index
-  );
-});
-
-LaunchedTokenCard.displayName = 'LaunchedTokenCard';
+};

@@ -36,7 +36,7 @@ export default function Navbar() {
 
   // Initialize Solana connection
   const connection = new Connection(
-    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, 
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     "confirmed"
   );
 
@@ -307,6 +307,14 @@ export default function Navbar() {
                       onClick={handleDashboardClick}
                     >
                       <FaExchangeAlt className="w-4 h-4 mr-2" />
+                      Swap
+                    </Link>
+                    <Link
+                      href="/trade"
+                      className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
+                      onClick={() => setShowDashboardDropdown(false)}
+                    >
+                      <FaExchangeAlt className="w-4 h-4 mr-2" />
                       Trade
                     </Link>
                   </div>
@@ -437,6 +445,9 @@ export default function Navbar() {
                 Assets
               </Link>
               <Link href={isAuthenticated ? '/swap' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                Swap
+              </Link>
+              <Link href="/trade" className="block py-2 text-white hover:opacity-80" onClick={() => setMobileOpen(false)}>
                 Trade
               </Link>
             </div>
