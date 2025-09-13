@@ -84,28 +84,28 @@ jobs:
             echo "🧹 Removing old images to free up space..."
             docker system prune -f
 
-            # echo "📄 Creating environment file..."
-            # cat <<EOF > .env
-            # API_BASE_URL=${{ secrets.API_BASE_URL }}
-            # MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
-            # CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
-            # TTS_API_URL=${{ secrets.TTS_API_URL }}
-            # MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
-            # OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            # NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
-            # NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
-            # NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
-            # NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
-            # NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
-            # NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
-            # NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
-            # NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
-            # NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            # NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            # NEXT_PUBLIC_TWITTER_CLIENT_ID=${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}
-            # NEXT_PUBLIC_TWITTER_CLIENT_SECRET=${{ secrets.TWITTER_CLIENT_SECRET }}
-            # NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            # NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
+            echo "📄 Creating environment file..."
+            cat <<EOF > .env
+            API_BASE_URL=${{ secrets.API_BASE_URL }}
+            MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
+            CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
+            TTS_API_URL=${{ secrets.TTS_API_URL }}
+            MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
+            NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
+            NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+            NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+            NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_TWITTER_CLIENT_ID=${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}
+            NEXT_PUBLIC_TWITTER_CLIENT_SECRET=${{ secrets.TWITTER_CLIENT_SECRET }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
             
             EOF
 
