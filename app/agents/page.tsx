@@ -222,6 +222,8 @@ export default function UserProfilePage() {
         body: JSON.stringify({ walletAddress }),
       });
 
+      console.log('Twitter link response status:', response.status);
+
       if (!response.ok) {
         throw new Error('Failed to initiate Twitter login');
       }

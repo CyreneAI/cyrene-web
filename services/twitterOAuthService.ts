@@ -28,9 +28,13 @@ export interface TwitterUser {
   
     constructor() {
       this.clientId = process.env.NEXT_PUBLIC_TWITTER_CLIENT_ID!;
+      console.log('Twitter Client ID:', this.clientId);
       this.clientSecret = process.env.TWITTER_CLIENT_SECRET!;
+      console.log('Twitter Client Secret:', this.clientSecret ? '****' : 'Not Set');
       this.redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`;
+      console.log('Twitter Redirect URI:', this.redirectUri);
     }
+  
   
     // Generate Twitter OAuth URL
     generateAuthUrl(state: string): string {
