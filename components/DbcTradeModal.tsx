@@ -1188,7 +1188,7 @@ export const DbcTradeModal: React.FC<DbcTradeModalProps> = ({
                 Close
               </button>
               <a
-                href={`https://jup.ag/swap/SOL-${tokenMintAddress || poolAddress}`}
+                href={`https://jup.ag/tokens/${tokenMintAddress || poolAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm text-center flex items-center justify-center"
