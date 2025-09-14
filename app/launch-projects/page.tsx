@@ -386,12 +386,18 @@ export default function LaunchProjectsPage() {
 
   // Handle project info changes
   const handleProjectInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    
     setProjectData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' 
+        ? (e.target as HTMLInputElement).checked // Store as boolean, NOT string
+        : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
+          ? Number(value)
+          : value
     }));
   };
+  
 
   // Handle team member changes
   const handleTeamMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -1465,6 +1471,9 @@ interface FundraiseTabProps {
   isSaving: boolean;
 }
 
+
+// Updated FundraiseTab Component with Better Checkbox Styling
+// Updated FundraiseTab Component with Better Checkbox Styling
 const FundraiseTab: React.FC<FundraiseTabProps> = ({
   projectData,
   conversionRates,
@@ -1565,7 +1574,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
       </div>
 
-      {/* Bot Protection Section */}
+      {/* Bot Protection Section - IMPROVED CHECKBOX STYLING */}
       <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Zap className="w-6 h-6 text-cyan-400" />
@@ -1576,77 +1585,123 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="enableFirstBuy"
-              name="enableFirstBuy"
-              checked={projectData.enableFirstBuy}
-              onChange={(e) => handleInputChange({
-                ...e,
-                target: { 
-                  ...e.target, 
-                  name: 'enableFirstBuy',
-                  value: e.target.checked.toString(),
-                  type: 'checkbox'
-                }
-              } as React.ChangeEvent<HTMLInputElement>)}
-              className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
-              disabled={isLoading}
-            />
-            <label htmlFor="enableFirstBuy" className="text-gray-300 text-sm">
-              Enable instant first buy to prevent bots from front-running your token launch
-            </label>
+          {/* IMPROVED CHECKBOX WITH CLEAR VISUAL STATE */}
+          <div className="flex items-start gap-4 p-4 bg-gray-800/50 rounded-lg border border-gray-600">
+            <div className="relative">
+              <input
+                type="checkbox"
+                id="enableFirstBuy"
+                name="enableFirstBuy"
+                checked={projectData.enableFirstBuy}
+                onChange={(e) => handleInputChange({
+                  ...e,
+                  target: { 
+                    ...e.target, 
+                    name: 'enableFirstBuy',
+                    value: e.target.checked.toString(),
+                    type: 'checkbox'
+                  }
+                } as React.ChangeEvent<HTMLInputElement>)}
+                className="sr-only" // Hide default checkbox
+                disabled={isLoading}
+              />
+              {/* Custom checkbox design */}
+              <label 
+                htmlFor="enableFirstBuy" 
+                className="flex items-center cursor-pointer select-none"
+              >
+                <div className={`
+                  w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200
+                  ${projectData.enableFirstBuy 
+                    ? 'bg-cyan-500 border-cyan-500 shadow-lg shadow-cyan-500/30' 
+                    : 'bg-gray-700 border-gray-500 hover:border-cyan-400'
+                  }
+                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}>
+                  {projectData.enableFirstBuy && (
+                    <Check className="w-3 h-3 text-white font-bold" />
+                  )}
+                </div>
+                <span className="ml-3 text-gray-300 text-sm font-medium">
+                  Enable instant first buy to prevent bots from front-running your token launch
+                </span>
+              </label>
+            </div>
+            
+            {/* Status indicator */}
+            <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+              projectData.enableFirstBuy 
+                ? 'bg-green-600/20 text-green-400 border border-green-500/30' 
+                : 'bg-gray-600/20 text-gray-400 border border-gray-500/30'
+            }`}>
+              {projectData.enableFirstBuy ? 'ENABLED' : 'DISABLED'}
+            </div>
           </div>
 
+          {/* Conditional fields when enabled */}
           {projectData.enableFirstBuy && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  First Buy Amount (SOL)
-                </label>
-                <input
-                  type="number"
-                  name="firstBuyAmountSol"
-                  value={projectData.firstBuyAmountSol}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                  min="0.001"
-                  max="10"
-                  step="0.001"
-                  disabled={isLoading}
-                  required={projectData.enableFirstBuy}
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {conversionRates && `≈ ${calculateFirstBuyValue()}`}
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    First Buy Amount (SOL)
+                  </label>
+                  <input
+                    type="number"
+                    name="firstBuyAmountSol"
+                    value={projectData.firstBuyAmountSol}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                    min="0.001"
+                    max="10"
+                    step="0.001"
+                    disabled={isLoading}
+                    required={projectData.enableFirstBuy === true || projectData.enableFirstBuy === 'true'}
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {conversionRates && `≈ ${calculateFirstBuyValue()}`}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">
+                    Minimum Tokens Expected
+                  </label>
+                  <input
+                    type="number"
+                    name="minimumTokensOut"
+                    value={projectData.minimumTokensOut}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                    min="1"
+                    disabled={isLoading}
+                    required={projectData.enableFirstBuy}
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Slippage protection
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  Minimum Tokens Expected
-                </label>
-                <input
-                  type="number"
-                  name="minimumTokensOut"
-                  value={projectData.minimumTokensOut}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                  min="1"
-                  disabled={isLoading}
-                  required={projectData.enableFirstBuy}
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  Slippage protection
-                </div>
+              <div className="text-xs text-cyan-300 bg-cyan-900/20 border border-cyan-500/20 rounded-lg p-3">
+                ✅ <strong>Bot Protection Active:</strong> Your purchase will be executed in the same transaction as pool creation, 
+                preventing bots from buying before you can get your own tokens.
               </div>
-            </div>
+            </motion.div>
           )}
 
-          <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3">
-            💡 <strong>Pro tip:</strong> Enabling first buy executes your purchase in the same transaction as pool creation, 
-            preventing bots from buying before you can get your own tokens.
-          </div>
+          {/* Info when disabled */}
+          {!projectData.enableFirstBuy && (
+            <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+              ⚠️ <strong>Warning:</strong> Without first buy protection, bots may front-run your token launch. 
+              Consider enabling this feature for better launch protection.
+            </div>
+          )}
         </div>
       </div>
 
@@ -1704,7 +1759,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                   <option key={key} value={key} className="bg-gray-800 text-white">
                     {mint.name} ({mint.fullSymbol}) ({mint.address.slice(0, 4)}...{mint.address.slice(-4)})
                   </option>
-                  
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -1732,7 +1786,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         ) : projectData.enableFirstBuy ? (
           <div className="flex items-center justify-center gap-2">
             <Rocket className="w-5 h-5" />
-            <span>Launch Token with First Buy</span>
+            <span>Launch Token with First Buy ({projectData.firstBuyAmountSol} SOL)</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2">
