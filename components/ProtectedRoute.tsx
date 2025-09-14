@@ -32,14 +32,31 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const [isAuthChecked, setIsAuthChecked] = useState(false)
 
   // List of allowed routes without authentication
-  const ALLOWED_ROUTES = ['/', '/explore-agents', '/privacy', '/terms','/explore-projects', '/launch-projects','/agents','/preview-page','/trade'];
+  const ALLOWED_ROUTES = ['/', '/explore-agents', '/privacy', '/terms', '/explore-projects', '/launch-projects', '/preview-page', '/trade', '/users', '/agents'];
+  
+  // List of allowed route patterns for dynamic routes
+  const ALLOWED_PATTERNS = [
+    '/users/', // This will match /users/anything
+    '/explore-agents/', // In case you have dynamic routes here
+  ];
+
+  // Function to check if a pathname is allowed
+  const isRouteAllowed = (path: string): boolean => {
+    // Check exact matches first
+    if (ALLOWED_ROUTES.includes(path)) {
+      return true;
+    }
+    
+    // Check pattern matches for dynamic routes
+    return ALLOWED_PATTERNS.some(pattern => path.startsWith(pattern));
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true)
       
       // Skip check for allowed routes
-      if (ALLOWED_ROUTES.includes(pathname)) {
+      if (isRouteAllowed(pathname)) {
         setIsLoading(false)
         setIsAuthChecked(true)
         return

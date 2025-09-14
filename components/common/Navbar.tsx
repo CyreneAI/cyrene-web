@@ -36,7 +36,7 @@ export default function Navbar() {
 
   // Initialize Solana connection
   const connection = new Connection(
-    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, 
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     "confirmed"
   );
 
@@ -147,14 +147,14 @@ export default function Navbar() {
   };
 
   return (
-    <header role="banner" className="fixed z-50 md:top-[50px] md:left-1/2 md:-translate-x-1/2 top-3 left-0 right-0">
+    <header role="banner" className="fixed z-50 top-3 lg:top-6 xl:top-[50px] left-0 right-0">
       <div
         className="
-          w-[calc(100%-24px)] md:w-auto md:min-w-[900px] md:max-w-[1200px] h-[60px] md:h-[80px]
-          mx-auto
-          rounded-[20px] md:rounded-[40px]
+          w-[calc(100%-24px)] lg:w-[calc(100%-48px)] xl:w-full max-w-[1200px] h-[60px] lg:h-[80px]
+          mx-auto overflow-visible
+          rounded-[20px] lg:rounded-[40px]
           backdrop-blur-[70px]
-          px-4 md:px-8
+          px-4 lg:px-8
           flex items-center justify-between
           shadow-[0_8px_28px_rgba(6,17,54,0.35)]
         "
@@ -172,8 +172,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Divider + Links (desktop) */}
-        <div className="hidden md:flex items-center gap-8 flex-1 mx-4 min-w-0">
+  {/* Divider + Links (desktop) */}
+  <div className="hidden lg:flex items-center gap-8 flex-1 mx-4 min-w-0">
           <div className="flex-1 h-px border-t border-dashed border-[#4D84EE]/60 min-w-[60px]" />
           <nav className="flex items-center gap-6 whitespace-nowrap">
             <Link 
@@ -227,7 +227,8 @@ export default function Navbar() {
                 onClick={() => setShowExploreDropdown(!showExploreDropdown)}
                 className={`text-lg font-medium hover:opacity-80 transition flex items-center gap-2 ${
                   pathname.startsWith('/explore-agents') || 
-                  pathname.startsWith('/explore-projects')
+                  pathname.startsWith('/explore-projects') ||
+                  pathname.startsWith('/users')
                     ? 'text-[#4D84EE]'
                     : 'text-white'
                 }`}
@@ -253,6 +254,14 @@ export default function Navbar() {
                     >
                       <FaRocket className="w-4 h-4 mr-2" />
                       Projects
+                    </Link>
+                    <Link
+                      href="/users"
+                      className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
+                      onClick={() => setShowExploreDropdown(false)}
+                    >
+                      <FaRocket className="w-4 h-4 mr-2" />
+                      Community
                     </Link>
                   </div>
                 </div>
@@ -282,17 +291,22 @@ export default function Navbar() {
                       className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
                       onClick={handleDashboardClick}
                     >
+                      {/* <Link
+                      href={'/agents'}
+                      className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
+                     
+                    ></Link> */}
                       <FaRobot className="w-4 h-4 mr-2" />
                       My Profile
                     </Link>
-                    <Link
+                    {/* <Link
                       href={isAuthenticated ? '/perks' : '#'}
                       className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
                       onClick={handleDashboardClick}
                     >
                       <FaGift className="w-4 h-4 mr-2" />
                       Perks
-                    </Link>
+                    </Link> */}
                     <Link
                       href={isAuthenticated ? '/tokenbalances' : '#'}
                       className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
@@ -307,8 +321,16 @@ export default function Navbar() {
                       onClick={handleDashboardClick}
                     >
                       <FaExchangeAlt className="w-4 h-4 mr-2" />
-                      Trade
+                      Swap
                     </Link>
+                    {/* <Link
+                      href="/trade"
+                      className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
+                      onClick={() => setShowDashboardDropdown(false)}
+                    >
+                      <FaExchangeAlt className="w-4 h-4 mr-2" />
+                      Trade
+                    </Link> */}
                   </div>
                 </div>
               )}
@@ -317,7 +339,7 @@ export default function Navbar() {
         </div>
 
   {/* Wallet Pill and Connect/Verify Buttons (desktop) */}
-  <div className="hidden md:flex items-center gap-3 ml-4">
+  <div className="hidden lg:flex items-center gap-3 ml-4">
           {/* Wallet pill if connected and authenticated */}
           {isConnected && isAuthenticated && address && (
             <div
@@ -345,7 +367,7 @@ export default function Navbar() {
               <AuthButton />
               <button
                 onClick={() => open()}
-                className="inline nter rounded-full px-4 py-2 h-11 border border-[#4D84EE]/40 text-white/90 hover:text-white hover:bg-[#4D84EE]/10 transition-colors text-sm"
+                className="inline-flex rounded-full px-4 py-2 h-11 border border-[#4D84EE]/40 text-white/90 hover:text-white hover:bg-[#4D84EE]/10 transition-colors text-sm"
                 title="Open account"
               >
                 Account
@@ -360,7 +382,7 @@ export default function Navbar() {
         {/* Mobile menu toggle */}
         <button
           type="button"
-          className="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+          className="lg:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((v) => !v)}
@@ -378,7 +400,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="md:hidden mx-3 mt-2 rounded-2xl border border-[#4D84EE]/20 bg-[#2F3755]/90 backdrop-blur-xl shadow-2xl overflow-hidden"
+            className="lg:hidden mx-3 mt-2 rounded-2xl border border-[#4D84EE]/20 bg-[#2F3755]/90 backdrop-blur-xl shadow-2xl overflow-hidden"
           >
             <div className="px-4 py-3 border-b border-white/10">
               <Link
@@ -428,7 +450,7 @@ export default function Navbar() {
             <div className="px-4 py-3 border-b border-white/10">
               <div className="text-xs uppercase tracking-widest text-white/60 mb-2">Dashboard</div>
               <Link href={isAuthenticated ? '/agents' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
-                My Agents
+               Profile
               </Link>
               <Link href={isAuthenticated ? '/perks' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
                 Perks
@@ -437,6 +459,9 @@ export default function Navbar() {
                 Assets
               </Link>
               <Link href={isAuthenticated ? '/swap' : '#'} className="block py-2 text-white hover:opacity-80" onClick={(e) => { handleDashboardClick(e as unknown as React.MouseEvent); setMobileOpen(false); }}>
+                Swap
+              </Link>
+              <Link href="/trade" className="block py-2 text-white hover:opacity-80" onClick={() => setMobileOpen(false)}>
                 Trade
               </Link>
             </div>

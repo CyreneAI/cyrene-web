@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress, returnUrl } = body;
     
     if (!walletAddress) {
       return NextResponse.json(
@@ -15,23 +15,27 @@ export async function POST(request: NextRequest) {
 
     // Check if environment variables are set
     if (!process.env.NEXT_PUBLIC_TWITTER_CLIENT_ID) {
+      console.error('Twitter client ID not configured');
       return NextResponse.json(
-        { error: 'Twitter client ID not configured' },
+        { error: 'Twitter authentication is not properly configured. Please contact support.' },
         { status: 500 }
       );
     }
 
     if (!process.env.TWITTER_CLIENT_SECRET) {
+      console.error('Twitter client secret not configured');
       return NextResponse.json(
-        { error: 'Twitter client secret not configured' },
+        { error: 'Twitter authentication is not properly configured. Please contact support.' },
         { status: 500 }
       );
     }
 
-    // Generate state parameter with wallet address
+    // Generate state parameter with wallet address and return URL
     const state = Buffer.from(JSON.stringify({ 
       walletAddress, 
-      timestamp: Date.now() 
+      returnUrl: returnUrl || '/agents', // Default to /agents if not provided
+      timestamp: Date.now(),
+      nonce: Math.random().toString(36).substring(7) // Add randomness for security
     })).toString('base64');
     
     // Build Twitter OAuth URL
@@ -48,12 +52,20 @@ export async function POST(request: NextRequest) {
     const authUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
     
     console.log('Generated Twitter OAuth URL for wallet:', walletAddress);
+    console.log('Return URL will be:', returnUrl || '/agents');
     
-    return NextResponse.json({ authUrl });
+    return NextResponse.json({ 
+      authUrl,
+      message: 'Redirecting to Twitter for authentication...' 
+    });
   } catch (error) {
     console.error('Twitter login error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Failed to initiate Twitter authentication',
+        details: errorMessage
+      },
       { status: 500 }
     );
   }

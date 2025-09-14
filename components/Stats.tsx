@@ -58,7 +58,7 @@ export default function Stats() {
               clickEffect={true}
               spotlightRadius={300}
               particleCount={12}
-              glowColor="132, 0, 255"
+              glowColor="30, 64, 175"
               customCardData={customCardData}
             />
           </div>

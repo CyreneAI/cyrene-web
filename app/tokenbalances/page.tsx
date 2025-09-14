@@ -112,7 +112,7 @@ export default function TokenBalancesPage() {
   const [tokens, setTokens] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentChain, setCurrentChain] = useState<'ethereum' | 'arbitrum' | 'base' | 'solana'>('ethereum');
+  const [currentChain, setCurrentChain] = useState<'ethereum' | 'arbitrum' | 'base' | 'solana'>('solana');
   const [manualAddress, setManualAddress] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   
@@ -517,7 +517,7 @@ const tokensWithMetadata = await Promise.all(nonZeroBalances.map(async (token: {
   if (!walletAddress && !manualAddress) {
     return (
       <>
-        <StarCanvas/>
+      
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold text-white">Connect your wallet</h2>
@@ -560,14 +560,15 @@ const tokensWithMetadata = await Promise.all(nonZeroBalances.map(async (token: {
 
   return (
     <>
-      <StarCanvas />
-      <div className="relative min-h-screen py-20 px-4 overflow-hidden">
-        {/* Gradient Orbs */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-[#0162FF] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
-        <div className="absolute top-40 right-10 w-72 h-72 bg-[#A63FE1] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#3985FF] rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000" />
+      <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
+        <div className="w-[2661px] text-[370px] opacity-10 tracking-[24.96px] leading-[70%] font-moonhouse text-transparent text-left inline-block [-webkit-text-stroke:3px_#c8c8c8] [paint-order:stroke_fill] mix-blend-overlay">
+          CYRENE
+        </div>
+      </div>
+     
+      <div className="relative min-h-screen pt-36 pb-24 px-4 overflow-hidden">
 
-        <div className="relative z-10 max-w-7xl mx-auto">
+        <div className="relative z-10 max-w-7xl mx-auto mt-12">
           {/* Title Section */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -575,11 +576,11 @@ const tokensWithMetadata = await Promise.all(nonZeroBalances.map(async (token: {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#0162FF] via-[#3985FF] to-[#A63FE1] bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold text-white bg-clip-text text-transparent">
               {manualAddress ? 'Assets' : 'My Assets'}
             </h1>
             <p className="mt-4 text-gray-400">
-              View all tokens across multiple blockchains
+              View all assests
             </p>
           </motion.div>
 
@@ -686,7 +687,7 @@ const tokensWithMetadata = await Promise.all(nonZeroBalances.map(async (token: {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-wrap justify-center gap-2 mb-8"
           >
-            <GlowButton
+            {/* <GlowButton
               active={currentChain === 'ethereum'}
               onClick={() => setCurrentChain('ethereum')}
             >
@@ -703,7 +704,7 @@ const tokensWithMetadata = await Promise.all(nonZeroBalances.map(async (token: {
               onClick={() => setCurrentChain('base')}
             >
               Base
-            </GlowButton>
+            </GlowButton> */}
             <GlowButton
               active={currentChain === 'solana'}
               onClick={() => setCurrentChain('solana')}

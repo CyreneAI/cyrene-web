@@ -146,7 +146,7 @@ export const ScrollVelocity: React.FC<ScrollVelocityProps> = ({
           key={i} 
           ref={i === 0 ? copyRef : null}
         >
-          <span className={`${className} font-outfit font-normal text-2xl md:text-3xl tracking-normal uppercase`}>
+          <span className={`${className} font-outfit font-normal text-2xl md:text-3xl tracking-normal`}>
             {children}
           </span>
           {withStars && (

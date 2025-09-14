@@ -88,12 +88,14 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('Twitter OAuth error:', error);
-    return NextResponse.redirect(`${baseUrl}/dashboard/agents?error=twitter_auth_failed`);
+    // FIXED: Redirect to the correct route
+    return NextResponse.redirect(`${baseUrl}/agents?error=twitter_auth_failed`);
   }
 
   if (!code || !state) {
     console.error('Missing parameters:', { code: !!code, state: !!state });
-    return NextResponse.redirect(`${baseUrl}/dashboard/agents?error=missing_parameters`);
+    // FIXED: Redirect to the correct route
+    return NextResponse.redirect(`${baseUrl}/agents?error=missing_parameters`);
   }
 
   try {
@@ -148,16 +150,18 @@ export async function GET(request: NextRequest) {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      return NextResponse.redirect(`${baseUrl}/dashboard/agents?error=database_error&details=${encodeURIComponent(dbError.message)}`);
+      // FIXED: Redirect to the correct route
+      return NextResponse.redirect(`${baseUrl}/agents?error=database_error&details=${encodeURIComponent(dbError.message)}`);
     }
 
     console.log('Profile saved successfully:', data);
 
-    // Redirect back to profile with success
-    return NextResponse.redirect(`${baseUrl}/dashboard/agents?twitter_linked=true`);
+    // FIXED: Redirect back to profile with success - changed from /dashboard/agents to /agents
+    return NextResponse.redirect(`${baseUrl}/agents?twitter_linked=true`);
   } catch (error) {
     console.error('Twitter callback error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.redirect(`${baseUrl}/dashboard/agents?error=callback_failed&details=${encodeURIComponent(errorMessage)}`);
+    // FIXED: Redirect to the correct route
+    return NextResponse.redirect(`${baseUrl}/agents?error=callback_failed&details=${encodeURIComponent(errorMessage)}`);
   }
 }

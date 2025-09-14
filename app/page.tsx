@@ -19,6 +19,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { AuthDialog } from "@/components/ui/auth-dialog";
 import Stats from "@/components/Stats";
 import DecryptedText from "@/components/ui/DecryptedText";
+import ShinyText from "@/components/ShinyText";
 import ScrollVelocity from "@/components/ScrollVelocity";
 
 // Interface for token metadata from IPFS
@@ -397,7 +398,7 @@ const TokenCarousel = () => {
   const [tokens, setTokens] = useState<LaunchedTokenData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
-  const [isPaused, setIsPaused] = useState(false);
+  // Static layout: no scroll/animation state needed
 
   // Function to fetch metadata from IPFS
   const fetchTokenMetadata = useCallback(async (metadataUri: string): Promise<TokenMetadata | null> => {
@@ -442,12 +443,7 @@ const TokenCarousel = () => {
     loadTokens();
   }, [loadTokens]);
 
-  // Create duplicated array for smooth infinite scroll
-  const extendedTokens = useMemo(() => {
-    if (tokens.length === 0) return [];
-    // Double the array for seamless infinite scroll
-    return [...tokens, ...tokens];
-  }, [tokens]);
+  // Static view: use tokens as-is
 
   if (isLoading) {
     return (
@@ -484,34 +480,19 @@ const TokenCarousel = () => {
           </p>
         </motion.div>
 
-        {/* Carousel Container */}
+        {/* Static Cards Container */}
         <div className="relative">
-          {/* Fade gradients on edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#010623] to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#010623] to-transparent z-10 pointer-events-none" />
-          
-          {/* Control button */}
-
-
-          {/* Carousel Track */}
-          <div className="overflow-hidden rounded-2xl">
-            <div
-              className={`flex ${!isPaused ? 'animate-infinite-scroll' : ''}`}
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
-            >
-              {extendedTokens.map((token, index) => (
-                <TokenCarouselCard 
+          <div className="rounded-2xl">
+            <div className="flex flex-wrap justify-center gap-4">
+              {tokens.map((token, index) => (
+                <TokenCarouselCard
                   key={`${token.contractAddress}-${index}`}
-                  token={token} 
+                  token={token}
                   fetchTokenMetadata={fetchTokenMetadata}
                 />
               ))}
             </div>
           </div>
-
-          {/* Scroll indicator */}
-
         </div>
 
         {/* View All Button */}
@@ -533,7 +514,7 @@ const TokenCarousel = () => {
         </motion.div>
       </div>
 
-      {/* Add this CSS to your globals.css file */}
+      {/* Animation CSS retained but unused now that cards are static */}
       <style jsx global>{`
         @keyframes infinite-scroll {
           0% {
@@ -552,14 +533,14 @@ const TokenCarousel = () => {
           animation-play-state: paused;
         }
 
-        /* Mobile hero section improvements */
+    /* Mobile hero section improvements */
         @media (max-width: 640px) {
           .hero-section {
-            min-height: 450px !important;
+      min-height: 70vh !important;
           }
           
           .hero-content {
-            padding-bottom: 2rem !important;
+      padding-bottom: 0 !important;
           }
           
           /* Ensure text doesn't overflow on very small screens */
@@ -571,7 +552,7 @@ const TokenCarousel = () => {
 
         @media (max-width: 480px) {
           .hero-section {
-            min-height: 400px !important;
+            min-height: 65vh !important;
             border-radius: 16px !important;
           }
         }
@@ -1054,7 +1035,7 @@ export default function Home() {
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-full max-w-[1700px] mx-auto h-[500px] sm:h-[600px] md:h-[800px] lg:h-[900px] items-end justify-center gap-2.5 px-4 sm:px-8 lg:px-[517px] py-4 sm:py-0 mt-4 sm:mt-8 md:mt-12 relative rounded-[20px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[90vh] min-h-[450px] items-end justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-4 sm:py-0 my-6 sm:my-10 md:my-12 relative rounded-[20px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
             
             {/* Background Image */}
             <img 
@@ -1064,7 +1045,7 @@ export default function Home() {
             />
             
             {/* Dark overlay */}
-            <div className="absolute inset-0 bg-black/40 sm:bg-black/30 md:bg-black/20 z-1" aria-hidden="true" />
+            <div className="absolute inset-0 bg-black/40 sm:bg-black/30 md:bg-black/20 z-[1]" aria-hidden="true" />
             
             {/* Left Arrow */}
             <img 
@@ -1082,18 +1063,24 @@ export default function Home() {
               className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
             />
             
-            <div className="hero-content inline-flex flex-col justify-center sm:-ml-[89px] items-center relative flex-[0_0_auto] w-full">
+            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-8 md:pb-12 lg:pb-16">
       
               {/* Header Section */}
-              <header className="flex flex-col w-full max-w-[598px] gap-3 sm:gap-5 items-center relative flex-[0_0_auto]">
-                <h2 className="relative w-fit mt-[-1.00px] font-outfit font-medium text-white text-[14px] sm:text-[18px] md:text-[21px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[18px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap">
-                  JOURNEY WITH
-                </h2>
+              <header className="flex flex-col w-full max-w-[598px] gap-2 sm:gap-3 items-center relative flex-[0_0_auto]">
+                <ShinyText
+                  text="JOURNEY WITH"
+                  className="relative w-fit font-outfit font-medium text-[14px] sm:text-[18px] md:text-[21px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[18px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap"
+                />
 
                 <DecryptedText
                   text="CYRENE"
                   animateOn="view"
                   revealDirection="center"
+                  sequential={true}
+                  speed={200}
+                  maxIterations={15}
+                  useOriginalCharsOnly={false}
+                  characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=-[]{}|;:,.<>?"
                   className="hero-title relative w-fit 
                     bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(162,194,255,1)_100%)] 
                     [-webkit-background-clip:text] 
@@ -1108,12 +1095,21 @@ export default function Home() {
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
                     leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
                     whitespace-nowrap"
+                  encryptedClassName="relative w-fit 
+                    text-white/40
+                    font-moonhouse 
+                    font-normal 
+                    text-[60px] sm:text-[80px] md:text-[110px] 
+                    text-center 
+                    tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
+                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    whitespace-nowrap"
                 />
 
               </header>
               
               {/* Portrait Image */}
-              <div className="relative w-[250px] sm:w-[350px] md:w-[500px] lg:w-[700px] h-[180px] sm:h-[250px] md:h-[350px] lg:h-[498px] mt-[-10px] sm:mt-[-15px] md:mt-[-25px] lg:mt-[-30px]">
+              <div className="relative w-[250px] sm:w-[350px] md:w-[500px] lg:w-[700px] h-[180px] sm:h-[250px] md:h-[350px] lg:h-[498px] -mt-2 sm:-mt-4 md:-mt-6">
                 <Image
                   src="/robo.webp"
                   alt="Portrait of Cyrene, a technologically advanced female humanoid"
@@ -1139,7 +1135,7 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
                 className="text-center mb-16"
               >
-                <h1 className="font-moonhouse text-[30px] font-bold text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
+                <h1 className="font-moonhouse text-[30px] font-medium text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
                   Why CyreneAI ?
                 </h1>
                 <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
@@ -1224,11 +1220,11 @@ export default function Home() {
           <Stats/>
           <ScrollVelocity
             texts={[
-              'AI Agents, Your Launch Partners', 
-              'Decentralized Infrastructure', 
-              'Internet Capital Markets',
+              'AI agents, your launch partners', 
+              'Decentralized infrastructure', 
+              'Internet capital markets',
             ]} 
-            velocity={80} 
+            velocity={40} 
             className="text-white opacity-80"
             withStars={true}
           />

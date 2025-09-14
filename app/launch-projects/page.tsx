@@ -137,7 +137,7 @@ export default function LaunchProjectsPage() {
     tokenName: '',
     tokenSymbol: '',
     totalTokenSupply: 1000000000,
-    migrationQuoteThreshold: 210,
+    migrationQuoteThreshold: 101,
     quoteMint: 'SOL' as QuoteMintType,
     enableFirstBuy: true,
     firstBuyAmountSol: 0.1,
@@ -342,6 +342,47 @@ export default function LaunchProjectsPage() {
       }
     }
   };
+  const numberToWords = (num: number) => {
+    if (num === 0) return 'Zero';
+    
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+                  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+                  'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const scales = ['', 'Thousand', 'Million', 'Billion', 'Trillion'];
+  
+    const convertHundreds = (n: number) => {
+      let result = '';
+      if (n >= 100) {
+        result += ones[Math.floor(n / 100)] + ' Hundred';
+        n %= 100;
+        if (n > 0) result += ' ';
+      }
+      if (n >= 20) {
+        result += tens[Math.floor(n / 10)];
+        n %= 10;
+        if (n > 0) result += '-' + ones[n];
+      } else if (n > 0) {
+        result += ones[n];
+      }
+      return result;
+    };
+  
+    let result = '';
+    let scaleIndex = 0;
+    while (num > 0) {
+      const chunk = num % 1000;
+      if (chunk !== 0) {
+        const chunkWords = convertHundreds(chunk);
+        result = chunkWords + (scales[scaleIndex] ? ' ' + scales[scaleIndex] : '') + (result ? ' ' + result : '');
+      }
+      num = Math.floor(num / 1000);
+      scaleIndex++;
+    }
+    return result || 'Zero';
+  };
+  
+  const formatWithCommas = (num : number) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   // Handle project info changes
   const handleProjectInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -671,6 +712,17 @@ export default function LaunchProjectsPage() {
   if (!isConnected) {
     return (
       <>
+        {/* Background Image */}
+        <div className="fixed inset-0 w-full h-full -z-20">
+          <Image
+            src="/abstract-luxury-gradient-blue-background-smooth-dark-blue-with-black-vignette-studio-banner 2 (1).png"
+            alt="Background"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+
         <StarCanvas/>
         <div className="flex flex-col items-center justify-center min-h-[60vh] pt-20">
           <div className="text-center space-y-4">
@@ -1060,7 +1112,7 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         <div>
           <label className="block text-gray-300 text-sm font-medium mb-2">
             <FileText className="w-4 h-4 inline mr-1" />
-            Whitepaper URL
+            Docs / Whitepaper URL
           </label>
           <input
             type="url"
@@ -1650,8 +1702,9 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
               >
                 {Object.entries(QUOTE_MINTS).map(([key, mint]) => (
                   <option key={key} value={key} className="bg-gray-800 text-white">
-                    {mint.name} ({mint.fullSymbol})
+                    {mint.name} ({mint.fullSymbol}) ({mint.address.slice(0, 4)}...{mint.address.slice(-4)})
                   </option>
+                  
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
