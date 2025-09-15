@@ -45,6 +45,7 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.473.0",
+    "mongodb": "^6.19.0",
     "motion": "^12.23.12",
     "next": "15.1.6",
     "openai": "^4.89.0",
