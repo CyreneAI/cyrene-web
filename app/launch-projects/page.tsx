@@ -1,7 +1,7 @@
-// app/launch-projects/page.tsx - COMPLETE FIXED VERSION
+// app/launch-projects/page.tsx - COMPLETE FIXED VERSION WITH AUTO-SAVE
 'use client';
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, 
@@ -36,16 +36,13 @@ interface TokenLaunchParams {
   symbol: string;
   image: string;
   description: string;
-  // First buy parameters
   firstBuyAmountSol: number;
   minimumTokensOut: number;
   enableFirstBuy: boolean;
-  // Trade status parameter
   tradeStatus: boolean;
 }
 
 interface ProjectFormData {
-  // Project Information
   projectName: string;
   projectDescription: string;
   projectCategory: string;
@@ -54,12 +51,8 @@ interface ProjectFormData {
   githubUrl: string;
   websiteUrl: string;
   whitepaperUrl: string;
-  
-  // Team Details
   teamMembers: TeamMember[];
   projectStage: 'ideation' | 'cooking';
-  
-  // Token Details (for cooking stage)
   tokenName: string;
   tokenSymbol: string;
   totalTokenSupply: number;
@@ -119,7 +112,6 @@ export default function LaunchProjectsPage() {
   
   const [activeTab, setActiveTab] = useState<'info' | 'team' | 'fundraise'>('info');
   const [projectData, setProjectData] = useState<ProjectFormData>({
-    // Project Information
     projectName: '',
     projectDescription: '',
     projectCategory: '',
@@ -128,12 +120,8 @@ export default function LaunchProjectsPage() {
     githubUrl: '',
     websiteUrl: '',
     whitepaperUrl: '',
-    
-    // Team Details
     teamMembers: [],
     projectStage: 'ideation',
-    
-    // Token Details
     tokenName: '',
     tokenSymbol: '',
     totalTokenSupply: 1000000000,
@@ -144,6 +132,9 @@ export default function LaunchProjectsPage() {
     minimumTokensOut: 1000000,
     tradeStatus: true
   });
+  
+  // 🔥 NEW: Track original data for comparison
+  const [originalProjectData, setOriginalProjectData] = useState<ProjectFormData | null>(null);
   
   const [existingIdeaId, setExistingIdeaId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -158,12 +149,10 @@ export default function LaunchProjectsPage() {
   const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   
-  // Image upload states
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageHash, setImageHash] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   
-  // Team member form state
   const [newTeamMember, setNewTeamMember] = useState<TeamMember>({
     name: '',
     role: '',
@@ -176,9 +165,26 @@ export default function LaunchProjectsPage() {
   });
   const [showAddMember, setShowAddMember] = useState(false);
 
-  // Get wallet adapter
   const walletAdapter = useReownWalletAdapter();
   const { address, isConnected } = useAppKitAccount();
+
+  // 🔥 BETTER: Track actual unsaved changes
+  const hasRealUnsavedChanges = useMemo(() => {
+    if (!existingIdeaId || !originalProjectData) return false;
+    
+    return (
+      projectData.migrationQuoteThreshold !== originalProjectData.migrationQuoteThreshold ||
+      projectData.totalTokenSupply !== originalProjectData.totalTokenSupply ||
+      projectData.enableFirstBuy !== originalProjectData.enableFirstBuy ||
+      projectData.firstBuyAmountSol !== originalProjectData.firstBuyAmountSol ||
+      projectData.minimumTokensOut !== originalProjectData.minimumTokensOut ||
+      projectData.quoteMint !== originalProjectData.quoteMint ||
+      projectData.tokenName !== originalProjectData.tokenName ||
+      projectData.tokenSymbol !== originalProjectData.tokenSymbol ||
+      projectData.projectName !== originalProjectData.projectName ||
+      projectData.projectDescription !== originalProjectData.projectDescription
+    );
+  }, [projectData, originalProjectData, existingIdeaId]);
 
   // Load existing project idea if ideaId is provided
   useEffect(() => {
@@ -189,8 +195,8 @@ export default function LaunchProjectsPage() {
           const existingIdea = await ProjectIdeasService.getProjectIdeaById(ideaId, address);
           if (existingIdea) {
             setExistingIdeaId(ideaId);
-            // Populate form with existing data
-            setProjectData({
+            
+            const loadedData = {
               projectName: existingIdea.projectName,
               projectDescription: existingIdea.projectDescription,
               projectCategory: existingIdea.projectCategory,
@@ -200,7 +206,7 @@ export default function LaunchProjectsPage() {
               websiteUrl: existingIdea.websiteUrl || '',
               whitepaperUrl: existingIdea.whitepaperUrl || '',
               teamMembers: existingIdea.teamMembers,
-              projectStage: 'cooking', // Always set to cooking when upgrading
+              projectStage: 'cooking' as const,
               tokenName: existingIdea.tokenName || existingIdea.projectName,
               tokenSymbol: existingIdea.tokenSymbol || existingIdea.projectName.substring(0, 5).toUpperCase(),
               totalTokenSupply: existingIdea.totalTokenSupply,
@@ -210,14 +216,15 @@ export default function LaunchProjectsPage() {
               firstBuyAmountSol: existingIdea.firstBuyAmountSol,
               minimumTokensOut: existingIdea.minimumTokensOut,
               tradeStatus: existingIdea.tradeStatus
-            });
+            };
+            
+            setProjectData(loadedData);
+            setOriginalProjectData(loadedData); // 🔥 Store for comparison
 
-            // Set image preview if exists
             if (existingIdea.projectImage) {
               setImagePreview(existingIdea.projectImage);
             }
 
-            // If upgrading from ideation, start on fundraise tab
             if (existingIdea.projectStage === 'ideation') {
               setActiveTab('fundraise');
             }
@@ -342,6 +349,7 @@ export default function LaunchProjectsPage() {
       }
     }
   };
+
   const numberToWords = (num: number) => {
     if (num === 0) return 'Zero';
     
@@ -391,13 +399,12 @@ export default function LaunchProjectsPage() {
     setProjectData(prev => ({
       ...prev,
       [name]: type === 'checkbox' 
-        ? (e.target as HTMLInputElement).checked // Store as boolean, NOT string
+        ? (e.target as HTMLInputElement).checked
         : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
           ? Number(value)
           : value
     }));
   };
-  
 
   // Handle team member changes
   const handleTeamMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -450,7 +457,6 @@ export default function LaunchProjectsPage() {
       projectStage: stage
     }));
     
-    // If switching to cooking, sync token name/symbol with project name
     if (stage === 'cooking') {
       setProjectData((prev) => ({
         ...prev,
@@ -467,20 +473,17 @@ export default function LaunchProjectsPage() {
       return;
     }
 
-    // Validate basic project info
     if (!projectData.projectName || !projectData.projectDescription || 
         !projectData.projectCategory || !projectData.projectIndustry) {
       toast.error('Please fill in all required project information');
       return;
     }
 
-    // Validate team members
     if (projectData.teamMembers.length === 0) {
       toast.error('Please add at least one team member');
       return;
     }
 
-    // Validate cooking stage requirements
     if (projectData.projectStage === 'cooking') {
       if (!projectData.tokenName || !projectData.tokenSymbol) {
         toast.error('Please fill in token details for cooking stage');
@@ -517,31 +520,30 @@ export default function LaunchProjectsPage() {
       let savedIdea: ProjectIdeaData;
 
       if (existingIdeaId) {
-        // Update existing project idea
         const updatedIdea = await ProjectIdeasService.updateProjectIdea(existingIdeaId, address, ideaData);
         if (!updatedIdea) {
           throw new Error('Failed to update project idea');
         }
         savedIdea = updatedIdea;
         toast.success('Project updated successfully!');
+        
+        // 🔥 UPDATE: Reset original data after save
+        setOriginalProjectData({ ...projectData });
       } else {
-        // Create new project idea
         savedIdea = await ProjectIdeasService.saveProjectIdea(ideaData, address);
         setExistingIdeaId(savedIdea.id!);
         toast.success('Project idea saved!');
+        setOriginalProjectData({ ...projectData });
       }
       
-      // Update local state
       setProjectIdeas(prev => {
         const filtered = prev.filter(p => p.id !== savedIdea.id);
         return [savedIdea, ...filtered];
       });
       
       if (projectData.projectStage === 'ideation') {
-        // Reset form for new project
         resetForm();
       } else {
-        // Move to fundraise tab for cooking stage
         setActiveTab('fundraise');
       }
       
@@ -579,10 +581,11 @@ export default function LaunchProjectsPage() {
     setImagePreview(null);
     setImageHash('');
     setExistingIdeaId(null);
+    setOriginalProjectData(null);
     setActiveTab('info');
   };
 
-  // Launch token (for cooking stage)
+  // 🔥 FIXED: Launch token with auto-save
   const launchToken = async () => {
     if (!walletAdapter.publicKey || !walletAdapter.isConnected || !address) {
       toast.error('Please connect your wallet first');
@@ -607,10 +610,42 @@ export default function LaunchProjectsPage() {
     setIsLoading(true);
     
     try {
+      // 🔥 AUTO-SAVE CHANGES BEFORE LAUNCH
+      if (hasRealUnsavedChanges) {
+        toast.info('Saving latest changes...');
+        
+        const ideaData: ProjectIdeaData = {
+          projectName: projectData.projectName,
+          projectDescription: projectData.projectDescription,
+          projectCategory: projectData.projectCategory,
+          projectIndustry: projectData.projectIndustry,
+          projectImage: projectData.projectImage,
+          githubUrl: projectData.githubUrl,
+          websiteUrl: projectData.websiteUrl,
+          whitepaperUrl: projectData.whitepaperUrl,
+          projectStage: projectData.projectStage,
+          teamMembers: projectData.teamMembers,
+          tokenName: projectData.tokenName,
+          tokenSymbol: projectData.tokenSymbol,
+          totalTokenSupply: projectData.totalTokenSupply,
+          migrationQuoteThreshold: projectData.migrationQuoteThreshold, // 🎯 Current form value
+          quoteMint: projectData.quoteMint,
+          enableFirstBuy: projectData.enableFirstBuy,
+          firstBuyAmountSol: projectData.firstBuyAmountSol,
+          minimumTokensOut: projectData.minimumTokensOut,
+          tradeStatus: projectData.tradeStatus,
+          isLaunched: false
+        };
+
+        await ProjectIdeasService.updateProjectIdea(existingIdeaId, address, ideaData);
+        setOriginalProjectData({ ...projectData }); // Reset tracking
+        toast.success('Changes saved!');
+      }
+      
       toast.info('Setting up configuration...');
       const configResult = await setupConfigWithWallet(walletAdapter, {
         totalTokenSupply: projectData.totalTokenSupply,
-        migrationQuoteThreshold: projectData.migrationQuoteThreshold,
+        migrationQuoteThreshold: projectData.migrationQuoteThreshold, // 🎯 Uses current form value
         quoteMint: projectData.quoteMint
       });
       
@@ -644,10 +679,9 @@ export default function LaunchProjectsPage() {
         metadataUri: poolResult.metadataUri,
         tradeStatus: projectData.tradeStatus,
         launchedAt: Date.now(),
-        projectIdeaId: existingIdeaId // IMPORTANT: Link to project idea
+        projectIdeaId: existingIdeaId
       };
 
-      // Save to database with project idea reference
       const savedToken = await LaunchedTokensService.launchTokenFromProjectIdea(
         existingIdeaId,
         address,
@@ -655,13 +689,9 @@ export default function LaunchProjectsPage() {
       );
       
       setLaunchedTokens(prev => [savedToken, ...prev]);
-      
-      // Refresh project ideas to reflect the launched status
       await loadUserProjects();
       
-      toast.success('Token launched successfully!');
-      
-      // Redirect to profile page
+      toast.success('Token launched successfully with latest settings!');
       window.location.href = '/dashboard/agents?tab=tokens';
       
     } catch (error) {
@@ -718,7 +748,6 @@ export default function LaunchProjectsPage() {
   if (!isConnected) {
     return (
       <>
-        {/* Background Image */}
         <div className="fixed inset-0 w-full h-full -z-20">
           <Image
             src="/abstract-luxury-gradient-blue-background-smooth-dark-blue-with-black-vignette-studio-banner 2 (1).png"
@@ -772,7 +801,6 @@ export default function LaunchProjectsPage() {
     
       <div className="min-h-screen text-white py-20 px-4 mt-24">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-white mb-4">
               {existingIdeaId ? 'Launch Your Project' : 'Launch Your Project'}
@@ -907,7 +935,7 @@ export default function LaunchProjectsPage() {
                 onLaunchToken={launchToken}
                 isLoading={isLoading}
                 calculateFirstBuyValue={calculateFirstBuyValue}
-                hasUnsavedChanges={!existingIdeaId}
+                hasUnsavedChanges={hasRealUnsavedChanges} // 🔥 Use better tracking
                 onSaveProject={saveProject}
                 isSaving={isSaving}
               />
@@ -1025,7 +1053,6 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         </div>
       </div>
 
-      {/* Project Image Upload */}
       <div>
         <label className="block text-gray-300 text-sm font-medium mb-2">
           Project Image
@@ -1083,7 +1110,6 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         </div>
       </div>
 
-      {/* Optional URLs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label className="block text-gray-300 text-sm font-medium mb-2">
@@ -1134,7 +1160,7 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
   );
 };
 
-// Team Details Tab Component - UPDATED
+// Team Details Tab Component
 interface TeamDetailsTabProps {
   projectData: ProjectFormData;
   newTeamMember: TeamMember;
@@ -1173,7 +1199,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
         <p className="text-gray-400">Add your team members and set project stage</p>
       </div>
 
-      {/* Project Stage Selection - Only show if not an existing idea */}
       {!isExistingIdea && (
         <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">Project Stage</h3>
@@ -1215,7 +1240,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
         </div>
       )}
 
-      {/* Show current stage if existing idea */}
       {isExistingIdea && (
         <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/30 rounded-xl p-6">
           <div className="flex items-center gap-3">
@@ -1228,7 +1252,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
         </div>
       )}
 
-      {/* Team Members */}
       <div>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">Team Members</h3>
@@ -1241,7 +1264,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
           </button>
         </div>
 
-        {/* Existing Team Members */}
         {projectData.teamMembers.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {projectData.teamMembers.map((member, index) => (
@@ -1286,7 +1308,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
           </div>
         )}
 
-        {/* Add Team Member Form */}
         {showAddMember && (
           <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-600 mb-6">
             <div className="flex justify-between items-center mb-4">
@@ -1435,7 +1456,6 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
         )}
       </div>
 
-      {/* Save Project Button */}
       <div className="flex justify-end pt-6 border-t border-gray-600">
         <button
           onClick={onSaveProject}
@@ -1458,7 +1478,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
   );
 };
 
-// Fundraise Tab Component - UPDATED
+// Fundraise Tab Component - FIXED
 interface FundraiseTabProps {
   projectData: ProjectFormData;
   conversionRates: ConversionRate | null;
@@ -1471,9 +1491,6 @@ interface FundraiseTabProps {
   isSaving: boolean;
 }
 
-
-// Updated FundraiseTab Component with Better Checkbox Styling
-// Updated FundraiseTab Component with Better Checkbox Styling
 const FundraiseTab: React.FC<FundraiseTabProps> = ({
   projectData,
   conversionRates,
@@ -1486,19 +1503,18 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
   isSaving
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    onProjectInfoChange({
-      ...e,
-      target: {
-        ...e.target,
-        name,
-        value: type === 'checkbox' 
-          ? (e.target as HTMLInputElement).checked.toString()
-          : (name === 'totalTokenSupply' || name === 'migrationQuoteThreshold' || name === 'firstBuyAmountSol' || name === 'minimumTokensOut')
-            ? Number(value).toString()
-            : value
-      }
-    } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>);
+    if (e.target.type === 'checkbox') {
+      const checkboxEvent = {
+        ...e,
+        target: {
+          ...e.target,
+          value: (e.target as HTMLInputElement).checked ? 'true' : 'false'
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onProjectInfoChange(checkboxEvent);
+    } else {
+      onProjectInfoChange(e);
+    }
   };
 
   return (
@@ -1518,24 +1534,10 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-400" />
             <div>
-              <h4 className="font-semibold text-yellow-300">Unsaved Changes</h4>
-              <p className="text-sm text-yellow-200">Please save your project before launching the token.</p>
+              <h4 className="font-semibold text-yellow-300">Unsaved Changes Detected</h4>
+              <p className="text-sm text-yellow-200">Your changes will be automatically saved before launch</p>
             </div>
           </div>
-          <button
-            onClick={onSaveProject}
-            disabled={isSaving}
-            className="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white rounded-lg transition-colors text-sm font-medium"
-          >
-            {isSaving ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </div>
-            ) : (
-              'Save Project First'
-            )}
-          </button>
         </div>
       )}
 
@@ -1574,7 +1576,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
       </div>
 
-      {/* Bot Protection Section - IMPROVED CHECKBOX STYLING */}
+      {/* Bot Protection Section */}
       <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Zap className="w-6 h-6 text-cyan-400" />
@@ -1585,7 +1587,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
         
         <div className="space-y-4">
-          {/* IMPROVED CHECKBOX WITH CLEAR VISUAL STATE */}
           <div className="flex items-start gap-4 p-4 bg-gray-800/50 rounded-lg border border-gray-600">
             <div className="relative">
               <input
@@ -1593,19 +1594,10 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 id="enableFirstBuy"
                 name="enableFirstBuy"
                 checked={projectData.enableFirstBuy}
-                onChange={(e) => handleInputChange({
-                  ...e,
-                  target: { 
-                    ...e.target, 
-                    name: 'enableFirstBuy',
-                    value: e.target.checked.toString(),
-                    type: 'checkbox'
-                  }
-                } as React.ChangeEvent<HTMLInputElement>)}
-                className="sr-only" // Hide default checkbox
+                onChange={handleInputChange}
+                className="sr-only"
                 disabled={isLoading}
               />
-              {/* Custom checkbox design */}
               <label 
                 htmlFor="enableFirstBuy" 
                 className="flex items-center cursor-pointer select-none"
@@ -1628,7 +1620,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
               </label>
             </div>
             
-            {/* Status indicator */}
             <div className={`px-2 py-1 rounded-full text-xs font-medium ${
               projectData.enableFirstBuy 
                 ? 'bg-green-600/20 text-green-400 border border-green-500/30' 
@@ -1638,7 +1629,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
             </div>
           </div>
 
-          {/* Conditional fields when enabled */}
           {projectData.enableFirstBuy && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
@@ -1661,7 +1651,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                     max="10"
                     step="0.001"
                     disabled={isLoading}
-                    required={projectData.enableFirstBuy === true || projectData.enableFirstBuy === 'true'}
+                    required={projectData.enableFirstBuy}
                   />
                   <div className="text-xs text-gray-500 mt-1">
                     {conversionRates && `≈ ${calculateFirstBuyValue()}`}
@@ -1695,7 +1685,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
             </motion.div>
           )}
 
-          {/* Info when disabled */}
           {!projectData.enableFirstBuy && (
             <div className="text-xs text-gray-400 bg-gray-800/50 rounded-lg p-3 border border-gray-600">
               ⚠️ <strong>Warning:</strong> Without first buy protection, bots may front-run your token launch. 
@@ -1771,7 +1760,8 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
       <button
         onClick={onLaunchToken}
         className="w-full bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage || hasUnsavedChanges}
+        disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage}
+        // 🔥 Removed hasUnsavedChanges from disabled condition since we auto-save
       >
         {isLoading ? (
           <div className="flex items-center justify-center gap-2">
@@ -1780,8 +1770,8 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
           </div>
         ) : hasUnsavedChanges ? (
           <div className="flex items-center justify-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>Save Project First</span>
+            <Rocket className="w-5 h-5" />
+            <span>Save & Launch Token</span>
           </div>
         ) : projectData.enableFirstBuy ? (
           <div className="flex items-center justify-center gap-2">
