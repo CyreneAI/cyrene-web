@@ -45,6 +45,7 @@ jobs:
               --build-arg TWITTER_CLIENT_SECRET="${{ secrets.TWITTER_CLIENT_SECRET }}" \
               --build-arg NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
               --build-arg NEXT_PUBLIC_BIRDEYE_API_KEY="${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}" \
+              --build-arg MONGO_URI="${{ secrets.MONGO_URI }}" \
               -t ghcr.io/netsepio/cyrene-web:prod .
 
 
@@ -106,6 +107,7 @@ jobs:
             TWITTER_CLIENT_SECRET=${{ secrets.TWITTER_CLIENT_SECRET }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
             NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
+            MONGO_URI="${{ secrets.MONGO_URI }}"
             
             EOF
 
