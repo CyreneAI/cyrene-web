@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -35,13 +35,13 @@ export default function Navbar() {
   const exploreDropdownRef = useRef<HTMLDivElement>(null);
 
   // Initialize Solana connection
-  const connection = new Connection(
+  const connection = useMemo(() => new Connection(
     `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     "confirmed"
-  );
+  ), []);
 
   // Function to fetch SOL balance
-  const fetchSolBalance = async (walletAddress: string) => {
+  const fetchSolBalance = useCallback(async (walletAddress: string) => {
     try {
       setIsLoadingBalance(true);
       const publicKey = new PublicKey(walletAddress);
@@ -54,7 +54,7 @@ export default function Navbar() {
     } finally {
       setIsLoadingBalance(false);
     }
-  };
+  }, [connection]);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -69,7 +69,7 @@ export default function Navbar() {
       localStorage.removeItem('currentAgentName');
       localStorage.removeItem('currentAgentImage');
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, fetchSolBalance]);
 
   // Periodically update balance every 30 seconds when connected
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function Navbar() {
         clearInterval(intervalId);
       }
     };
-  }, [isConnected, address, isAuthenticated]);
+  }, [isConnected, address, isAuthenticated, fetchSolBalance]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -228,6 +228,7 @@ export default function Navbar() {
                 className={`text-lg font-medium hover:opacity-80 transition flex items-center gap-2 ${
                   pathname.startsWith('/explore-agents') || 
                   pathname.startsWith('/explore-projects') ||
+                  pathname.startsWith('/trends') ||
                   pathname.startsWith('/users')
                     ? 'text-[#4D84EE]'
                     : 'text-white'
@@ -254,6 +255,14 @@ export default function Navbar() {
                     >
                       <FaRocket className="w-4 h-4 mr-2" />
                       Projects
+                    </Link>
+                    <Link
+                      href="/trends"
+                      className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
+                      onClick={() => setShowExploreDropdown(false)}
+                    >
+                      <FaSearch className="w-4 h-4 mr-2" />
+                      Trends
                     </Link>
                     <Link
                       href="/users"
@@ -302,7 +311,7 @@ export default function Navbar() {
                     {/* <Link
                       href={isAuthenticated ? '/perks' : '#'}
                       className="flex items-center px-4 py-2 text-sm text-white hover:bg-[#4D84EE]/10 transition-all"
-                      onClick={handleDashboardClick}
+                      onClick={handleDashboardClick}F
                     >
                       <FaGift className="w-4 h-4 mr-2" />
                       Perks

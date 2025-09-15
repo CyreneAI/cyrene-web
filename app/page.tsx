@@ -1220,8 +1220,7 @@ export default function Home() {
           <Stats/>
           <ScrollVelocity
             texts={[
-              'AI agents, your launch partners', 
-              'Decentralized infrastructure', 
+              'AI agents, your launch partners',
               'Internet capital markets',
             ]} 
             velocity={40} 
