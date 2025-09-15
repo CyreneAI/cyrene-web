@@ -43,8 +43,11 @@ jobs:
               --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
               --build-arg NEXT_PUBLIC_TWITTER_CLIENT_ID="${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}" \
               --build-arg TWITTER_CLIENT_SECRET="${{ secrets.TWITTER_CLIENT_SECRET }}" \
-               --build-arg NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
-                --build-arg NEXT_PUBLIC_BIRDEYE_API_KEY="${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}" \
+              --build-arg NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
+              --build-arg NEXT_PUBLIC_BIRDEYE_API_KEY="${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}" \
+              --build-arg MONGO_URI="${{ secrets.MONGO_URI }}" \
+              --build-arg GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
+              --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
               -t ghcr.io/netsepio/cyrene-web:prod .
 
 
