@@ -487,7 +487,7 @@ async function createPool(
 
   // Updated connection for MAINNET
   const connection = new Connection(
-    `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, 
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, 
     "confirmed"
   );
 

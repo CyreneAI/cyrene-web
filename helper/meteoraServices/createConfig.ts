@@ -202,7 +202,7 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 
 // Initialize connection and client for MAINNET
-const connection = new Connection(`https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, "confirmed");// replace with helius r[c]
+const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`, "confirmed");// replace with helius r[c]
 const client = new DynamicBondingCurveClient(connection, "confirmed");
 
 // Interface for wallet adapter (works with most Solana wallets)

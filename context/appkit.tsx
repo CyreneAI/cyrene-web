@@ -394,7 +394,7 @@ export function AppKit({ children }: { children: React.ReactNode }) {
 createAppKit({
   adapters: [new EthersAdapter(), solanaWeb3JsAdapter],
   metadata,
-  networks: [solana , solanaDevnet ],
+  networks: [solana ],
   projectId,
   features: {
     analytics: true,
