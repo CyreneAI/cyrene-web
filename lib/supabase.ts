@@ -1,4 +1,4 @@
-// lib/supabase.ts - Updated types
+// lib/supabase.ts - Updated with hidden token support
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -23,7 +23,7 @@ export interface TeamMember {
   profileImage?: string;
 }
 
-// Project Idea Types - Updated to match database schema
+// Project Idea Types - Updated to match database schema with social media
 export interface ProjectIdeaDB {
   id: string;
   wallet_address: string;
@@ -31,14 +31,17 @@ export interface ProjectIdeaDB {
   project_description: string;
   project_category: string;
   project_industry: string;
-  project_image?: string | null; // Changed to match database
-  github_url?: string | null; // Changed to match database
-  website_url?: string | null; // Changed to match database
-  whitepaper_url?: string | null; // Changed to match database
+  project_image?: string | null;
+  github_url?: string | null;
+  website_url?: string | null;
+  whitepaper_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  linkedin_url?: string | null;
   project_stage: 'ideation' | 'cooking';
   team_members: TeamMember[];
-  token_name?: string | null; // Changed to match database
-  token_symbol?: string | null; // Changed to match database
+  token_name?: string | null;
+  token_symbol?: string | null;
   total_token_supply: number;
   migration_quote_threshold: number;
   quote_mint: string;
@@ -47,7 +50,7 @@ export interface ProjectIdeaDB {
   minimum_tokens_out: number;
   trade_status: boolean;
   is_launched: boolean;
-  launched_token_id?: string | null; // Changed to match database
+  launched_token_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +65,9 @@ export interface ProjectIdeaData {
   githubUrl?: string;
   websiteUrl?: string;
   whitepaperUrl?: string;
+  twitterUrl?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
   projectStage: 'ideation' | 'cooking';
   teamMembers: TeamMember[];
   tokenName?: string;
@@ -79,7 +85,7 @@ export interface ProjectIdeaData {
   updatedAt?: string;
 }
 
-// Existing launched token types (keep these)
+// Updated launched token types with hidden support
 export interface LaunchedTokenDB {
   id: string;
   wallet_address: string;
@@ -92,6 +98,7 @@ export interface LaunchedTokenDB {
   damm_pool_address: string | null;
   metadata_uri: string | null;
   trade_status: boolean;
+  is_hidden: boolean; // NEW: Hidden status
   launched_at: number;
   project_idea_id: string | null;
   created_at: string;
@@ -108,64 +115,12 @@ export interface LaunchedTokenData {
   dammPoolAddress?: string;
   metadataUri?: string;
   tradeStatus: boolean;
+  isHidden: boolean; // NEW: Hidden status
   launchedAt: number;
   projectIdeaId?: string;
 }
 
-// Convert functions for Project Ideas - Fixed null handling
-export const projectIdeaDbToFrontend = (dbIdea: ProjectIdeaDB): ProjectIdeaData => ({
-  id: dbIdea.id,
-  projectName: dbIdea.project_name,
-  projectDescription: dbIdea.project_description,
-  projectCategory: dbIdea.project_category,
-  projectIndustry: dbIdea.project_industry,
-  projectImage: dbIdea.project_image || undefined, // Convert null to undefined
-  githubUrl: dbIdea.github_url || undefined, // Convert null to undefined
-  websiteUrl: dbIdea.website_url || undefined, // Convert null to undefined
-  whitepaperUrl: dbIdea.whitepaper_url || undefined, // Convert null to undefined
-  projectStage: dbIdea.project_stage,
-  teamMembers: dbIdea.team_members || [],
-  tokenName: dbIdea.token_name || undefined, // Convert null to undefined
-  tokenSymbol: dbIdea.token_symbol || undefined, // Convert null to undefined
-  totalTokenSupply: dbIdea.total_token_supply,
-  migrationQuoteThreshold: dbIdea.migration_quote_threshold,
-  quoteMint: dbIdea.quote_mint,
-  enableFirstBuy: dbIdea.enable_first_buy,
-  firstBuyAmountSol: dbIdea.first_buy_amount_sol,
-  minimumTokensOut: dbIdea.minimum_tokens_out,
-  tradeStatus: dbIdea.trade_status,
-  isLaunched: dbIdea.is_launched,
-  launchedTokenId: dbIdea.launched_token_id || undefined, // Convert null to undefined
-  createdAt: dbIdea.created_at,
-  updatedAt: dbIdea.updated_at
-});
-
-export const projectIdeaFrontendToDb = (idea: ProjectIdeaData, walletAddress: string): Omit<ProjectIdeaDB, 'id' | 'created_at' | 'updated_at'> => ({
-  wallet_address: walletAddress,
-  project_name: idea.projectName,
-  project_description: idea.projectDescription,
-  project_category: idea.projectCategory,
-  project_industry: idea.projectIndustry,
-  project_image: idea.projectImage || null, // Now correctly typed
-  github_url: idea.githubUrl || null, // Now correctly typed
-  website_url: idea.websiteUrl || null, // Now correctly typed
-  whitepaper_url: idea.whitepaperUrl || null, // Now correctly typed
-  project_stage: idea.projectStage,
-  team_members: idea.teamMembers,
-  token_name: idea.tokenName || null, // Now correctly typed
-  token_symbol: idea.tokenSymbol || null, // Now correctly typed
-  total_token_supply: idea.totalTokenSupply,
-  migration_quote_threshold: idea.migrationQuoteThreshold,
-  quote_mint: idea.quoteMint,
-  enable_first_buy: idea.enableFirstBuy,
-  first_buy_amount_sol: idea.firstBuyAmountSol,
-  minimum_tokens_out: idea.minimumTokensOut,
-  trade_status: idea.tradeStatus,
-  is_launched: idea.isLaunched,
-  launched_token_id: idea.launchedTokenId || null // Now correctly typed
-});
-
-// Keep existing launched token convert functions
+// Updated convert functions for launched tokens with hidden support
 export const dbToFrontend = (dbToken: LaunchedTokenDB): LaunchedTokenData => ({
   contractAddress: dbToken.contract_address,
   dbcPoolAddress: dbToken.dbc_pool_address,
@@ -173,11 +128,12 @@ export const dbToFrontend = (dbToken: LaunchedTokenDB): LaunchedTokenData => ({
   quoteMint: dbToken.quote_mint,
   tokenName: dbToken.token_name,
   tokenSymbol: dbToken.token_symbol,
-  dammPoolAddress: dbToken.damm_pool_address || undefined, // Convert null to undefined
-  metadataUri: dbToken.metadata_uri || undefined, // Convert null to undefined
+  dammPoolAddress: dbToken.damm_pool_address || undefined,
+  metadataUri: dbToken.metadata_uri || undefined,
   tradeStatus: dbToken.trade_status,
+  isHidden: dbToken.is_hidden, // NEW
   launchedAt: dbToken.launched_at,
-  projectIdeaId: dbToken.project_idea_id || undefined // Convert null to undefined
+  projectIdeaId: dbToken.project_idea_id || undefined
 });
 
 export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): Omit<LaunchedTokenDB, 'id' | 'created_at' | 'updated_at'> => ({
@@ -191,11 +147,71 @@ export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): O
   damm_pool_address: token.dammPoolAddress || null,
   metadata_uri: token.metadataUri || null,
   trade_status: token.tradeStatus,
+  is_hidden: token.isHidden, // NEW
   launched_at: token.launchedAt,
   project_idea_id: token.projectIdeaId || null
 });
 
-// Category and Industry types
+// Convert functions for Project Ideas (unchanged)
+export const projectIdeaDbToFrontend = (dbIdea: ProjectIdeaDB): ProjectIdeaData => ({
+  id: dbIdea.id,
+  projectName: dbIdea.project_name,
+  projectDescription: dbIdea.project_description,
+  projectCategory: dbIdea.project_category,
+  projectIndustry: dbIdea.project_industry,
+  projectImage: dbIdea.project_image || undefined,
+  githubUrl: dbIdea.github_url || undefined,
+  websiteUrl: dbIdea.website_url || undefined,
+  whitepaperUrl: dbIdea.whitepaper_url || undefined,
+  twitterUrl: dbIdea.twitter_url || undefined,
+  instagramUrl: dbIdea.instagram_url || undefined,
+  linkedinUrl: dbIdea.linkedin_url || undefined,
+  projectStage: dbIdea.project_stage,
+  teamMembers: dbIdea.team_members || [],
+  tokenName: dbIdea.token_name || undefined,
+  tokenSymbol: dbIdea.token_symbol || undefined,
+  totalTokenSupply: dbIdea.total_token_supply,
+  migrationQuoteThreshold: dbIdea.migration_quote_threshold,
+  quoteMint: dbIdea.quote_mint,
+  enableFirstBuy: dbIdea.enable_first_buy,
+  firstBuyAmountSol: dbIdea.first_buy_amount_sol,
+  minimumTokensOut: dbIdea.minimum_tokens_out,
+  tradeStatus: dbIdea.trade_status,
+  isLaunched: dbIdea.is_launched,
+  launchedTokenId: dbIdea.launched_token_id || undefined,
+  createdAt: dbIdea.created_at,
+  updatedAt: dbIdea.updated_at
+});
+
+export const projectIdeaFrontendToDb = (idea: ProjectIdeaData, walletAddress: string): Omit<ProjectIdeaDB, 'id' | 'created_at' | 'updated_at'> => ({
+  wallet_address: walletAddress,
+  project_name: idea.projectName,
+  project_description: idea.projectDescription,
+  project_category: idea.projectCategory,
+  project_industry: idea.projectIndustry,
+  project_image: idea.projectImage || null,
+  github_url: idea.githubUrl || null,
+  website_url: idea.websiteUrl || null,
+  whitepaper_url: idea.whitepaperUrl || null,
+  twitter_url: idea.twitterUrl || null,
+  instagram_url: idea.instagramUrl || null,
+  linkedin_url: idea.linkedinUrl || null,
+  project_stage: idea.projectStage,
+  team_members: idea.teamMembers,
+  token_name: idea.tokenName || null,
+  token_symbol: idea.tokenSymbol || null,
+  total_token_supply: idea.totalTokenSupply,
+  migration_quote_threshold: idea.migrationQuoteThreshold,
+  quote_mint: idea.quoteMint,
+  enable_first_buy: idea.enableFirstBuy,
+  first_buy_amount_sol: idea.firstBuyAmountSol,
+  minimum_tokens_out: idea.minimumTokensOut,
+  trade_status: idea.tradeStatus,
+  is_launched: idea.isLaunched,
+  launched_token_id: idea.launchedTokenId || null
+});
+
+// Category and Industry types (unchanged)
 export interface ProjectCategory {
   id: number;
   name: string;

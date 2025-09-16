@@ -5,13 +5,14 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import StarCanvas from "@/components/StarCanvas";
-import { Github, Globe, FileText, Users, Lightbulb, Rocket, Wallet, Linkedin, Twitter, Github as GithubIcon, ArrowLeft, Heart, UserPlus, Loader2, AlertCircle } from "lucide-react";
+import { Github, Globe, FileText, Users, Lightbulb, Rocket, Wallet, Linkedin, Twitter, Github as GithubIcon, ArrowLeft, Heart, UserPlus, Loader2, AlertCircle, Instagram, ChartArea } from "lucide-react";
 import { ProjectIdeasService } from '@/services/projectIdeasService';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { ProjectIdeaData, LaunchedTokenData } from '@/lib/supabase';
 import { useSocialInteractions } from '@/hooks/useSocialInteractions';
 import { useAppKitAccount } from "@reown/appkit/react";
 import { toast } from 'sonner';
+import { FaXTwitter } from "react-icons/fa6";
 
 interface TokenMetadata {
   name: string;
@@ -183,6 +184,9 @@ export default function ProjectPreviewPage() {
         githubUrl: projectIdea.githubUrl,
         websiteUrl: projectIdea.websiteUrl,
         whitepaperUrl: projectIdea.whitepaperUrl,
+        twitterUrl: projectIdea.twitterUrl, // NEW
+      instagramUrl: projectIdea.instagramUrl, // NEW
+      linkedinUrl: projectIdea.linkedinUrl,
         teamMembers: projectIdea.teamMembers,
         stage: projectIdea.isLaunched ? 'cooking' : projectIdea.projectStage || 'ideation',
         tokenName: projectIdea.tokenName,
@@ -200,6 +204,9 @@ export default function ProjectPreviewPage() {
         githubUrl: '',
         websiteUrl: '',
         whitepaperUrl: '',
+        twitterUrl: '', // NEW
+        instagramUrl: '', // NEW
+        linkedinUrl: '',
         teamMembers: [],
         stage: 'cooking',
         tokenName: launchedToken.tokenName,
@@ -305,23 +312,62 @@ export default function ProjectPreviewPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Title + Meta */}
             <div className="lg:col-span-2 space-y-6">
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                <h1 className="text-4xl md:text-5xl font-bold">{projectData.name}</h1>
-                <div className="mt-3 max-w-3xl">
-                  {isGeneratingOneLiner ? (
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Tagline...</span>
-                    </div>
-                  ) : oneLinerError ? (
-                    <p className="text-gray-300">{projectData.description}</p>
-                  ) : oneLiner ? (
-                    <p className="text-gray-300 text-lg italic">{oneLiner}</p>
-                  ) : (
-                    <p className="text-gray-300">{projectData.description}</p>
-                  )}
-                </div>
-              </motion.div>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <div className="flex items-start gap-4">
+        <div className="flex-1">
+          <h1 className="text-4xl md:text-5xl font-bold">{projectData.name}</h1>
+          {/* UPDATED: Social Media Links in Hero - Right beside the project name */}
+          <div className="flex items-center gap-3 mt-2 mb-3">
+            {projectData.twitterUrl && (
+              <a 
+                href={projectData.twitterUrl}
+                className="p-2 rounded-full bg-gray-800/60 border border-gray-600/50 hover:bg-gray-700/80 transition-all"
+                title="Twitter/X"
+              >
+                <FaXTwitter className="w-5 h-5 text-blue-400" />
+              </a>
+            )}
+            {projectData.instagramUrl && (
+              <a 
+                href={projectData.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-gray-800/60 border border-gray-600/50 hover:bg-gray-700/80 transition-all"
+                title="Instagram"
+              >
+                <Instagram className="w-5 h-5 text-pink-400" />
+              </a>
+            )}
+            {projectData.linkedinUrl && (
+              <a 
+                href={projectData.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-gray-800/60 border border-gray-600/50 hover:bg-gray-700/80 transition-all"
+                title="LinkedIn"
+              >
+                <Linkedin className="w-5 h-5 text-blue-500" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-3 max-w-3xl">
+        {isGeneratingOneLiner ? (
+          <div className="flex items-center gap-2 text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Tagline...</span>
+          </div>
+        ) : oneLinerError ? (
+          <p className="text-gray-300">{projectData.description}</p>
+        ) : oneLiner ? (
+          <p className="text-gray-300 text-lg italic">{oneLiner}</p>
+        ) : (
+          <p className="text-gray-300">{projectData.description}</p>
+        )}
+      </div>
+    </motion.div>
 
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-3">
@@ -378,6 +424,26 @@ export default function ProjectPreviewPage() {
                     <FileText className="w-4 h-4" /> Whitepaper
                   </a>
                 )}
+                                  {launchedToken && (
+                    <button 
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          tokenAddress: launchedToken.contractAddress,
+                          tokenName: launchedToken.tokenName,
+                          tokenSymbol: launchedToken.tokenSymbol,
+                          poolAddress: launchedToken.dbcPoolAddress || '',
+                          metadataUri: launchedToken.metadataUri || '',
+                          tradeStatus: launchedToken.tradeStatus ? 'active' : 'graduated'
+                        });
+                        router.push(`/trade?${params.toString()}`);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 text-black px-5 py-2 hover:bg-blue-700 transition" 
+                       
+                    rel="noopener noreferrer"
+                    >
+                      <ChartArea className="w-4 h-4" />  Trade
+                    </button>
+                  )}
               </div>
 
               {/* Real-time Social Stats */}
@@ -569,7 +635,7 @@ export default function ProjectPreviewPage() {
                           )}
                           {member.twitterUrl && (
                             <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300" aria-label="Twitter">
-                              <Twitter className="w-4 h-4" />
+                              <FaXTwitter className="w-4 h-4" />
                             </a>
                           )}
                           {member.githubUrl && (
@@ -633,7 +699,7 @@ export default function ProjectPreviewPage() {
                     Contact Team
                   </button>
                   
-                  {launchedToken && (
+                  {/* {launchedToken && (
                     <button 
                       onClick={() => {
                         const params = new URLSearchParams({
@@ -650,7 +716,7 @@ export default function ProjectPreviewPage() {
                     >
                       Trade Token
                     </button>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>

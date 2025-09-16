@@ -1,21 +1,33 @@
-// hooks/useSocialInteractions.ts
+// hooks/useSocialInteractions.ts - FIXED VERSION
 import { useState, useEffect, useCallback } from 'react';
 import { SocialInteractionsService, SocialStats } from '@/services/socialInteractionsService';
 import { toast } from 'sonner';
 
+const DEFAULT_STATS: SocialStats = {
+  likeCount: 0,
+  followerCount: 0,
+  isLiked: false,
+  isFollowing: false
+};
+
 export const useSocialInteractions = (projectId: string, walletAddress?: string) => {
-  const [stats, setStats] = useState<SocialStats>({
-    likeCount: 0,
-    followerCount: 0,
-    isLiked: false,
-    isFollowing: false
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<SocialStats>(DEFAULT_STATS);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowingAction, setIsFollowingAction] = useState(false);
+
+  // Check if projectId is valid - this prevents the UUID error
+  const isValidProjectId = projectId && projectId.trim() !== '' && projectId !== 'undefined' && projectId !== 'null';
 
   // Load initial stats
   const loadStats = useCallback(async () => {
+    // Don't make API call if projectId is invalid
+    if (!isValidProjectId) {
+      setStats(DEFAULT_STATS);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const socialStats = await SocialInteractionsService.getProjectSocialStats(
@@ -25,15 +37,25 @@ export const useSocialInteractions = (projectId: string, walletAddress?: string)
       setStats(socialStats);
     } catch (error) {
       console.error('Error loading social stats:', error);
-      toast.error('Failed to load social stats');
+      // Set default stats instead of showing error for invalid IDs
+      setStats(DEFAULT_STATS);
+      // Only show toast error if it's a real API error, not just invalid ID
+      if (isValidProjectId) {
+        toast.error('Failed to load social stats');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, walletAddress]);
+  }, [projectId, walletAddress, isValidProjectId]);
 
   // Subscribe to real-time updates
   useEffect(() => {
     loadStats();
+
+    // Only subscribe to real-time updates if we have a valid project ID
+    if (!isValidProjectId) {
+      return;
+    }
 
     // Subscribe to real-time updates
     const unsubscribe = SocialInteractionsService.subscribeToProjectStatsUpdates(
@@ -48,10 +70,15 @@ export const useSocialInteractions = (projectId: string, walletAddress?: string)
     );
 
     return unsubscribe;
-  }, [projectId, loadStats]);
+  }, [projectId, loadStats, isValidProjectId]);
 
   // Handle like/unlike
   const toggleLike = useCallback(async () => {
+    if (!isValidProjectId) {
+      toast.error('Invalid project ID');
+      return;
+    }
+
     if (!walletAddress) {
       toast.error('Please connect your wallet to like projects');
       return;
@@ -79,19 +106,24 @@ export const useSocialInteractions = (projectId: string, walletAddress?: string)
     } finally {
       setIsLiking(false);
     }
-  }, [projectId, walletAddress, stats.isLiked, isLiking]);
+  }, [projectId, walletAddress, stats.isLiked, isLiking, isValidProjectId]);
 
   // Handle follow/unfollow
   const toggleFollow = useCallback(async () => {
+    if (!isValidProjectId) {
+      toast.error('Invalid project ID');
+      return;
+    }
+
     if (!walletAddress) {
       toast.error('Please connect your wallet to follow projects');
       return;
     }
 
-    if (isFollowing) return;
+    if (isFollowingAction) return;
 
     try {
-      setIsFollowing(true);
+      setIsFollowingAction(true);
       
       let updatedStats: SocialStats;
       if (stats.isFollowing) {
@@ -108,15 +140,15 @@ export const useSocialInteractions = (projectId: string, walletAddress?: string)
       const message = error instanceof Error ? error.message : 'Failed to update follow';
       toast.error(message);
     } finally {
-      setIsFollowing(false);
+      setIsFollowingAction(false);
     }
-  }, [projectId, walletAddress, stats.isFollowing, isFollowing]);
+  }, [projectId, walletAddress, stats.isFollowing, isFollowingAction, isValidProjectId]);
 
   return {
     stats,
     isLoading,
     isLiking,
-    isFollowingAction: isFollowing,
+    isFollowingAction,
     toggleLike,
     toggleFollow,
     refetch: loadStats

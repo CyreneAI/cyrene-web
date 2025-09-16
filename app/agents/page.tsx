@@ -11,7 +11,9 @@ import {
   Loader2, Search, Copy, ExternalLink, MessageSquare, User, Coins, 
   TrendingUp, RefreshCw, ImageIcon, Settings, Twitter, Calendar,
   MapPin, Globe, Edit3, Verified, Users, Heart, Lightbulb,
-  Rocket, Github, FileText, Eye, Clock
+  Rocket, Github, FileText, Eye, Clock,
+  EyeOff,
+  AlertTriangle
 } from 'lucide-react';
 import { BeatLoader } from 'react-spinners';
 import { toast } from 'sonner';
@@ -168,6 +170,9 @@ export default function UserProfilePage() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'agents' | 'tokens' | 'ideas'>('agents');
   const [twitterLinking, setTwitterLinking] = useState(false);
+  const [showHiddenTokens, setShowHiddenTokens] = useState(false);
+  const [hiddenTokens, setHiddenTokens] = useState<LaunchedTokenData[]>([]);
+  const [updatingTokenVisibility, setUpdatingTokenVisibility] = useState<string | null>(null);
   
   // Ethereum wallet
   const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount();
@@ -302,8 +307,12 @@ const handleTwitterLink = async () => {
     
     try {
       setTokensLoading(true);
-      const tokens = await LaunchedTokensService.getLaunchedTokens(walletAddress);
-      setTokens(tokens);
+      const [allTokens, hiddenTokensData] = await Promise.all([
+        LaunchedTokensService.getLaunchedTokens(walletAddress, true), // Include all tokens
+        LaunchedTokensService.getHiddenTokens(walletAddress) // Get hidden tokens separately
+      ]);
+      setTokens(allTokens);
+      setHiddenTokens(hiddenTokensData);
     } catch (error) {
       console.error('Error loading tokens:', error);
       toast.error('Failed to load tokens');
@@ -439,6 +448,32 @@ const handleTwitterLink = async () => {
     );
   }
 
+
+  const handleToggleTokenVisibility = async (token: LaunchedTokenData) => {
+    if (!walletAddress) return;
+    
+    setUpdatingTokenVisibility(token.contractAddress);
+    
+    try {
+      if (token.isHidden) {
+        await LaunchedTokensService.unhideToken(token.contractAddress, walletAddress);
+        toast.success(`${token.tokenName} is now visible in public listings`);
+      } else {
+        await LaunchedTokensService.hideToken(token.contractAddress, walletAddress);
+        toast.success(`${token.tokenName} is now hidden from public listings`);
+      }
+      
+      // Reload tokens to get updated visibility status
+      await loadTokens();
+    } catch (error) {
+      console.error('Error toggling token visibility:', error);
+      toast.error('Failed to update token visibility');
+    } finally {
+      setUpdatingTokenVisibility(null);
+    }
+  };
+
+  
   return (
     <>
       <div className="absolute top-0 left-0 w-full overflow-hidden -z-10 pointer-events-none">
@@ -662,47 +697,53 @@ const handleTwitterLink = async () => {
 
           {/* Tabs - Updated to include project ideas */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex justify-center mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        className="flex justify-center mb-8"
+      >
+        <div className="flex bg-gray-800/50 backdrop-blur-xl rounded-full p-1 border border-white/10">
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
+              activeTab === 'agents'
+                ? 'bg-white text-black'
+                : 'text-gray-400 hover:text-white'
+            }`}
           >
-            <div className="flex bg-gray-800/50 backdrop-blur-xl rounded-full p-1 border border-white/10">
-              <button
-                onClick={() => setActiveTab('agents')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'agents'
-                    ? 'bg-white text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                Agents {agents.length > 0 && `(${agents.length})`}
-              </button>
-              <button
-                onClick={() => setActiveTab('tokens')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'tokens'
-                    ? 'bg-white text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Coins className="w-4 h-4" />
-                Tokens {tokens.length > 0 && `(${tokens.length})`}
-              </button>
-              <button
-                onClick={() => setActiveTab('ideas')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                  activeTab === 'ideas'
-                    ? 'bg-white text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Lightbulb className="w-4 h-4" />
-                Ideas {projectIdeas.length > 0 && `(${projectIdeas.length})`}
-              </button>
-            </div>
-          </motion.div>
+            <User className="w-4 h-4" />
+            Agents {agents.length > 0 && `(${agents.length})`}
+          </button>
+          <button
+            onClick={() => setActiveTab('tokens')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
+              activeTab === 'tokens'
+                ? 'bg-white text-black'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Coins className="w-4 h-4" />
+            Tokens {tokens.length > 0 && `(${tokens.length})`}
+            {/* Show hidden indicator */}
+            {hiddenTokens.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs">
+                {hiddenTokens.length} hidden
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('ideas')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
+              activeTab === 'ideas'
+                ? 'bg-white text-black'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Lightbulb className="w-4 h-4" />
+            Ideas {projectIdeas.length > 0 && `(${projectIdeas.length})`}
+          </button>
+        </div>
+      </motion.div>
 
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto mb-8">
@@ -741,11 +782,16 @@ const handleTwitterLink = async () => {
                 />
               ) : activeTab === 'tokens' ? (
                 <TokensSection
-                  tokens={filteredTokens}
-                  loading={tokensLoading}
-                  onTradeClick={handleTradeClick}
-                  formatDate={formatTokenDate}
-                  fetchTokenMetadata={fetchTokenMetadata}
+                tokens={filteredTokens}
+                hiddenTokens={hiddenTokens}
+                showHiddenTokens={showHiddenTokens}
+                setShowHiddenTokens={setShowHiddenTokens}
+                loading={tokensLoading}
+                onTradeClick={handleTradeClick}
+                onToggleVisibility={handleToggleTokenVisibility}
+                formatDate={formatTokenDate}
+                fetchTokenMetadata={fetchTokenMetadata}
+                updatingTokenVisibility={updatingTokenVisibility}
                 />
               ) : (
                 <ProjectIdeasSection
@@ -1156,13 +1202,29 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, index, formatDate, parseCh
 // Tokens Section Component
 interface TokensSectionProps {
   tokens: LaunchedTokenData[];
+  hiddenTokens: LaunchedTokenData[];
+  showHiddenTokens: boolean;
+  setShowHiddenTokens: (show: boolean) => void;
   loading: boolean;
   onTradeClick: (token: LaunchedTokenData) => void;
+  onToggleVisibility: (token: LaunchedTokenData) => void;
   formatDate: (timestamp: number) => string;
   fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
+  updatingTokenVisibility: string | null;
 }
 
-const TokensSection: React.FC<TokensSectionProps> = ({ tokens, loading, onTradeClick, formatDate, fetchTokenMetadata }) => {
+const TokensSection: React.FC<TokensSectionProps> = ({ 
+  tokens, 
+  hiddenTokens,
+  showHiddenTokens,
+  setShowHiddenTokens,
+  loading, 
+  onTradeClick, 
+  onToggleVisibility,
+  formatDate, 
+  fetchTokenMetadata,
+  updatingTokenVisibility
+}) => {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -1171,6 +1233,9 @@ const TokensSection: React.FC<TokensSectionProps> = ({ tokens, loading, onTradeC
       </div>
     );
   }
+
+  const visibleTokens = tokens.filter(token => !token.isHidden);
+  const displayTokens = showHiddenTokens ? tokens : visibleTokens;
 
   if (tokens.length === 0) {
     return (
@@ -1189,17 +1254,67 @@ const TokensSection: React.FC<TokensSectionProps> = ({ tokens, loading, onTradeC
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {tokens.map((token, index) => (
-        <TokenCard
-          key={token.contractAddress}
-          token={token}
-          index={index}
-          onTradeClick={() => onTradeClick(token)}
-          formatDate={formatDate}
-          fetchTokenMetadata={fetchTokenMetadata}
-        />
-      ))}
+    <div className="space-y-6">
+      {/* Visibility Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-white">Your Tokens</h3>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span>{visibleTokens.length} visible</span>
+            {hiddenTokens.length > 0 && (
+              <>
+                <span>•</span>
+                <span>{hiddenTokens.length} hidden</span>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {hiddenTokens.length > 0 && (
+          <button
+            onClick={() => setShowHiddenTokens(!showHiddenTokens)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              showHiddenTokens
+                ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30'
+                : 'bg-gray-700/50 text-gray-300 border border-gray-600/50 hover:bg-gray-700/70'
+            }`}
+          >
+            {showHiddenTokens ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showHiddenTokens ? 'Hide Hidden Tokens' : 'Show Hidden Tokens'}
+          </button>
+        )}
+      </div>
+
+      {/* Hidden Tokens Warning */}
+      {showHiddenTokens && hiddenTokens.length > 0 && (
+        <div className="bg-orange-600/10 border border-orange-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-400" />
+            <div>
+              <p className="text-orange-300 font-medium">Hidden Tokens</p>
+              <p className="text-orange-200/80 text-sm">
+                These tokens are hidden from public explore pages but visible to you here.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tokens Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {displayTokens.map((token, index) => (
+          <TokenCard
+            key={token.contractAddress}
+            token={token}
+            index={index}
+            onTradeClick={() => onTradeClick(token)}
+            onToggleVisibility={() => onToggleVisibility(token)}
+            formatDate={formatDate}
+            fetchTokenMetadata={fetchTokenMetadata}
+            isUpdatingVisibility={updatingTokenVisibility === token.contractAddress}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -1209,11 +1324,21 @@ interface TokenCardProps {
   token: LaunchedTokenData;
   index: number;
   onTradeClick: () => void;
+  onToggleVisibility: () => void;
   formatDate: (timestamp: number) => string;
   fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
+  isUpdatingVisibility: boolean;
 }
 
-const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, index, onTradeClick, formatDate, fetchTokenMetadata }) => {
+const TokenCard: React.FC<TokenCardProps> = React.memo(({ 
+  token, 
+  index, 
+  onTradeClick, 
+  onToggleVisibility,
+  formatDate, 
+  fetchTokenMetadata,
+  isUpdatingVisibility
+}) => {
   const [tokenImage, setTokenImage] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
@@ -1263,10 +1388,20 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, index, onTradeC
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="relative bg-[#000010] transition-colors duration-300 rounded-3xl p-6 border border-white/10 hover:border-white/20 group backdrop-blur-sm"
+      className={`relative bg-[#000010] transition-colors duration-300 rounded-3xl p-6 border group backdrop-blur-sm ${
+        token.isHidden 
+          ? 'border-orange-500/30 bg-orange-500/5' 
+          : 'border-white/10 hover:border-white/20'
+      }`}
     >
-      {/* Status indicator */}
+      {/* Status and Hidden indicators */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
+        {token.isHidden && (
+          <div className="px-2 py-1 bg-orange-600/20 text-orange-400 rounded text-xs font-medium flex items-center gap-1">
+            <EyeOff className="w-3 h-3" />
+            Hidden
+          </div>
+        )}
         {statusInfo.status === 'graduated' ? (
           <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50"></div>
         ) : (
@@ -1342,6 +1477,26 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, index, onTradeC
           </button>
         )}
 
+        {/* Visibility Toggle Button */}
+        <button
+          onClick={onToggleVisibility}
+          disabled={isUpdatingVisibility}
+          className={`px-3 py-2 rounded-lg transition-colors text-sm flex items-center justify-center shadow-lg ${
+            token.isHidden
+              ? 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30'
+              : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+          } ${isUpdatingVisibility ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={token.isHidden ? 'Make visible in public' : 'Hide from public'}
+        >
+          {isUpdatingVisibility ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : token.isHidden ? (
+            <Eye className="w-4 h-4" />
+          ) : (
+            <EyeOff className="w-4 h-4" />
+          )}
+        </button>
+
         <a
           href={`https://solscan.io/token/${token.contractAddress}`}
           target="_blank"
@@ -1353,7 +1508,11 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({ token, index, onTradeC
         </a>
       </div>
 
-      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/10 group-hover:to-purple-600/10 transition-all duration-300 pointer-events-none"></div>
+      <div className={`absolute inset-0 rounded-3xl transition-all duration-300 pointer-events-none ${
+        token.isHidden
+          ? 'bg-gradient-to-r from-orange-600/5 to-orange-600/10'
+          : 'bg-gradient-to-r from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/10 group-hover:to-purple-600/10'
+      }`}></div>
     </motion.article>
   );
 });

@@ -42,7 +42,7 @@ const TokenInfoCard: React.FC<TokenInfoCardProps> = ({
       {/* Main content */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center overflow-hidden">
+          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center overflow-hidden">
             {image ? (
               <Image src={image} alt={name} width={48} height={48} className="object-cover" />
             ) : (

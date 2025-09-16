@@ -7,7 +7,8 @@ import {
   Loader2, Upload, TrendingUp, ExternalLink, ChevronDown, AlertCircle, 
   RefreshCw, DollarSign, Zap, Image as LucidImage, Ban, Settings, 
   Users, Globe, Github, FileText, Plus, X, User, Lightbulb, 
-  Rocket, Coins, MapPin, Linkedin, Twitter
+  Rocket, Coins, MapPin, Linkedin, Twitter,
+  Instagram
 } from 'lucide-react';
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
@@ -27,6 +28,7 @@ import { Copy, Check } from 'lucide-react';
 import Image from "next/image";
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
+import { FaXTwitter } from 'react-icons/fa6';
 
 interface TokenLaunchParams {
   totalTokenSupply: number;
@@ -51,6 +53,9 @@ interface ProjectFormData {
   githubUrl: string;
   websiteUrl: string;
   whitepaperUrl: string;
+  twitterUrl: string; // NEW
+  instagramUrl: string; // NEW
+  linkedinUrl: string; 
   teamMembers: TeamMember[];
   projectStage: 'ideation' | 'cooking';
   tokenName: string;
@@ -120,6 +125,9 @@ export default function LaunchProjectsPage() {
     githubUrl: '',
     websiteUrl: '',
     whitepaperUrl: '',
+    twitterUrl: '', // NEW
+    instagramUrl: '', // NEW
+    linkedinUrl: '',
     teamMembers: [],
     projectStage: 'ideation',
     tokenName: '',
@@ -205,6 +213,9 @@ export default function LaunchProjectsPage() {
               githubUrl: existingIdea.githubUrl || '',
               websiteUrl: existingIdea.websiteUrl || '',
               whitepaperUrl: existingIdea.whitepaperUrl || '',
+              twitterUrl: existingIdea.twitterUrl || '', // NEW
+              instagramUrl: existingIdea.instagramUrl || '', // NEW
+              linkedinUrl: existingIdea.linkedinUrl || '',
               teamMembers: existingIdea.teamMembers,
               projectStage: 'cooking' as const,
               tokenName: existingIdea.tokenName || existingIdea.projectName,
@@ -566,6 +577,9 @@ export default function LaunchProjectsPage() {
       githubUrl: '',
       websiteUrl: '',
       whitepaperUrl: '',
+      twitterUrl: '', // NEW
+      instagramUrl: '', // NEW
+      linkedinUrl: '',
       teamMembers: [],
       projectStage: 'ideation',
       tokenName: '',
@@ -678,6 +692,7 @@ export default function LaunchProjectsPage() {
         tokenSymbol: projectData.tokenSymbol,
         metadataUri: poolResult.metadataUri,
         tradeStatus: projectData.tradeStatus,
+        isHidden: false,
         launchedAt: Date.now(),
         projectIdeaId: existingIdeaId
       };
@@ -1155,6 +1170,50 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
             placeholder="https://docs.yourproject.com"
           />
         </div>
+        <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              <FaXTwitter className="w-4 h-4 inline mr-1" />
+              Twitter/X URL
+            </label>
+            <input
+              type="url"
+              name="twitterUrl"
+              value={projectData.twitterUrl}
+              onChange={onProjectInfoChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="https://twitter.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              <Instagram className="w-4 h-4 inline mr-1" />
+              Instagram URL
+            </label>
+            <input
+              type="url"
+              name="instagramUrl"
+              value={projectData.instagramUrl}
+              onChange={onProjectInfoChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="https://instagram.com/..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 text-sm font-medium mb-2">
+              <Linkedin className="w-4 h-4 inline mr-1" />
+              LinkedIn URL
+            </label>
+            <input
+              type="url"
+              name="linkedinUrl"
+              value={projectData.linkedinUrl}
+              onChange={onProjectInfoChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="https://linkedin.com/company/..."
+            />
+          </div>
       </div>
     </motion.div>
   );
@@ -1294,7 +1353,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
                   )}
                   {member.twitterUrl && (
                     <a href={member.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                      <Twitter className="w-4 h-4" />
+                      <FaXTwitter className="w-4 h-4" />
                     </a>
                   )}
                   {member.githubUrl && (
