@@ -12,8 +12,8 @@ export default function TermsPage() {
 
         <section className="mt-6 space-y-6 text-white text-base leading-relaxed">
           <p>
-            These Terms of Use (the "Terms") constitute a legally binding agreement between you ("you," "your," or "User") and CyreneAI LLC ("CyreneAI," "we," "us," or "our").
-            These Terms govern your access to and use of the CyreneAI Launchpad platform (the "Platform"). By using the Platform, you agree to these Terms and our <a href="/privacy" className="text-[#4D84EE]">Privacy Policy</a>.
+            These Terms of Use (the &quot;Terms&quot;) constitute a legally binding agreement between you (&quot;you,&quot; &quot;your,&quot; or &quot;User&quot;) and CyreneAI LLC (&quot;CyreneAI,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
+            These Terms govern your access to and use of the CyreneAI Launchpad platform (the &quot;Platform&quot;). By using the Platform, you agree to these Terms and our <a href="/privacy" className="text-[#4D84EE]">Privacy Policy</a>.
           </p>
 
           <div className="p-4 bg-white/3 rounded-lg border border-white/6">
@@ -59,7 +59,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-4">7. Risks and Disclaimers</h2>
           <p>
-            Using the Platform carries risks: market volatility, smart contract vulnerabilities, regulatory changes, and third-party failures. The Platform is provided "as is" without warranties. You accept all risks and bear responsibility for outcomes.
+            Using the Platform carries risks: market volatility, smart contract vulnerabilities, regulatory changes, and third-party failures. The Platform is provided &quot;as is&quot; without warranties. You accept all risks and bear responsibility for outcomes.
           </p>
 
           <h2 className="text-2xl font-semibold mt-4">8. Limitation of Liability</h2>

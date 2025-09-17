@@ -11,9 +11,9 @@ export default function PrivacyPage() {
 
         <section className="mt-6 space-y-6 text-white text-base leading-relaxed">
           <p>
-            This Privacy Policy ("Policy") explains how <strong>CyreneAI LLC</strong> ("CyreneAI", "we", "us", or "our"), a limited liability company
+            This Privacy Policy (&quot;Policy&quot;) explains how <strong>CyreneAI LLC</strong> (&quot;CyreneAI&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), a limited liability company
             registered in the Republic of the Marshall Islands, collects, uses, discloses, and protects your personal information when you access or use the CyreneAI
-            Launchpad platform (the "Platform") and its associated services (the "Services"). This Policy is part of the Terms of Use and applies to all users of the Platform.
+            Launchpad platform (the &quot;Platform&quot;) and its associated services (the &quot;Services&quot;). This Policy is part of the Terms of Use and applies to all users of the Platform.
           </p>
 
           <div className="p-4 bg-white/3 rounded-lg border border-white/6">
