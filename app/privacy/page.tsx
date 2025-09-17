@@ -1,33 +1,101 @@
 export default function PrivacyPage() {
   return (
-    <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-4xl mx-auto bg-black/80 rounded-2xl p-8 backdrop-blur-md border border-white/10">
-          <h1 className="text-3xl font-semibold text-white mb-8">Privacy Policy</h1>
-          <div className="space-y-6">
-            <p className="text-white text-base">This Privacy Policy describes our policies and procedures on the collection, use, and disclosure of your information when you use the Service and tells you about your privacy rights and how the law protects You. We use your Personal Data to provide and improve the Service. By using the Service, you agree to the collection and use of information in accordance with this Privacy Policy.</p>
-
-            <h2 className="text-2xl font-semibold text-white mt-8 mb-4">Personal Data</h2>
-            <p className="text-white text-base">While using Our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you. Personally identifiable information may include, but is not limited to:</p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li className="text-white text-base">Email address</li>
-              <li className="text-white text-base">First name and last name</li>
-              <li className="text-white text-base">Twitter and Discord account</li>
-              <li className="text-white text-base">Usage Data</li>
-            </ul>
-
-            <h2 className="text-2xl font-semibold text-white mt-8 mb-4">Usage Data</h2>
-            <p className="text-white text-base">Usage Data is collected automatically when using the Service. Usage Data may include information such as your Device&apos;s Internet Protocol address (e.g., IP address), browser type, browser version, etc.</p>
-
-            <h2 className="text-2xl font-semibold text-white mt-8 mb-4">Tracking Technologies and Cookies</h2>
-            <p className="text-white text-base">We use Cookies and similar tracking technologies to track activity on our Service and store certain information. Tracking technologies used are beacons, tags, and scripts to collect and track information and to improve and analyze our Service. The technologies we use may include:</p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li className="text-white text-base"><strong className="text-white">Cookies or Browser Cookies:</strong> A cookie is a small file placed on your Device. You can instruct your browser to refuse all Cookies or to indicate when a Cookie is being sent. However, if you do not accept Cookies, you may not be able to use some parts of our Service. Unless you have adjusted your browser setting so that it will refuse Cookies, our Service may use Cookies.</li>
-              <li className="text-white text-base"><strong className="text-white">Web Beacons:</strong> Certain sections of our Service and our emails may contain small electronic files known as web beacons (also referred to as clear gifs, pixel tags, and single-pixel gifs) that permit CyreneAI, for example, to count users who have visited those pages or opened an email and for other related website statistics (for example, recording the popularity of a certain section and verifying system and server integrity).</li>
-            </ul>
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-40">
+      <div className="max-w-4xl mx-auto bg-gradient-to-br from-[#071035]/60 via-[#0b1238]/50 to-black/40 rounded-2xl p-8 backdrop-blur-md border border-white/6 shadow-xl">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Privacy Policy for CyreneAI Launchpad</h1>
+            <p className="text-sm text-white/70 mt-1">Last Updated: September 15, 2025</p>
           </div>
         </div>
+
+        <section className="mt-6 space-y-6 text-white text-base leading-relaxed">
+          <p>
+            This Privacy Policy ("Policy") explains how <strong>CyreneAI LLC</strong> ("CyreneAI", "we", "us", or "our"), a limited liability company
+            registered in the Republic of the Marshall Islands, collects, uses, discloses, and protects your personal information when you access or use the CyreneAI
+            Launchpad platform (the "Platform") and its associated services (the "Services"). This Policy is part of the Terms of Use and applies to all users of the Platform.
+          </p>
+
+          <div className="p-4 bg-white/3 rounded-lg border border-white/6">
+            <h3 className="text-lg font-semibold">Important Notices</h3>
+            <ul className="list-disc pl-5 mt-2 space-y-2 text-white/85">
+              <li><strong>Decentralized and Permissionless:</strong> The Platform operates on public blockchains. Transaction and wallet data are public and may be linked to identities if shared.</li>
+              <li><strong>No Custody of Keys:</strong> We do not store or have access to your private keys or wallets. You are responsible for securing your wallet.</li>
+              <li><strong>Zero Responsibility:</strong> CyreneAI assumes no liability for data exposure resulting from blockchain activity, third-party services, or user negligence.</li>
+            </ul>
+          </div>
+
+          <h2 className="text-2xl font-semibold mt-2">1. Information We Collect</h2>
+          <p>We may collect the following categories of information:</p>
+          <ul className="list-disc pl-6 space-y-2">
+            <li><strong>Account Information:</strong> Email, username, and social handles if you provide them for optional features (e.g., XP, referrals).</li>
+            <li><strong>KYC Data:</strong> Name, government-issued ID, and address when required for compliance (optional and only when requested).</li>
+            <li><strong>Usage Data:</strong> IP address, browser type, device information, and activity logs to improve the Platform and detect abuse.</li>
+            <li><strong>Blockchain Data:</strong> Wallet addresses and transactions are public on-chain and outside our control.</li>
+            <li><strong>Referral Data:</strong> Referral codes or linked account information for tracking rewards.</li>
+          </ul>
+
+          <h2 className="text-2xl font-semibold mt-4">2. How We Use Your Information</h2>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>Provide and maintain the Services (account management, project submissions, token launches).</li>
+            <li>Administer XP rewards, referrals, and contests.</li>
+            <li>Perform optional KYC checks when required for legal compliance.</li>
+            <li>Detect and prevent fraud, abuse, or security incidents.</li>
+            <li>Analyze usage (aggregated/anonymized) to improve the Platform.</li>
+            <li>Comply with legal obligations and respond to lawful requests.</li>
+          </ul>
+
+          <h2 className="text-2xl font-semibold mt-4">3. How We Share Your Information</h2>
+          <p>We may share information in limited circumstances:</p>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>With project teams or other users as required for platform features.</li>
+            <li>With law enforcement when legally compelled.</li>
+            <li>With service providers (e.g., analytics, hosting) to operate the Platform.</li>
+            <li>On public blockchains, where transactions are inherently public.</li>
+          </ul>
+
+          <h2 className="text-2xl font-semibold mt-4">4. Data Security</h2>
+          <p>
+            We use reasonable technical and organizational measures to protect data. However, due to the decentralized nature of blockchains and external services,
+            we cannot guarantee absolute security. You are responsible for securing your accounts and private keys.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-4">5. Retention of Data</h2>
+          <p>
+            We retain personal data only as long as necessary to provide Services or comply with legal obligations. On-chain data is permanent and outside our control.
+            You may request deletion of account-related data by contacting us, but we cannot guarantee full removal due to decentralization.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-4">6. Your Choices and Rights</h2>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>Opt out of providing non-essential information.</li>
+            <li>Disconnect social accounts or wallets at any time.</li>
+            <li>Request deletion of account data (subject to legal/technical limits).</li>
+          </ul>
+
+          <h2 className="text-2xl font-semibold mt-4">7. International Transfers</h2>
+          <p>
+            Your data may be processed in jurisdictions including the Marshall Islands. By using the Platform, you consent to cross-border transfers.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-4">8. Children</h2>
+          <p>The Platform is not intended for individuals under 18. We do not knowingly collect data from minors.</p>
+
+          <h2 className="text-2xl font-semibold mt-4">9. Changes to This Policy</h2>
+          <p>We may update this Policy from time to time. Continued use constitutes acceptance of any changes.</p>
+
+          <h2 className="text-2xl font-semibold mt-4">10. Contact Us</h2>
+          <p>
+            For questions or requests, email <a href="mailto:support@cyreneai.com" className="text-[#4D84EE]">support@cyreneai.com</a> or write to:
+            <br />
+            Trust Company Complex, Ajeltake Road, Ajeltake Island, Majuro, Marshall Islands MH96960
+          </p>
+
+          <div className="mt-6 p-4 bg-white/2 rounded-lg border border-white/6">
+            <p className="text-sm text-white/80">By using the CyreneAI Platform, you acknowledge that you have read, understood, and agree to this Privacy Policy.</p>
+          </div>
+        </section>
       </div>
-    </>
+    </div>
   );
-} 
+}
