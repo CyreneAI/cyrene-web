@@ -6,8 +6,12 @@ import {
   Loader2, Search, RefreshCw, AlertCircle, TrendingUp, ExternalLink, 
   ImageIcon, Copy, Check, Filter, ChevronDown, Ban, Lightbulb, 
   Rocket, Users, Clock, Eye, Github, Globe, FileText, 
-  Heart
+  Heart,
+  Linkedin,
+  Instagram,
+  Twitter
 } from 'lucide-react';
+import { FaXTwitter } from "react-icons/fa6";
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
@@ -400,13 +404,49 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
 
         <div className="flex items-center gap-1">
-          {idea.githubUrl && (
+        {idea.githubUrl && (
             <button
               onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
-              className="p-1 text-gray-400 hover:text-white transition-colors"
+              className="p-1 text-gray-400 hover:text-white transition-colors rounded"
               title="GitHub"
             >
               <Github className="w-4 h-4" />
+            </button>
+          )}
+          {idea.twitterUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.twitterUrl!)}
+              className="p-1 text-gray-400 hover:text-blue-400 transition-colors rounded"
+              title="Twitter/X"
+            >
+              <FaXTwitter className="w-4 h-4" />
+            </button>
+          )}
+          {idea.instagramUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.instagramUrl!)}
+              className="p-1 text-gray-400 hover:text-pink-400 transition-colors rounded"
+              title="Instagram"
+            >
+              <Instagram className="w-4 h-4" />
+            </button>
+          )}
+          {idea.linkedinUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.linkedinUrl!)}
+              className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded"
+              title="LinkedIn"
+            >
+              <Linkedin className="w-4 h-4" />
+            </button>
+          )}
+          {idea.websiteUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.websiteUrl!)}
+              className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded"
+              title="Website"
+            >
+              <Globe className="w-4 h-4" />
             </button>
           )}
         </div>

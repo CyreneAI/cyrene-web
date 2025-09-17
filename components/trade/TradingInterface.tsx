@@ -217,7 +217,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   // Handle Jupiter link for graduated tokens
   const handleJupiterTrade = () => {
-    const jupiterUrl = `https://jup.ag/swap/SOL-${tokenData.address}`
+    const jupiterUrl = `https://jup.ag/tokens/${tokenData.address}`
     window.open(jupiterUrl, '_blank')
   }
 

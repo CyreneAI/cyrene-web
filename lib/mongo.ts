@@ -1,6 +1,6 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 
-const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/';
+const uri = process.env.NEXT_PUBLIC_MONGO_URI || 'mongodb://localhost:27017/';
 const client = new MongoClient(uri);
 
 let clientPromise: Promise<MongoClient> | null = null;

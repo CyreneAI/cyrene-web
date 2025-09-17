@@ -1,16 +1,17 @@
-// services/launchedTokensService.ts - Updated to work with project ideas
+// services/launchedTokensService.ts - Updated with hide/unhide functionality
 import { supabase, LaunchedTokenData, LaunchedTokenDB, ProjectIdeaData, dbToFrontend, frontendToDb } from '@/lib/supabase';
 import { ProjectIdeasService } from './projectIdeasService';
 
 export class LaunchedTokensService {
   /**
-   * Get all launched tokens from all users (for explore page)
+   * Get all launched tokens from all users (for explore page) - EXCLUDES HIDDEN TOKENS
    */
   static async getAllLaunchedTokens(limit: number = 50, offset: number = 0): Promise<LaunchedTokenData[]> {
     try {
       const { data, error } = await supabase
         .from('launched_tokens')
         .select('*')
+        .eq('is_hidden', false) // Only show non-hidden tokens in public explore
         .order('launched_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -29,13 +30,14 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Get launched tokens count (for pagination)
+   * Get launched tokens count (for pagination) - EXCLUDES HIDDEN TOKENS
    */
   static async getTotalTokensCount(): Promise<number> {
     try {
       const { count, error } = await supabase
         .from('launched_tokens')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('is_hidden', false); // Only count non-hidden tokens
 
       if (error) {
         console.error('Error fetching tokens count:', error);
@@ -50,13 +52,14 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Search tokens by name or symbol
+   * Search tokens by name or symbol - EXCLUDES HIDDEN TOKENS
    */
   static async searchTokens(query: string, limit: number = 20): Promise<LaunchedTokenData[]> {
     try {
       const { data, error } = await supabase
         .from('launched_tokens')
         .select('*')
+        .eq('is_hidden', false) // Only search non-hidden tokens
         .or(`token_name.ilike.%${query}%,token_symbol.ilike.%${query}%`)
         .order('launched_at', { ascending: false })
         .limit(limit);
@@ -76,15 +79,21 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Get all launched tokens for a specific wallet address
+   * Get all launched tokens for a specific wallet address - INCLUDES HIDDEN TOKENS (for dashboard)
    */
-  static async getLaunchedTokens(walletAddress: string): Promise<LaunchedTokenData[]> {
+  static async getLaunchedTokens(walletAddress: string, includeHidden: boolean = true): Promise<LaunchedTokenData[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('launched_tokens')
         .select('*')
-        .eq('wallet_address', walletAddress)
-        .order('launched_at', { ascending: false });
+        .eq('wallet_address', walletAddress);
+
+      // Only include hidden filter if we want to exclude them
+      if (!includeHidden) {
+        query = query.eq('is_hidden', false);
+      }
+
+      const { data, error } = await query.order('launched_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching launched tokens:', error);
@@ -185,7 +194,7 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Update a launched token (mainly for adding DAMM pool address or trade status)
+   * Update a launched token (including hide/unhide functionality)
    */
   static async updateLaunchedToken(
     contractAddress: string, 
@@ -213,6 +222,10 @@ export class LaunchedTokensService {
       if (updates.projectIdeaId !== undefined) {
         (dbUpdates as any).project_idea_id = updates.projectIdeaId;
       }
+      // NEW: Handle hidden status updates
+      if (updates.isHidden !== undefined) {
+        dbUpdates.is_hidden = updates.isHidden;
+      }
 
       const { data, error } = await supabase
         .from('launched_tokens')
@@ -235,6 +248,74 @@ export class LaunchedTokensService {
       return dbToFrontend(data as LaunchedTokenDB);
     } catch (error) {
       console.error('Service error updating launched token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Hide a token from public view
+   */
+  static async hideToken(
+    contractAddress: string,
+    walletAddress: string
+  ): Promise<LaunchedTokenData | null> {
+    try {
+      return await this.updateLaunchedToken(contractAddress, walletAddress, { isHidden: true });
+    } catch (error) {
+      console.error('Service error hiding token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Unhide a token (make it visible in public view)
+   */
+  static async unhideToken(
+    contractAddress: string,
+    walletAddress: string
+  ): Promise<LaunchedTokenData | null> {
+    try {
+      return await this.updateLaunchedToken(contractAddress, walletAddress, { isHidden: false });
+    } catch (error) {
+      console.error('Service error unhiding token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get only hidden tokens for a specific wallet
+   */
+  static async getHiddenTokens(walletAddress: string): Promise<LaunchedTokenData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('launched_tokens')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .eq('is_hidden', true)
+        .order('launched_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching hidden tokens:', error);
+        throw new Error(`Failed to fetch hidden tokens: ${error.message}`);
+      }
+
+      if (!data) return [];
+
+      return data.map(dbToFrontend);
+    } catch (error) {
+      console.error('Service error fetching hidden tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get only visible (non-hidden) tokens for a specific wallet
+   */
+  static async getVisibleTokens(walletAddress: string): Promise<LaunchedTokenData[]> {
+    try {
+      return await this.getLaunchedTokens(walletAddress, false);
+    } catch (error) {
+      console.error('Service error fetching visible tokens:', error);
       throw error;
     }
   }
@@ -356,7 +437,7 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Get a specific launched token by contract address (public access)
+   * Get a specific launched token by contract address (public access) - EXCLUDES HIDDEN
    */
   static async getPublicLaunchedTokenByContract(contractAddress: string): Promise<LaunchedTokenData | null> {
     try {
@@ -364,6 +445,7 @@ export class LaunchedTokensService {
         .from('launched_tokens')
         .select('*')
         .eq('contract_address', contractAddress)
+        .eq('is_hidden', false) // Only return non-hidden tokens in public access
         .single();
 
       if (error) {
@@ -384,7 +466,7 @@ export class LaunchedTokensService {
   }
 
   /**
-   * Get launched token with project idea details (public access)
+   * Get launched token with project idea details (public access) - EXCLUDES HIDDEN
    */
   static async getPublicTokenWithProjectIdea(contractAddress: string): Promise<{
     token: LaunchedTokenData;
@@ -431,10 +513,11 @@ export class LaunchedTokensService {
 
       for (const token of tokens) {
         try {
-          // Add default trade status for migrated tokens
-          const tokenWithTradeStatus = {
+          // Add default values for migrated tokens
+          const tokenWithDefaults = {
             ...token,
-            tradeStatus: token.tradeStatus ?? true // Default to enabled if not set
+            tradeStatus: token.tradeStatus ?? true, // Default to enabled if not set
+            isHidden: token.isHidden ?? false // Default to visible if not set
           };
 
           // Check if token already exists in database
@@ -442,7 +525,7 @@ export class LaunchedTokensService {
           
           if (!existing) {
             // Save to database
-            const saved = await this.saveLaunchedToken(tokenWithTradeStatus, walletAddress);
+            const saved = await this.saveLaunchedToken(tokenWithDefaults, walletAddress);
             migratedTokens.push(saved);
           } else {
             migratedTokens.push(existing);
