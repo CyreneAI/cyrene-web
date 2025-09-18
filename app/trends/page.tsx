@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { getTrendsCollection } from '@/lib/mongo';
+import TrendsCloud from '@/components/trends/TrendsCloud';
+import TrendPanels from '@/components/trends/TrendPanels';
 
 type Trend = {
   _id?: string;
@@ -40,57 +42,49 @@ export default async function TrendsPage({ searchParams }: { searchParams?: Prom
   const items = await getTrends(selected || undefined);
   const col = await getTrendsCollection();
   const countries = await col.distinct('country');
-
+  const maxCount = items.reduce((m, t) => Math.max(m, t.tweet_count || 0), 0);
+  const total = items.length;
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-40 pb-10 text-white">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Trends (Last 24h)</h1>
-        <form action="/trends" method="get" className="flex items-center gap-2">
-          <label className="mr-2 opacity-80 text-sm">Country</label>
-          <select
-            name="country"
-            className="bg-[#0b1238]/60 border border-white/10 rounded-lg px-3 py-2 text-sm"
-            defaultValue={selected || ''}
-          >
-            <option value="">All</option>
-            {countries.filter(Boolean).sort().map((c) => (
-              <option key={c} value={String(c)}>
-                {String(c)}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10">Apply</button>
-        </form>
+    <div className="pt-40 pb-20 text-white w-full">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-6">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-[#b5ccff] to-[#6aa2ff] bg-clip-text text-transparent">Global Trends Cloud</h1>
+            <p className="text-sm md:text-base text-white/60 mt-2">Sized by hours sustained in trending lists. All current topics are visible at once horizontally—click any to open its analysis.</p>
+          </div>
+          <form action="/trends" method="get" className="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-3 py-2 rounded-2xl border border-white/10 self-start">
+            <label className="opacity-70 text-xs uppercase tracking-wide">Country</label>
+            <select
+              name="country"
+              className="bg-[#0b1238]/60 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+              defaultValue={selected || ''}
+            >
+              <option value="">All</option>
+              {countries.filter(Boolean).sort().map((c) => (
+                <option key={c} value={String(c)}>
+                  {String(c)}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="px-3 py-2 text-sm rounded-lg bg-[#1b2b5e] hover:bg-[#26407f] border border-white/10 transition-colors">Apply</button>
+          </form>
+        </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-white/10 bg-[#0b1238]/40">
-        <table className="min-w-full text-sm">
-          <thead className="bg-white/5">
-            <tr>
-              <th className="px-4 py-3 text-left">Rank</th>
-              <th className="px-4 py-3 text-left">Trend</th>
-              <th className="px-4 py-3 text-left">Best Pos</th>
-              <th className="px-4 py-3 text-left">Tweets</th>
-              <th className="px-4 py-3 text-left">Duration (hrs)</th>
-              <th className="px-4 py-3 text-left">Country</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((t) => (
-              <tr key={t._id ? String(t._id) : `${t.country}-${t.rank}-${t.trending_topic}`} className="border-t border-white/10 hover:bg-white/5">
-                <td className="px-4 py-3 font-semibold">{t.rank}</td>
-                <td className="px-4 py-3">
-                  <Link href={`/trends/${encodeURIComponent(t.trending_topic)}`} className="text-[#4D84EE] hover:underline">
-                    {t.trending_topic}
-                  </Link>
-                </td>
-                <td className="px-4 py-3">{t.top_position ?? '-'}</td>
-                <td className="px-4 py-3">{t.tweet_count?.toLocaleString?.() ?? '-'}</td>
-                <td className="px-4 py-3">{t.duration_hrs ?? '-'}</td>
-                <td className="px-4 py-3">{t.country ?? '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Divider and extra spacing to separate header from cloud */}
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="mt-6 border-t border-white/6" />
+      </div>
+      <div className="mt-8 w-full px-4 sm:px-6 md:px-10 lg:px-14">
+        <div className="pt-8">
+          <TrendsCloud items={items} fullWidth />
+        </div>
+        <div className="mt-14 max-w-7xl mx-auto">
+          <div className="mb-6 flex items-center gap-4">
+            <h2 className="text-2xl font-semibold tracking-tight">Highlights</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent" />
+          </div>
+          <TrendPanels items={items} />
+        </div>
       </div>
     </div>
   );
