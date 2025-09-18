@@ -49,8 +49,8 @@ export default async function TrendsPage({ searchParams }: { searchParams?: Prom
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-[#b5ccff] to-[#6aa2ff] bg-clip-text text-transparent">Global Trends Cloud</h1>
-            <p className="text-sm md:text-base text-white/60 mt-2">Sized by hours sustained in trending lists. All current topics are visible at once horizontally—click any to open its analysis.</p>
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-[#b5ccff] to-[#6aa2ff] bg-clip-text text-transparent">Global Trends </h1>
+        
           </div>
           <form action="/trends" method="get" className="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-3 py-2 rounded-2xl border border-white/10 self-start">
             <label className="opacity-70 text-xs uppercase tracking-wide">Country</label>
