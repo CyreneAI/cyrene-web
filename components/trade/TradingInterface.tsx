@@ -89,7 +89,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   }
 
   // Fetch SOL price from DexScreener
-  const fetchSolPrice = async () => {
+  const fetchSolPrice = React.useCallback(async () => {
     try {
       const response = await axios.get(`https://api.dexscreener.com/latest/dex/pairs/solana/${SOL_USDC_PAIR_ADDRESS}`)
       const pair = response.data.pairs?.[0] || null
@@ -101,7 +101,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     } catch (error) {
       console.error('Error fetching SOL price:', error)
     }
-  }
+  }, [solAmount])
 
   // USD/SOL conversion helpers
   const calculateUsdValue = (amount: string): string => {
@@ -127,7 +127,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   }
 
   // Get quote from Meteora SDK (for active bonding curves)
-  const getCustomPoolQuote = async () => {
+  const getCustomPoolQuote = React.useCallback(async () => {
     if (!tokenData.poolAddress || tokenData.tradeStatus !== 'active') return
 
     try {
@@ -173,7 +173,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [solAmount, slippage, tokenData.poolAddress, tokenData.tradeStatus])
 
   // Execute swap transaction (for active bonding curves)
   const executeCustomPoolSwap = async () => {
@@ -226,14 +226,14 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     fetchSolPrice()
     const interval = setInterval(fetchSolPrice, 30000) // Update every 30 seconds
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchSolPrice])
 
   useEffect(() => {
     if (tokenData.poolAddress && solAmount && tokenData.tradeStatus === 'active') {
       const debounceTimer = setTimeout(() => getCustomPoolQuote(), 500)
       return () => clearTimeout(debounceTimer)
     }
-  }, [solAmount, slippage, tokenData.poolAddress, tokenData.tradeStatus])
+  }, [solAmount, slippage, tokenData.poolAddress, tokenData.tradeStatus, getCustomPoolQuote])
 
   // If token is graduated, show Jupiter link
   if (tokenData.tradeStatus === 'graduated') {
@@ -258,7 +258,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   }
 
   return (
-    <div className="bg-[#040A25] rounded-[30px] p-6 h-[50vh]">
+    <div className="relative bg-[#040A25] rounded-[30px] p-6 h-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white text-lg">Trade</h3>
         <span className="text-xs text-gray-400">Slippage: {slippage}%</span>
@@ -272,12 +272,12 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
             Balance: {solBalance !== null ? solBalance.toFixed(4) : '-'} SOL
           </div>
         </div>
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 min-w-0">
           <input
             type="number"
             value={solAmount}
             onChange={handleSolAmountChange}
-            className="flex-1 bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
+            className="flex-1 min-w-0 bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
             placeholder="0.0"
             min="0"
             step="0.1"
@@ -286,13 +286,13 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
             <span className="font-medium text-black text-sm">SOL</span>
           </div>
         </div>
-        <div className="flex items-center border-t border-black/10 pt-2">
+        <div className="flex items-center border-t border-black/10 pt-2 min-w-0">
           <span className="text-black text-sm mr-2">≈</span>
           <input
             type="number"
             value={usdAmount}
             onChange={handleUsdAmountChange}
-            className="flex-1 bg-transparent text-black text-sm font-medium outline-none placeholder-gray-600"
+            className="flex-1 min-w-0 bg-transparent text-black text-sm font-medium outline-none placeholder-gray-600"
             placeholder="0.00"
             min="0"
             step="0.01"
@@ -309,12 +309,12 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
       {/* You Receive Section */}
       <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20 mb-4">
         <span className="text-black font-medium text-sm">You receive</span>
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0">
           <input
             type="text"
             value={customPoolQuote ? (parseFloat(customPoolQuote.amountOut) / 1e9).toFixed(4) : '...'}
             readOnly
-            className="flex-1 bg-transparent text-black text-xl font-medium outline-none"
+            className="flex-1 min-w-0 truncate bg-transparent text-black text-xl font-medium outline-none"
           />
           <div className="bg-black/20 rounded-lg px-2 py-1">
             <span className="font-medium text-black text-sm">{tokenData.symbol}</span>
@@ -353,7 +353,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         </div>
       )}
 
-      {/* Action Buttons */}
+  {/* Action Buttons */}
       <div className="flex gap-2">
         <button
           onClick={getCustomPoolQuote}
@@ -367,7 +367,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
           <button
             onClick={executeCustomPoolSwap}
             disabled={loading || !customPoolQuote}
-            className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+            className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm relative overflow-visible"
           >
             {loading ? 'Processing...' : 'Swap'}
           </button>
@@ -380,6 +380,16 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
           </button>
         )}
       </div>
+
+      {/* Loading overlay (covers the trading card when running swaps/quote fetch) */}
+      {loading && (
+        <div className="absolute inset-0 bg-black/50 rounded-[30px] z-20 flex items-center justify-center">
+          <div className="flex items-center gap-3 bg-white/6 px-5 py-3 rounded-lg">
+            <Loader2 className="animate-spin h-5 w-5 text-white" />
+            <div className="text-white text-sm">{txStatus || 'Processing transaction...'}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

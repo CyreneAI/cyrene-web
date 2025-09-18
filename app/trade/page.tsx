@@ -276,7 +276,7 @@ function TradePageContent() {
                 />
 
                 {/* REAL-TIME Holders distribution */}
-                <div className="bg-[#040A25] rounded-[30px] p-6">
+                <div className="bg-[#040A25] rounded-[30px] p-6 lg:row-start-2">
                   <HoldersDistribution 
                     tokenAddress={tokenData.address} // Pass real token address
                     title="Live Holders"
