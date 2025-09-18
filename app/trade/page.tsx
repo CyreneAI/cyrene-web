@@ -15,7 +15,12 @@ import HoldersDistribution from '@/components/tokens/HoldersDistribution'
 import { FixedChat } from '@/components/FixedChat'
 import PoolProgressCard from '@/components/trade/PoolProgressCard'
 import TradingInterface from '@/components/trade/TradingInterface'
+
+import LiveChat from '@/components/LiveChat'
 import { fetchTokenData, fetchDexScreenerData } from '@/services/tokenDataService'
+import { useProjectStream } from '@/hooks/useProjectStream'
+import LiveStreamPlayer from '@/components/LiveStreamPlayer'
+
 
 // Types
 interface TokenData {
@@ -49,11 +54,15 @@ function TradePageContent() {
   const poolAddress = searchParams.get('poolAddress')
   const metadataUri = searchParams.get('metadataUri')
   const tradeStatus = searchParams.get('tradeStatus') as 'active' | 'graduated'
+  const streamUrl = searchParams.get('streamUrl') // optional livestream url
   
   // State
   const [tokenData, setTokenData] = useState<TokenData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Use streaming hook - only after tokenData is available
+  const { streamSource, isLive, isLoading: streamLoading } = useProjectStream(tokenData?.address)
   
   // Load token data
   useEffect(() => {
@@ -106,7 +115,7 @@ function TradePageContent() {
     }
 
     loadTokenData()
-  }, [tokenAddress, tokenName, tokenSymbol, poolAddress, metadataUri, tradeStatus])
+  }, [tokenAddress, tokenName, tokenSymbol, poolAddress, metadataUri, tradeStatus, streamUrl])
   
   // Handle wallet connection
   const handleConnectWallet = () => {
@@ -206,7 +215,7 @@ function TradePageContent() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Token Info and Chart Area - Takes up 3 columns on large screens */}
               <div className="lg:col-span-3">
-                {/* 1) Token information card */}
+                {/* 0) Token information card */}
                 <TokenInfoCard 
                   symbol={tokenData.symbol}
                   name={tokenData.name}
@@ -236,6 +245,16 @@ function TradePageContent() {
                     },
                   ]}
                 />
+                
+                {/* 1) Enhanced Livestream - Only show if stream exists or is loading */}
+                {(streamSource || isLive || streamLoading) && (
+                  <LiveStreamPlayer
+                    source={streamSource}
+                    isLive={isLive}
+                    className="mb-6"
+                    title={`${tokenData.name} Live Stream`}
+                  />
+                )}
 
                 {/* 2) Chart section */}
                 <div className="bg-[#040A25] rounded-[30px] p-4 mb-6">
@@ -265,6 +284,12 @@ function TradePageContent() {
                 {tokenData.tradeStatus === 'active' && tokenData.poolAddress && (
                   <PoolProgressCard poolAddress={tokenData.poolAddress} />
                 )}
+                
+                {/* Live Chat */}
+                <LiveChat
+                  roomId={tokenData.address}
+                  title="Live Chat"
+                />
 
                 {/* Trading Interface */}
                 <TradingInterface
@@ -276,13 +301,12 @@ function TradePageContent() {
                 />
 
                 {/* REAL-TIME Holders distribution */}
-                <div className="bg-[#040A25] rounded-[30px] p-6 lg:row-start-2">
+                <div className="bg-[#040A25] rounded-[30px] p-6">
                   <HoldersDistribution 
                     tokenAddress={tokenData.address} // Pass real token address
                     title="Live Holders"
                     showRefresh={true}
                     enableRealtime={true}
-               
                   />
                 </div>
               </div>

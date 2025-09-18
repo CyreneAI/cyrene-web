@@ -152,6 +152,34 @@ export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): O
   project_idea_id: token.projectIdeaId || null
 });
 
+export interface ProjectStreamDB {
+  id: string;
+  project_id: string;
+  project_type: 'idea' | 'token';
+  wallet_address: string;
+  stream_url: string;
+  stream_key: string;
+  status: 'live' | 'offline';
+  title?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectStreamData {
+  id: string;
+  projectId: string;
+  projectType: 'idea' | 'token';
+  walletAddress: string;
+  streamUrl: string;
+  streamKey: string;
+  status: 'live' | 'offline';
+  title?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Convert functions for Project Ideas (unchanged)
 export const projectIdeaDbToFrontend = (dbIdea: ProjectIdeaDB): ProjectIdeaData => ({
   id: dbIdea.id,

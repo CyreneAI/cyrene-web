@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTMP Stream Player</title>
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .video-js {
+            width: 640px;
+            height: 360px;
+        }
+    </style>
+</head>
+<body>
+    <video-js id="rtmp-player" class="video-js vjs-default-skin" controls preload="auto">
+        <source src="https://stream.eu01.erebrus.io/live/abhishek" type="application/x-mpegURL">
+        <p class="vjs-no-js">
+            To view this video, please enable JavaScript and consider upgrading to a web browser that
+            <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+        </p>
+    </video-js>
+
+    <!-- Video.js and HLS plugin -->
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        // Initialize Video.js player
+        var player = videojs('rtmp-player', {
+            fluid: true, // Responsive
+            playbackRates: [0.5, 1, 1.5, 2], // Optional: Playback speed options
+            errorDisplay: true
+        });
+
+        // Optional: Log errors for debugging
+        player.on('error', function(e) {
+            console.error('Player error:', player.error());
+        });
+    </script>
+</body>
+</html>

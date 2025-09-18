@@ -13,7 +13,8 @@ import {
   MapPin, Globe, Edit3, Verified, Users, Heart, Lightbulb,
   Rocket, Github, FileText, Eye, Clock,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Radio
 } from 'lucide-react';
 import { BeatLoader } from 'react-spinners';
 import { toast } from 'sonner';
@@ -27,7 +28,7 @@ import { DbcTradeModal } from '@/components/DbcTradeModal';
 import React from 'react';
 import { Check } from 'lucide-react';
 import { getHighResTwitterImage } from '@/lib/imageUtils';
-
+import StreamManagement from '@/components/StreamManagement';
 // Types
 interface UserProfile {
   id: string;
@@ -168,12 +169,40 @@ export default function UserProfilePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedToken, setSelectedToken] = useState<LaunchedTokenData | null>(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'agents' | 'tokens' | 'ideas'>('agents');
+  const [activeTab, setActiveTab] = useState<'agents' | 'tokens' | 'ideas' | 'streaming'>('agents');
+  
   const [twitterLinking, setTwitterLinking] = useState(false);
   const [showHiddenTokens, setShowHiddenTokens] = useState(false);
   const [hiddenTokens, setHiddenTokens] = useState<LaunchedTokenData[]>([]);
   const [updatingTokenVisibility, setUpdatingTokenVisibility] = useState<string | null>(null);
-  
+  const getProjectsForStreaming = () => {
+    const projects: Array<{
+      id: string;
+      name: string;
+      type: 'idea' | 'token';
+      symbol?: string;
+    }> = [];
+    
+    // Add project ideas
+    projectIdeas.forEach(idea => {
+      projects.push({
+        id: idea.id!,
+        name: idea.projectName,
+        type: 'idea' as const
+      });
+    });
+    
+    // Add launched tokens
+    tokens.forEach(token => {
+      projects.push({
+        id: token.contractAddress,
+        name: token.tokenName,
+        type: 'token' as const,
+        symbol: token.tokenSymbol
+      });
+    });
+    return projects;
+  };
   // Ethereum wallet
   const { address: ethAddress, isConnected: isEthConnected } = useAppKitAccount();
   // Solana wallet
@@ -742,6 +771,17 @@ const handleTwitterLink = async () => {
             <Lightbulb className="w-4 h-4" />
             Ideas {projectIdeas.length > 0 && `(${projectIdeas.length})`}
           </button>
+          <button
+      onClick={() => setActiveTab('streaming')}
+      className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all ${
+        activeTab === 'streaming'
+          ? 'bg-white text-black'
+          : 'text-gray-400 hover:text-white'
+      }`}
+    >
+      <Radio className="w-4 h-4" />
+      Streaming
+    </button>
         </div>
       </motion.div>
 
@@ -773,7 +813,12 @@ const handleTwitterLink = async () => {
           <div className="relative w-full">
             <div className="absolute inset-0 bg-[#434a6033] rounded-[40px] backdrop-blur-[35px] backdrop-brightness-[100%]" />
             <div className="relative z-10 p-8 md:p-12">
-              {activeTab === 'agents' ? (
+               {activeTab === 'streaming' ? (
+    <StreamManagement
+      projects={getProjectsForStreaming()}
+      walletAddress={walletAddress}
+    />
+  ) : activeTab === 'agents' ? (
                 <AgentsSection
                   agents={filteredAgents}
                   loading={agentsLoading}

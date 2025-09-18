@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Livestream Test</title>
+  <!-- Video.js CSS -->
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+</head>
+<body style="background:#000; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+
+  <video
+    id="my-video"
+    class="video-js vjs-big-play-centered"
+    controls
+    autoplay
+    muted
+    preload="auto"
+    width="800"
+    height="450"
+    data-setup='{}'
+  >
+    <source src="https://stream.eu01.erebrus.io/live/sachin/index.m3u8" type="application/x-mpegURL" />
+    <p class="vjs-no-js">
+      To view this video please enable JavaScript, and consider upgrading to a
+      web browser that supports HTML5 video.
+    </p>
+  </video>
+
+  <!-- Video.js script -->
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+</body>
+</html>
