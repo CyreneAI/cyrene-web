@@ -9,13 +9,15 @@ import {
   Heart,
   Linkedin,
   Instagram,
-  Twitter
+  Twitter,
+  Radio
 } from 'lucide-react';
 import { FaXTwitter } from "react-icons/fa6";
 import { toast } from 'sonner';
 import StarCanvas from '@/components/StarCanvas';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { ProjectIdeasService } from '@/services/projectIdeasService';
+import { StreamingService } from '@/services/streamingService'; // Import streaming service
 import { LaunchedTokenData, ProjectIdeaData } from '@/lib/supabase';
 import React from 'react';
 import { useAppKitAccount } from "@reown/appkit/react";
@@ -36,12 +38,20 @@ interface TokenMetadata {
   }>;
 }
 
+// Interface for live streaming data
+interface LiveStreamInfo {
+  projectId: string;
+  projectType: 'idea' | 'token';
+  isLive: boolean;
+}
+
 export default function ExploreProjectsPage() {
   const router = useRouter();
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
   const [projectIdeas, setProjectIdeas] = useState<ProjectIdeaData[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<LaunchedTokenData[]>([]);
   const [filteredIdeas, setFilteredIdeas] = useState<ProjectIdeaData[]>([]);
+  const [liveStreams, setLiveStreams] = useState<Map<string, LiveStreamInfo>>(new Map()); // Track live streams
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +81,31 @@ export default function ExploreProjectsPage() {
     }
   }, [tokenMetadataCache]);
 
+  // Load live streams data
+  const loadLiveStreams = useCallback(async () => {
+    try {
+      const liveStreamsData = await StreamingService.getLiveStreams();
+      const streamMap = new Map<string, LiveStreamInfo>();
+      
+      liveStreamsData.forEach(stream => {
+        streamMap.set(stream.projectId, {
+          projectId: stream.projectId,
+          projectType: stream.projectType,
+          isLive: stream.status === 'live'
+        });
+      });
+      
+      setLiveStreams(streamMap);
+    } catch (error) {
+      console.error('Error loading live streams:', error);
+    }
+  }, []);
+
+  // Check if a project is live streaming
+  const isProjectLiveStreaming = useCallback((projectId: string): boolean => {
+    return liveStreams.get(projectId)?.isLive || false;
+  }, [liveStreams]);
+
   // Load all data
   const loadAllData = useCallback(async (showLoadingIndicator = true) => {
     try {
@@ -79,7 +114,8 @@ export default function ExploreProjectsPage() {
       
       const [allTokens, allIdeas] = await Promise.all([
         LaunchedTokensService.getAllLaunchedTokens(100),
-        ProjectIdeasService.getPublicProjectIdeas(100)
+        ProjectIdeasService.getPublicProjectIdeas(100),
+        loadLiveStreams() // Load live streams data
       ]);
       
       const unlaunchedIdeas = allIdeas.filter(idea => !idea.isLaunched);
@@ -97,12 +133,22 @@ export default function ExploreProjectsPage() {
     } finally {
       if (showLoadingIndicator) setIsLoading(false);
     }
-  }, []);
+  }, [loadLiveStreams]);
 
   // Initial load
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
+
+  // Set up real-time updates for live streams
+  useEffect(() => {
+    // Refresh live streams every 30 seconds to keep status updated
+    const interval = setInterval(() => {
+      loadLiveStreams();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [loadLiveStreams]);
 
   // Filter based on search query
   useEffect(() => {
@@ -125,15 +171,34 @@ export default function ExploreProjectsPage() {
       );
     }
 
-    // Sort by latest first
-    const sortedTokens = filteredTokensResult.sort((a, b) => b.launchedAt - a.launchedAt);
-    const sortedIdeas = filteredIdeasResult.sort((a, b) => 
-      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-    );
+    // Sort by latest first, but prioritize live streaming projects
+    const sortedTokens = filteredTokensResult.sort((a, b) => {
+      const aIsLive = isProjectLiveStreaming(a.projectIdeaId || a.contractAddress);
+      const bIsLive = isProjectLiveStreaming(b.projectIdeaId || b.contractAddress);
+      
+      // Live streams first
+      if (aIsLive && !bIsLive) return -1;
+      if (!aIsLive && bIsLive) return 1;
+      
+      // Then by launch time
+      return b.launchedAt - a.launchedAt;
+    });
+    
+    const sortedIdeas = filteredIdeasResult.sort((a, b) => {
+      const aIsLive = isProjectLiveStreaming(a.id || '');
+      const bIsLive = isProjectLiveStreaming(b.id || '');
+      
+      // Live streams first
+      if (aIsLive && !bIsLive) return -1;
+      if (!aIsLive && bIsLive) return 1;
+      
+      // Then by creation time
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
     
     setFilteredTokens(sortedTokens);
     setFilteredIdeas(sortedIdeas);
-  }, [searchQuery, launchedTokens, projectIdeas]);
+  }, [searchQuery, launchedTokens, projectIdeas, isProjectLiveStreaming]);
 
   // Handle trade button click - UPDATED to navigate to trade page
   const handleTradeClick = (token: LaunchedTokenData) => {
@@ -280,6 +345,7 @@ export default function ExploreProjectsPage() {
                             idea={idea}
                             index={index}
                             formatDate={formatDate}
+                            isLiveStreaming={isProjectLiveStreaming(idea.id || '')}
                           />
                         ))
                       )}
@@ -322,6 +388,7 @@ export default function ExploreProjectsPage() {
                             onTradeClick={() => handleTradeClick(token)}
                             formatDate={formatDate}
                             fetchTokenMetadata={fetchTokenMetadata}
+                            isLiveStreaming={isProjectLiveStreaming(token.projectIdeaId || token.contractAddress)}
                           />
                         ))
                       )}
@@ -337,14 +404,15 @@ export default function ExploreProjectsPage() {
   );
 }
 
-// Project Idea Card Component - UPDATED with navigation
+// Project Idea Card Component - UPDATED with live streaming indicator
 interface ProjectIdeaCardProps {
   idea: ProjectIdeaData;
   index: number;
   formatDate: (timestamp: number | string) => string;
+  isLiveStreaming: boolean;
 }
 
-const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDate }) => {
+const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDate, isLiveStreaming }) => {
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
   
@@ -373,11 +441,28 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl p-4 hover:bg-gray-800/90 hover:border-gray-600/60 transition-all duration-300 group shadow-lg cursor-pointer"
+      className={`bg-gray-900/80 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/90 transition-all duration-300 group shadow-lg cursor-pointer ${
+        isLiveStreaming 
+          ? 'border-green-500/60 ring-1 ring-green-400/20' 
+          : 'border-gray-700/50 hover:border-gray-600/60'
+      }`}
     >
+      {/* Live streaming indicator */}
+      {isLiveStreaming && (
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        
+          <span className="text-xs text-green-300 font-medium">LIVE</span>
+        </div>
+      )}
+
       {/* Project header */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/80 backdrop-blur-sm border border-gray-600/50 flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-lg bg-gray-800/80 backdrop-blur-sm border border-gray-600/50 flex items-center justify-center overflow-hidden relative">
+          {/* Live streaming dot overlay */}
+          {isLiveStreaming && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
+          )}
           {idea.projectImage ? (
             <img
               src={idea.projectImage}
@@ -404,7 +489,7 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
 
         <div className="flex items-center gap-1">
-        {idea.githubUrl && (
+          {idea.githubUrl && (
             <button
               onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
               className="p-1 text-gray-400 hover:text-white transition-colors rounded"
@@ -493,14 +578,15 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
     </motion.div>
   );
 };
-// Token Card Component - UPDATED with navigation
-// Fixed TokenCard Component - Updated social stats logic
+
+// Token Card Component - UPDATED with live streaming indicator
 interface TokenCardProps {
   token: LaunchedTokenData;
   index: number;
   onTradeClick: () => void;
   formatDate: (timestamp: number | string) => string;
   fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
+  isLiveStreaming: boolean;
 }
 
 const TokenCard: React.FC<TokenCardProps> = React.memo(({ 
@@ -508,7 +594,8 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
   index, 
   onTradeClick, 
   formatDate, 
-  fetchTokenMetadata 
+  fetchTokenMetadata,
+  isLiveStreaming
 }) => {
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
@@ -596,11 +683,28 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className="bg-gray-900/90 backdrop-blur-md border border-gray-700/60 rounded-xl p-4 hover:bg-gray-800/95 hover:border-gray-600/70 transition-all duration-300 group shadow-xl cursor-pointer"
+      className={`bg-gray-900/90 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/95 transition-all duration-300 group shadow-xl cursor-pointer relative ${
+        isLiveStreaming 
+          ? 'border-green-500/60 ring-1 ring-green-400/20' 
+          : 'border-gray-700/60 hover:border-gray-600/70'
+      }`}
     >
+      {/* Live streaming indicator */}
+      {isLiveStreaming && (
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <Radio className="w-3 h-3 text-green-400" />
+          <span className="text-xs text-green-300 font-medium">LIVE</span>
+        </div>
+      )}
+
       {/* Token header */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-600/60 flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-600/60 flex items-center justify-center overflow-hidden relative">
+          {/* Live streaming dot overlay */}
+          {isLiveStreaming && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
+          )}
           {imageLoading ? (
             <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
           ) : tokenImage ? (
@@ -679,12 +783,6 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
               <Users className="w-3 h-3 text-blue-400" />
               <span>{stats.followerCount}</span>
             </div>
-            {/* Show indicator if this token was launched from a project idea */}
-            {/* {token.projectIdeaId && (
-              <div className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
-                Project
-              </div>
-            )} */}
           </>
         )}
       </div>
@@ -704,4 +802,3 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
 });
 
 TokenCard.displayName = 'TokenCard';
-
