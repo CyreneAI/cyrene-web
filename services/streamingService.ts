@@ -1,4 +1,4 @@
-// services/streamingService.ts
+// services/streamingService.ts - Fixed URL conversion
 import { supabase } from '@/lib/supabase';
 
 export interface ProjectStream {
@@ -29,27 +29,45 @@ export interface ProjectStreamDB {
   updated_at: string;
 }
 
-// Convert RTMP URL to HLS URL - FIXED VERSION
+// Convert RTMP URL to HLS URL - SIMPLE VERSION
 export const convertRtmpToHls = (rtmpUrl: string, streamKey: string): string => {
   console.log('Converting RTMP to HLS:', { rtmpUrl, streamKey });
   
   if (rtmpUrl.includes('erebrus.io')) {
-    // Handle Erebrus URLs - expected format: {base_url}/{stream_key}/index.m3u8
-    // Remove trailing slash if present and ensure proper format
-    const cleanUrl = rtmpUrl.replace(/\/+$/, '');
-    const hlsUrl = `${cleanUrl}/${streamKey}/index.m3u8`;
-    console.log('Generated HLS URL:', hlsUrl);
-    return hlsUrl;
+    // For Erebrus URLs, use the standard HLS format
+    const finalUrl = `https://stream.in01.erebrus.io/live/${streamKey}/index.m3u8`;
+    console.log('Generated HLS URL:', finalUrl);
+    return finalUrl;
   }
   
   // Fallback for other RTMP servers
-  // Convert rtmp://server/live to http://server/hls
   if (rtmpUrl.startsWith('rtmp://')) {
     const cleanUrl = rtmpUrl.replace('rtmp://', 'http://').replace(/\/live\/?$/, '/hls');
     return `${cleanUrl}/${streamKey}.m3u8`;
   }
   
   // If it's already HTTP/HTTPS, assume it's the base URL
+  const cleanUrl = rtmpUrl.replace(/\/+$/, '');
+  return `${cleanUrl}/${streamKey}/index.m3u8`;
+};
+
+// Alternative simpler version if you know the exact erebrus format
+export const convertRtmpToHlsSimple = (rtmpUrl: string, streamKey: string): string => {
+  console.log('Converting RTMP to HLS (simple):', { rtmpUrl, streamKey });
+  
+  if (rtmpUrl.includes('erebrus.io')) {
+    // For Erebrus, always use the standard stream.in01.erebrus.io format
+    const finalUrl = `https://stream.in01.erebrus.io/${streamKey}/index.m3u8`;
+    console.log('Generated HLS URL (simple):', finalUrl);
+    return finalUrl;
+  }
+  
+  // Fallback for other servers
+  if (rtmpUrl.startsWith('rtmp://')) {
+    const cleanUrl = rtmpUrl.replace('rtmp://', 'http://').replace(/\/live\/?$/, '/hls');
+    return `${cleanUrl}/${streamKey}.m3u8`;
+  }
+  
   const cleanUrl = rtmpUrl.replace(/\/+$/, '');
   return `${cleanUrl}/${streamKey}/index.m3u8`;
 };
@@ -161,8 +179,23 @@ export class StreamingService {
     try {
       console.log('Upserting stream data:', streamData);
       
+      // Store the original RTMP URL without conversion
+      // We'll convert it to HLS when needed for playback
+      let processedStreamUrl = streamData.streamUrl;
+      
+      // Only do minimal processing to store a clean RTMP URL
+      if (streamData.streamUrl.startsWith('rtmp://') && streamData.streamUrl.includes('erebrus.io')) {
+        // Normalize the RTMP URL to a standard format for storage
+        processedStreamUrl = streamData.streamUrl.replace(/\/+$/, ''); // Remove trailing slash
+        console.log('Storing RTMP URL:', { 
+          original: streamData.streamUrl, 
+          stored: processedStreamUrl 
+        });
+      }
+      
       const dbData = frontendToDb({
         ...streamData,
+        streamUrl: processedStreamUrl,
         status: 'offline' // Default to offline when creating/updating
       });
 
@@ -227,10 +260,11 @@ export class StreamingService {
   }
 
   /**
-   * Start stream (set status to live)
+   * Start stream and create chat room
    */
   static async startStream(projectId: string, walletAddress: string): Promise<ProjectStream | null> {
     try {
+      // Start the stream
       const { data, error } = await supabase
         .from('project_streams')
         .update({ status: 'live' })
@@ -241,7 +275,36 @@ export class StreamingService {
 
       if (error) throw error;
 
-      return data ? dbToFrontend(data as ProjectStreamDB) : null;
+      if (data) {
+        const stream = dbToFrontend(data as ProjectStreamDB);
+        
+        // Create chat room for this stream
+        const chatRoomId = `chat_${projectId}`;
+        
+        try {
+          const chatResponse = await fetch('/api/chat/room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              streamId: stream.id, 
+              roomId: chatRoomId 
+            })
+          });
+          
+          if (chatResponse.ok) {
+            console.log(`Created chat room ${chatRoomId} for stream ${projectId}`);
+          } else {
+            console.warn('Failed to create chat room, but stream started successfully');
+          }
+        } catch (chatError) {
+          console.error('Error creating chat room:', chatError);
+          // Don't fail the stream start if chat room creation fails
+        }
+        
+        return stream;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error starting stream:', error);
       throw error;
@@ -249,10 +312,11 @@ export class StreamingService {
   }
 
   /**
-   * Stop stream (set status to offline)
+   * Stop stream and end chat room
    */
   static async stopStream(projectId: string, walletAddress: string): Promise<ProjectStream | null> {
     try {
+      // Stop the stream
       const { data, error } = await supabase
         .from('project_streams')
         .update({ status: 'offline' })
@@ -263,7 +327,31 @@ export class StreamingService {
 
       if (error) throw error;
 
-      return data ? dbToFrontend(data as ProjectStreamDB) : null;
+      if (data) {
+        const stream = dbToFrontend(data as ProjectStreamDB);
+        
+        // End chat room
+        const chatRoomId = `chat_${projectId}`;
+        
+        try {
+          const chatResponse = await fetch(`/api/chat/room?roomId=${chatRoomId}&archive=true`, {
+            method: 'DELETE'
+          });
+          
+          if (chatResponse.ok) {
+            console.log(`Ended chat room ${chatRoomId} for stream ${projectId}`);
+          } else {
+            console.warn('Failed to end chat room, but stream stopped successfully');
+          }
+        } catch (chatError) {
+          console.error('Error ending chat room:', chatError);
+          // Don't fail the stream stop if chat room cleanup fails
+        }
+        
+        return stream;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error stopping stream:', error);
       throw error;
@@ -271,10 +359,24 @@ export class StreamingService {
   }
 
   /**
-   * Delete a project stream
+   * Delete a project stream and its chat room
    */
   static async deleteProjectStream(projectId: string, walletAddress: string): Promise<boolean> {
     try {
+      // Delete chat room first
+      const chatRoomId = `chat_${projectId}`;
+      
+      try {
+        await fetch(`/api/chat/room?roomId=${chatRoomId}&archive=false`, {
+          method: 'DELETE'
+        });
+        console.log(`Deleted chat room ${chatRoomId}`);
+      } catch (chatError) {
+        console.error('Error deleting chat room:', chatError);
+        // Continue with stream deletion even if chat deletion fails
+      }
+
+      // Delete the stream
       const { error } = await supabase
         .from('project_streams')
         .delete()
@@ -301,6 +403,7 @@ export class StreamingService {
         return null;
       }
 
+      // Use the fixed conversion function
       return convertRtmpToHls(stream.streamUrl, stream.streamKey);
     } catch (error) {
       console.error('Error getting stream URL:', error);
@@ -318,6 +421,31 @@ export class StreamingService {
     } catch (error) {
       console.error('Error checking if project is live:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get chat room status for a project
+   */
+  static async getChatRoomStatus(projectId: string): Promise<{
+    isActive: boolean;
+    participantCount: number;
+    messageCount: number;
+    onlineCount: number;
+  }> {
+    try {
+      const chatRoomId = `chat_${projectId}`;
+      const response = await fetch(`/api/chat/stats?roomId=${chatRoomId}`);
+      
+      if (!response.ok) {
+        return { isActive: false, participantCount: 0, messageCount: 0, onlineCount: 0 };
+      }
+      
+      const { stats } = await response.json();
+      return stats || { isActive: false, participantCount: 0, messageCount: 0, onlineCount: 0 };
+    } catch (error) {
+      console.error('Error getting chat room status:', error);
+      return { isActive: false, participantCount: 0, messageCount: 0, onlineCount: 0 };
     }
   }
 

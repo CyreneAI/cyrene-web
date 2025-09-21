@@ -48,7 +48,7 @@ export default function StreamManagement({ projects, walletAddress, className = 
   // Form state
   const [formData, setFormData] = useState<StreamFormData>({
     projectId: '',
-    streamUrl: 'rtmp://eu01.erebrus.io/live/',
+    streamUrl: 'rtmp://in01.erebrus.io/live/',
     streamKey: '',
     title: '',
     description: ''
@@ -106,7 +106,7 @@ export default function StreamManagement({ projects, walletAddress, className = 
       // Reset form and reload streams
       setFormData({
         projectId: '',
-        streamUrl: 'rtmp://eu01.erebrus.io/live/',
+        streamUrl: 'rtmp://in01.erebrus.io/live/',
         streamKey: '',
         title: '',
         description: ''
@@ -260,7 +260,7 @@ export default function StreamManagement({ projects, walletAddress, className = 
                   type="url"
                   value={formData.streamUrl}
                   onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
-                  placeholder="rtmp://eu01.erebrus.io/live/"
+                  placeholder="rtmp://in01.erebrus.io/live/"
                   required
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
@@ -338,7 +338,7 @@ export default function StreamManagement({ projects, walletAddress, className = 
                   setEditingStream(null);
                   setFormData({
                     projectId: '',
-                    streamUrl: 'rtmp://eu01.erebrus.io/live/',
+                    streamUrl: 'rtmp://in01.erebrus.io/live/',
                     streamKey: '',
                     title: '',
                     description: ''

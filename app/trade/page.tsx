@@ -286,10 +286,12 @@ function TradePageContent() {
                 )}
                 
                 {/* Live Chat */}
-                <LiveChat
-                  roomId={tokenData.address}
-                  title="Live Chat"
-                />
+                {/* <LiveChat
+  roomId={tokenData.address}
+  title="Live Chat" 
+  isStreamLive={isLive}
+  autoCreateRoom={true}
+/> */}
 
                 {/* Trading Interface */}
                 <TradingInterface
