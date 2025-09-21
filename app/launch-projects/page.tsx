@@ -1538,6 +1538,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
 };
 
 // Fundraise Tab Component - FIXED
+// Complete Fixed FundraiseTab Component
 interface FundraiseTabProps {
   projectData: ProjectFormData;
   conversionRates: ConversionRate | null;
@@ -1561,19 +1562,9 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
   onSaveProject,
   isSaving
 }) => {
+  // FIXED: Simply pass the event through - parent handles checkbox logic correctly
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    if (e.target.type === 'checkbox') {
-      const checkboxEvent = {
-        ...e,
-        target: {
-          ...e.target,
-          value: (e.target as HTMLInputElement).checked ? 'true' : 'false'
-        }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onProjectInfoChange(checkboxEvent);
-    } else {
-      onProjectInfoChange(e);
-    }
+    onProjectInfoChange(e);
   };
 
   return (
@@ -1635,7 +1626,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
       </div>
 
-      {/* Bot Protection Section */}
+      {/* Bot Protection Section - FIXED CHECKBOX */}
       <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Zap className="w-6 h-6 text-cyan-400" />
@@ -1653,7 +1644,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 id="enableFirstBuy"
                 name="enableFirstBuy"
                 checked={projectData.enableFirstBuy}
-                onChange={handleInputChange}
+                onChange={handleInputChange} // This now works correctly
                 className="sr-only"
                 disabled={isLoading}
               />
@@ -1820,7 +1811,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         onClick={onLaunchToken}
         className="w-full bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage}
-        // 🔥 Removed hasUnsavedChanges from disabled condition since we auto-save
       >
         {isLoading ? (
           <div className="flex items-center justify-center gap-2">
