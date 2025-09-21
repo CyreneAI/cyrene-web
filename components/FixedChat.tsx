@@ -198,7 +198,14 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
   };
 
   return (
-    <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 ${className}`}>
+    <div
+      className={`fixed left-1/2 transform -translate-x-1/2 z-50 ${className}`}
+      style={{
+        bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))'
+      }}
+      role="complementary"
+      aria-label="Cyrene assistant chat"
+    >
   <AnimatePresence>
         {isExpanded ? (
           // Expanded Chat Interface - Fixed sizing and spacing
@@ -208,12 +215,15 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="w-[420px] h-[550px] bg-gray-900/98 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl flex flex-col"
+            className="w-[92vw] sm:w-[440px] max-w-[460px] h-[72vh] max-h-[640px] min-h-[480px] bg-gray-900/98 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl flex flex-col overflow-hidden"
+            style={{
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
+            }}
           >
 
     
             {/* Header - Fixed height */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 sm:py-4 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                   <Image
@@ -241,7 +251,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
             <div className="flex-1 min-h-0 flex flex-col">
               <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin scrollbar-thumb-blue-500/50 scrollbar-track-transparent"
+                className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 space-y-4 scrollbar-thin scrollbar-thumb-blue-500/50 scrollbar-track-transparent"
               >
                 {/* Welcome message */}
                 <div className="flex justify-start">
@@ -349,7 +359,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
               )}
 
               {/* Input - Fixed height */}
-              <div className="p-4 border-t border-white/10 flex-shrink-0">
+              <div className="px-3 sm:px-4 py-3 sm:py-4 border-t border-white/10 flex-shrink-0 bg-gradient-to-t from-black/10 to-black/0">
                 <div className="relative">
                   <form
                     onSubmit={(e) => {
@@ -409,7 +419,7 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
           </motion.div>
           
         ) : (
-          // Collapsed Chat Button - Your Frame Design (Improved spacing)
+          // Collapsed Chat Button - Restored original styling with responsiveness
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -417,21 +427,15 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="relative cursor-pointer"
             onClick={() => setIsExpanded(true)}
+            role="button"
+            aria-label="Open Cyrene chat"
+            aria-expanded={isExpanded}
+            tabIndex={0}
           >
-            <div className="w-[480px] h-[80px] relative">
-              <div className="absolute w-full h-full top-0 left-0">
-                {/* Main container with gradient border */}
-                <div className="w-full bg-[#2f375533] rounded-[40px] backdrop-blur-[35px] h-full relative before:content-[''] before:absolute before:inset-0 before:p-px before:rounded-[40px] before:[background:linear-gradient(31deg,rgba(77,132,238,0.4)_0%,rgba(255,255,255,0.12)_50%,rgba(138,56,245,0.4)_100%)] before:[-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] before:[-webkit-mask-composite:xor] before:[mask-composite:exclude] before:z-[1] before:pointer-events-none">
-                  
-                  {/* Right side button area */}
-                  <div className="absolute w-[80px] h-[50px] top-[15px] right-[15px] bg-[#2f375533] rounded-[40px] backdrop-blur-[30px]" />
-                  
-                  {/* Text */}
-                  <p className="absolute top-[30px] left-20 font-normal text-neutral-100 text-sm tracking-[0] leading-[18px] whitespace-nowrap">
-                    Hi, I&apos;m Cyrene. How can I assist you today?
-                  </p>
-                  
-                  {/* Avatar container - Fixed sizing */}
+            <div className="relative w-[92vw] max-w-[480px] sm:w-[460px] md:w-[480px] h-[80px]">
+              <div className="absolute inset-0">
+                <div className="w-full h-full bg-[#2f375533] rounded-[40px] backdrop-blur-[35px] relative before:content-[''] before:absolute before:inset-0 before:p-px before:rounded-[40px] before:[background:linear-gradient(31deg,rgba(77,132,238,0.4)_0%,rgba(255,255,255,0.12)_50%,rgba(138,56,245,0.4)_100%)] before:[-webkit-mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] before:[-webkit-mask-composite:xor] before:[mask-composite:exclude] before:pointer-events-none before:z-[1]">
+                  {/* Avatar */}
                   <div className="inline-flex h-[50px] w-[50px] items-center justify-center absolute top-[15px] left-[15px] bg-[#00000026] rounded-[40px] overflow-hidden">
                     <Image
                       src="/CyreneAI_logo_square.png"
@@ -439,19 +443,23 @@ export const FixedChat: React.FC<FixedChatProps> = ({ className = '' }) => {
                       width={35}
                       height={20}
                       className="object-contain"
+                      priority
                     />
                   </div>
+                  {/* Text */}
+                  <p className="absolute left-[80px] right-[110px] top-[30px] font-normal text-neutral-100 text-[13px] sm:text-sm leading-[18px] whitespace-nowrap overflow-hidden text-ellipsis">
+                    Hi, I&apos;m Cyrene. How can I assist you today?
+                  </p>
+                  {/* Icon pill */}
+                  <div className="absolute w-[80px] h-[50px] top-[15px] right-[15px] bg-[#2f375533] rounded-[40px] backdrop-blur-[30px] flex items-center justify-center gap-3">
+                    <button className="w-6 h-6 text-white/60 hover:text-white transition-colors" aria-label="Voice">
+                      <Mic className="w-full h-full" />
+                    </button>
+                    <button className="w-6 h-6 text-white/60 hover:text-white transition-colors" aria-label="Messages">
+                      <MessageCircle className="w-full h-full" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Icons - Better positioning */}
-              <div className="absolute w-[60px] h-6 top-7 right-[25px] flex gap-2 items-center justify-center">
-                <button className="w-6 h-6 text-white/60 hover:text-white transition-colors">
-                  <Mic className="w-full h-full" />
-                </button>
-                <button className="w-6 h-6 text-white/60 hover:text-white transition-colors">
-                  <MessageCircle className="w-full h-full" />
-                </button>
               </div>
             </div>
           </motion.div>

@@ -533,27 +533,61 @@ const TokenCarousel = () => {
           animation-play-state: paused;
         }
 
-    /* Mobile hero section improvements */
+    /* Mobile hero section improvements (updated) */
         @media (max-width: 640px) {
-          .hero-section {
-      min-height: 70vh !important;
+          /* Mobile base: make hero nearly full-screen and wider */
+          .hero-section { 
+            min-height: 86vh !important; 
+            align-items: center !important; 
+            padding-top: 32px !important; 
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
           }
-          
-          .hero-content {
-      padding-bottom: 0 !important;
+          .hero-section .robot-wrapper { 
+            /* lower robot slightly on mobile so it sits a bit further down */
+            transform: scale(1.18) translateY(64px); 
+            transform-origin: center top; 
+            margin-top: 24px !important;
           }
-          
-          /* Ensure text doesn't overflow on very small screens */
+          .hero-title {
+            max-width: 94vw;
+            overflow-wrap: break-word;
+            font-size: 56px !important;
+            line-height: 1.02 !important;
+            letter-spacing: 1px;
+          }
+          .hero-subtitle { font-size: 15px !important; }
+          .hero-content { padding-bottom: 0 !important; justify-content: flex-end !important; }
+          /* nudge header lower and add a slightly larger bottom gap so robot is visible */
+          .hero-content header { margin-top: 108px !important; transform: translateY(8px); margin-bottom: 18px !important; }
+          /* make the shiny 'JOURNEY WITH' slightly lower too */
+          .hero-content header .relative.w-fit { transform: translateY(8px); }
+          .hero-title { letter-spacing: 0.26em !important; }
           .hero-title {
             max-width: 90vw;
             overflow-wrap: break-word;
+            font-size: 52px !important;
+            line-height: 1.05 !important;
           }
         }
 
         @media (max-width: 480px) {
-          .hero-section {
-            min-height: 65vh !important;
-            border-radius: 16px !important;
+          .hero-section { min-height: 82vh !important; border-radius: 24px !important; padding-top: 40px !important; }
+          .hero-title { font-size: 52px !important; letter-spacing: 0.28em !important; }
+          .hero-section .robot-wrapper { /* small phones */ transform: scale(1.22) translateY(28px); margin-top: 16px !important; }
+          /* keep a consistent small gap on small phones */
+          @media (max-width: 480px) {
+            .hero-content header { margin-bottom: 20px !important; }
+          }
+        }
+
+        @media (max-width: 380px) {
+          .hero-section { min-height: 84vh !important; padding-top: 36px !important; }
+          .hero-title { font-size: 50px !important; letter-spacing: 0.30em !important; }
+          .hero-section .robot-wrapper { /* extra small */ transform: scale(1.24) translateY(36px); margin-top: 18px !important; }
+          @media (max-width: 380px) {
+            .hero-content header { margin-bottom: 22px !important; }
           }
         }
       `}</style>
@@ -1035,41 +1069,47 @@ export default function Home() {
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[90vh] min-h-[450px] items-end justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-4 sm:py-0 my-6 sm:my-10 md:my-12 relative rounded-[20px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[90vh] min-h-[450px] items-end md:items-end justify-center md:justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-6 sm:py-0 my-4 sm:my-10 md:my-12 relative rounded-[24px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
             
             {/* Background Image */}
-            <img 
+            <Image 
               src="/hero.webp" 
               alt="Futuristic corridor background" 
-              className="absolute inset-0 h-full w-full object-cover z-0" 
+              fill
+              priority
+              className="object-cover z-0" 
             />
             
             {/* Dark overlay */}
             <div className="absolute inset-0 bg-black/40 sm:bg-black/30 md:bg-black/20 z-[1]" aria-hidden="true" />
             
-            {/* Left Arrow */}
-            <img 
+            {/* Left Arrow (decorative) */}
+            <Image 
               src="/left-arrow.webp" 
               alt="" 
               aria-hidden="true" 
-              className="pointer-events-none absolute left-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
+              width={160}
+              height={160}
+              className="pointer-events-none absolute left-0 top-1/2 z-10 -translate-y-1/2 hidden md:block w-auto h-auto" 
             />
             
-            {/* Right Arrow */}
-            <img 
+            {/* Right Arrow (decorative) */}
+            <Image 
               src="/right-arrow.webp" 
               alt="" 
               aria-hidden="true" 
-              className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block" 
+              width={160}
+              height={160}
+              className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block w-auto h-auto" 
             />
             
-            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-8 md:pb-12 lg:pb-16">
+            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-6 sm:pb-8 md:pb-12 lg:pb-16">
       
               {/* Header Section */}
               <header className="flex flex-col w-full max-w-[598px] gap-2 sm:gap-3 items-center relative flex-[0_0_auto]">
                 <ShinyText
                   text="JOURNEY WITH"
-                  className="relative w-fit font-outfit font-medium text-[14px] sm:text-[18px] md:text-[21px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[18px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap"
+                  className="relative w-fit font-outfit font-medium text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[20px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap"
                 />
 
                 <DecryptedText
@@ -1090,7 +1130,7 @@ export default function Home() {
                     font-moonhouse 
                     font-normal 
                     text-transparent 
-                    text-[60px] sm:text-[80px] md:text-[110px] 
+                    text-[72px] sm:text-[92px] md:text-[110px] 
                     text-center 
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
                     leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
@@ -1109,12 +1149,15 @@ export default function Home() {
               </header>
               
               {/* Portrait Image */}
-              <div className="relative w-[250px] sm:w-[350px] md:w-[500px] lg:w-[700px] h-[180px] sm:h-[250px] md:h-[350px] lg:h-[498px] -mt-2 sm:-mt-4 md:-mt-6">
+              {/* Mobile-only soft radial glow behind the robot (hidden on md+) */}
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[52%] w-[340px] h-[180px] rounded-full blur-[56px] opacity-70 pointer-events-none z-10 block sm:hidden md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.22), rgba(20,30,60,0.0) 60%)'}} />
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[40%] w-[280px] h-[140px] rounded-full blur-[40px] opacity-80 pointer-events-none z-10 hidden sm:block md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.18), rgba(20,30,60,0.0) 60%)'}} />
+              <div className="robot-wrapper relative w-[300px] sm:w-[360px] md:w-[500px] lg:w-[700px] h-[255px] sm:h-[300px] md:h-[380px] lg:h-[498px] -mt-2 sm:-mt-4 md:-mt-6 transition-all z-20">
                 <Image
                   src="/robo.webp"
                   alt="Portrait of Cyrene, a technologically advanced female humanoid"
                   fill
-                  className="object-contain"
+                  className="object-contain scale-[1.18] sm:scale-100 origin-bottom"
                   priority
                 />
               </div>

@@ -27,6 +27,8 @@ function scaleFont(value: number, min: number, max: number, outMin: number, outM
 export const TrendsCloud: React.FC<TrendsCloudProps> = ({ items, maxWords = 160, fullWidth = false }) => {
   // Client placement: absolute canvas
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const [innerWidth, setInnerWidth] = useState<number | null>(null);
   const [placed, setPlaced] = useState<{
     text: string;
     left: number;
@@ -167,22 +169,43 @@ export const TrendsCloud: React.FC<TrendsCloudProps> = ({ items, maxWords = 160,
     }
     el.style.height = ch + 'px';
     setPlaced(out);
+    // compute required inner width so we can enable horizontal scrolling when needed
+    const maxRight = placedBoxes.reduce((acc, p) => Math.max(acc, p.r), 0);
+    const requiredWidth = Math.max(cw, Math.ceil(maxRight + 24));
+    setInnerWidth(requiredWidth);
   }, [measured, scalePass, processed]);
 
   return (
-    <div className="relative w-full py-2 overflow-hidden">
-      <div ref={containerRef} className="relative w-full h-[480px] overflow-hidden transition-[height] duration-300 bg-[radial-gradient(circle_at_20%_35%,#eaf4ff22,transparent_70%),radial-gradient(circle_at_80%_65%,#e6f7ff18,transparent_70%)]">
-        {placed.map((p, i) => (
-          <Link
-            key={`${p.text}-${i}`}
-            prefetch={false}
-            href={`/trends/${encodeURIComponent(p.text)}`}
-            className={`absolute whitespace-nowrap leading-tight ${p.rankClass} hover:scale-[1.04] transition-transform`}
-            style={{ left: p.left, top: p.top, fontSize: p.size, color: '#ffffff' }}
-          >
-            {p.text}
-          </Link>
-        ))}
+    <div className="relative w-full py-2">
+      {/* component-scoped scrollbar styles */}
+      <style>{`
+        /* Scoped to trends scroll wrapper */
+        .trends-scroll::-webkit-scrollbar { height: 12px; }
+        .trends-scroll::-webkit-scrollbar-track { background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 999px; }
+        .trends-scroll::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #7dd3fc, #a78bfa); border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+        .trends-scroll::-webkit-scrollbar-thumb:hover { transform: scale(1.05); }
+        /* Firefox */
+        .trends-scroll { scrollbar-width: thin; scrollbar-color: #7dd3fc #0b1220; }
+      `}</style>
+      {/* horizontal scroll wrapper */}
+      <div className="w-full overflow-x-auto overflow-y-hidden trends-scroll" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div
+          ref={containerRef}
+          className="relative h-[480px] transition-[height] duration-300"
+          style={{ width: innerWidth ? innerWidth + 'px' : '100%' }}
+        >
+          {placed.map((p, i) => (
+            <Link
+              key={`${p.text}-${i}`}
+              prefetch={false}
+              href={`/trends/${encodeURIComponent(p.text)}`}
+              className={`absolute whitespace-nowrap leading-tight ${p.rankClass} hover:scale-[1.04] transition-transform`}
+              style={{ left: p.left, top: p.top, fontSize: p.size, color: '#ffffff' }}
+            >
+              {p.text}
+            </Link>
+          ))}
+        </div>
       </div>
       {/* hidden measurement layer */}
       <div ref={measureRef} aria-hidden="true" className="pointer-events-none fixed -left-[5000px] top-0" />

@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 type Analysis = {
   description?: string;
   stats?: {
@@ -50,6 +52,9 @@ export default async function TrendDetail({ params }: { params: Promise<{ topic:
 
   return (
   <div className="max-w-3xl mx-auto px-4 pt-40 pb-10 text-white">
+      <div className="mb-4">
+        <Link href="/trends" className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/6 text-sm">← Back to trends</Link>
+      </div>
       <div className="bg-[#0b1238]/60 border border-white/10 rounded-2xl p-6 shadow-xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{doc.trending_topic}</h1>
