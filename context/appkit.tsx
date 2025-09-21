@@ -146,6 +146,10 @@ const getChainCookieKey = (key: string, chainType: string) => {
   return `${key}_${chainType}`;
 };
 
+// Client-side token lifetime (adjust to server TTL if known)
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const EXPIRY_KEY = 'erebrus_token_exp';
+
 // Cookie management utilities
 const setAuthCookies = (chainType: 'solana' | 'evm', token: string, walletAddress: string, userId: string) => {
   const options = { 
@@ -154,10 +158,20 @@ const setAuthCookies = (chainType: 'solana' | 'evm', token: string, walletAddres
     sameSite: 'Strict' as const,
     secure: process.env.NODE_ENV === 'production'
   };
+
+  const lowerWallet = walletAddress.toLowerCase();
+  const expiryTs = (Date.now() + TOKEN_TTL_MS).toString();
   
   Cookies.set(getChainCookieKey("erebrus_token", chainType), token, options);
-  Cookies.set(getChainCookieKey("erebrus_wallet", chainType), walletAddress.toLowerCase(), options);
+  Cookies.set(getChainCookieKey("erebrus_wallet", chainType), lowerWallet, options);
   Cookies.set(getChainCookieKey("erebrus_userid", chainType), userId, options);
+  Cookies.set(getChainCookieKey(EXPIRY_KEY, chainType), expiryTs, options);
+
+  // Backwards compatibility (legacy unsuffixed keys possibly read elsewhere)
+  Cookies.set("erebrus_token", token, options);
+  Cookies.set("erebrus_wallet", lowerWallet, options);
+  Cookies.set("erebrus_userid", userId, options);
+  Cookies.set(EXPIRY_KEY, expiryTs, options);
 };
 
 const clearAuthCookies = (chainType: 'solana' | 'evm') => {
@@ -165,18 +179,35 @@ const clearAuthCookies = (chainType: 'solana' | 'evm') => {
   Cookies.remove(getChainCookieKey("erebrus_token", chainType), options);
   Cookies.remove(getChainCookieKey("erebrus_wallet", chainType), options);
   Cookies.remove(getChainCookieKey("erebrus_userid", chainType), options);
+  Cookies.remove(getChainCookieKey(EXPIRY_KEY, chainType), options);
 };
 
 const getAuthFromCookies = (chainType: 'solana' | 'evm') => {
-  return {
-    token: Cookies.get(getChainCookieKey("erebrus_token", chainType)),
-    wallet: Cookies.get(getChainCookieKey("erebrus_wallet", chainType)),
-    userId: Cookies.get(getChainCookieKey("erebrus_userid", chainType))
-  };
+  const token = Cookies.get(getChainCookieKey("erebrus_token", chainType));
+  const wallet = Cookies.get(getChainCookieKey("erebrus_wallet", chainType));
+  const userId = Cookies.get(getChainCookieKey("erebrus_userid", chainType));
+  const expiry = Cookies.get(getChainCookieKey(EXPIRY_KEY, chainType));
+
+  
+
+  if (!token || !wallet || !userId) {
+    return { token: undefined, wallet: undefined, userId: undefined, expired: true };
+  }
+
+  let expired = false;
+    if (expiry) {
+    const ts = parseInt(expiry, 10);
+    if (!isNaN(ts)) {
+      expired = Date.now() > ts;
+    }
+  }
+  return { token, wallet, userId, expired } as const;
 };
 
 // EVM Authentication
-const authenticateEVM = async (walletAddress: string, walletProvider: any) => {
+import type { ExternalProvider } from 'ethers';
+
+const authenticateEVM = async (walletAddress: string, walletProvider: ExternalProvider) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
     const chainName = "evm";
@@ -296,10 +327,13 @@ export function useWalletAuth() {
 
   // Get current auth status
   const getCurrentAuthStatus = () => {
-    if (!isConnected || !address) return false;
-    
-    const chainType = caipNetworkId?.startsWith('solana:') ? 'solana' : 'evm';
-    const { token, wallet } = getAuthFromCookies(chainType);
+  if (!isConnected || !address) return false;
+  const chainType = caipNetworkId?.startsWith('solana:') ? 'solana' : 'evm';
+  const { token, wallet, expired } = getAuthFromCookies(chainType);
+      if (expired && token) {
+      clearAuthCookies(chainType);
+      return false;
+    }
     return !!(token && wallet?.toLowerCase() === address.toLowerCase());
   };
 
@@ -321,9 +355,9 @@ export function useWalletAuth() {
                            chainId === Number(solanaTestnet.id);
 
       const chainType = isSolanaChain ? 'solana' : 'evm';
-      const { token, wallet } = getAuthFromCookies(chainType);
+      const { token, wallet, expired } = getAuthFromCookies(chainType);
       
-      if (token && wallet?.toLowerCase() === address.toLowerCase()) {
+      if (token && !expired && wallet?.toLowerCase() === address.toLowerCase()) {
         setAuthSuccess(true);
         return true;
       }
@@ -364,13 +398,19 @@ export function useWalletAuth() {
     }
   };
 
-  // Cleanup on disconnection
+  // Cleanup on disconnection - but be more careful about clearing on refresh
   useEffect(() => {
     if (!isConnected) {
-      ['solana', 'evm'].forEach(chainType => {
-        clearAuthCookies(chainType as 'solana' | 'evm');
-      });
-      setAuthSuccess(false);
+      console.log('Wallet disconnected, clearing auth cookies');
+      // Add a small delay to avoid clearing on page refresh
+      const timeoutId = setTimeout(() => {
+        ['solana', 'evm'].forEach(chainType => {
+          clearAuthCookies(chainType as 'solana' | 'evm');
+        });
+        setAuthSuccess(false);
+      }, 1000); // 1 second delay
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [isConnected]);
 
