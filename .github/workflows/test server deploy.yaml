@@ -1,0 +1,131 @@
+name: Build & Deploy to Prod
+
+on:
+  push:
+    branches:
+      - main  # Runs only when code is pushed to the `main` branch
+
+jobs:
+  # 1️⃣ Build & Push Docker Image to GHCR
+  build-and-push:
+    name: Build & Push to GHCR to main
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # Required to push to GHCR
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/netsepio/cyrene-web:main
+          build-args: |
+            API_BASE_URL=${{ secrets.API_BASE_URL }}
+            MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
+            CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
+            TTS_API_URL=${{ secrets.TTS_API_URL }}
+            MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
+            NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
+            NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+            NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+            NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_TWITTER_CLIENT_ID=${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}
+            TWITTER_CLIENT_SECRET=${{ secrets.TWITTER_CLIENT_SECRET }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
+            NEXT_PUBLIC_MONGO_URI=${{ secrets.NEXT_PUBLIC_MONGO_URI }}
+
+  # 2️⃣ Deploy to Development Server via SSH
+  deploy:
+    name: Deploy to Development
+    needs: build-and-push  # Ensures deployment runs only after a successful build & push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DEV_REMOTE_SERVER_ADDRESS }}
+          username: ${{ secrets.PROD_SERVER_USERNAME }}
+          key: ${{ secrets.PROD_REMOTE_SERVER_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT }}
+          script: |
+            echo "📂 Navigating to cyreneai directory..."
+            cd cyreneai
+
+            echo "🔑 Logging in to GitHub Container Registry (GHCR)..."
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+            echo "🚀 Pulling the latest image for main..."
+            docker pull ghcr.io/netsepio/cyrene-web:main
+
+            echo "🛑 Stopping and removing existing container (if running)..."
+            docker stop cyreneai || true
+            docker rm cyreneai || true
+
+            echo "🧹 Removing old images to free up space..."
+            docker system prune -f
+
+            echo "📄 Creating environment file..."
+            cat <<EOF > .env
+            API_BASE_URL=${{ secrets.API_BASE_URL }}
+            MESSAGE_API_URL=${{ secrets.MESSAGE_API_URL }}
+            CYRENE_AI_ID=${{ secrets.CYRENE_AI_ID }}
+            TTS_API_URL=${{ secrets.TTS_API_URL }}
+            MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            NEXT_PUBLIC_PROJECT_ID=${{ secrets.NEXT_PUBLIC_PROJECT_ID }}
+            NEXT_PUBLIC_HELIUS_API_KEY=${{ secrets.NEXT_PUBLIC_HELIUS_API_KEY }}
+            NEXT_PUBLIC_SOLANA_RPC_URL=${{ secrets.NEXT_PUBLIC_SOLANA_RPC_URL }}
+            NEXT_PUBLIC_ALCHEMY_API_KEY=${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+            NEXT_PUBLIC_TREASURY_ADDRESS=${{ secrets.NEXT_PUBLIC_TREASURY_ADDRESS }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_1=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_1 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_2=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_2 }}
+            NEXT_PUBLIC_ADMIN_ADDRESS_3=${{ secrets.NEXT_PUBLIC_ADMIN_ADDRESS_3 }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_TWITTER_CLIENT_ID=${{ secrets.NEXT_PUBLIC_TWITTER_CLIENT_ID }}
+            TWITTER_CLIENT_SECRET=${{ secrets.TWITTER_CLIENT_SECRET }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
+            NEXT_PUBLIC_MONGO_URI="${{ secrets.NEXT_PUBLIC_MONGO_URI }}"
+            
+            EOF
+
+            echo "🐳 Running the new container..."
+            docker run -d -p 9080:3000 \
+              --name cyreneai \
+              --env-file .env \
+              --restart unless-stopped \
+              --label "traefik.enable=true" \
+              --label 'traefik.http.routers.cyreneai.rule=Host("dev.cyreneai.com")' \
+              --label "traefik.http.routers.cyreneai.entrypoints=websecure" \
+              --label "traefik.http.routers.cyreneai.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.cyreneai.loadbalancer.server.port=3000" \
+              --network traefik \
+              ghcr.io/netsepio/cyrene-web:main
+
+            echo "✅ Deployment complete!"
