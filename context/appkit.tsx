@@ -205,9 +205,9 @@ const getAuthFromCookies = (chainType: 'solana' | 'evm') => {
 };
 
 // EVM Authentication
-import type { ExternalProvider } from 'ethers';
+import type { Eip1193Provider } from 'ethers';
 
-const authenticateEVM = async (walletAddress: string, walletProvider: ExternalProvider) => {
+const authenticateEVM = async (walletAddress: string, walletProvider: Eip1193Provider) => {
   try {
     const GATEWAY_URL = "https://gateway.netsepio.com/";
     const chainName = "evm";
