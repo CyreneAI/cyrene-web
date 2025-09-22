@@ -284,8 +284,8 @@ export class createConfig {
         baseFeeParams: {
           baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
           feeSchedulerParam: {
-            startingFeeBps: 100,
-            endingFeeBps: 100,
+            startingFeeBps: 200,
+            endingFeeBps: 200,
             numberOfPeriod: 0,
             totalDuration: 0,
           },
@@ -299,7 +299,7 @@ export class createConfig {
         creatorLpPercentage: 0,
         partnerLockedLpPercentage: 40,
         creatorLockedLpPercentage: 60,
-        creatorTradingFeePercentage: 2,
+        creatorTradingFeePercentage: 0,
         leftover: 1,
         tokenUpdateAuthority: 1,
         migrationFee: {

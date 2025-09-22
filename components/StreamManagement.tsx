@@ -1,490 +1,548 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { 
-  Radio, 
-  Settings, 
-  Play, 
-  Pause, 
-  Trash2, 
-  Plus,
-  Eye,
-  EyeOff,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  Copy
+  Radio, Settings, Eye, EyeOff, ExternalLink, 
+  Copy, Monitor, Smartphone, AlertCircle, 
+  CheckCircle, Loader2, Play, Square, 
+  Info, Camera 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { StreamingService, ProjectStream, convertRtmpToHls } from '@/services/streamingService';
+import { StreamingService, ProjectStream } from '@/services/streamingService';
+import WebRTCStreamer from './WebRTCStreamer';
+
+interface Project {
+  id: string;
+  name: string;
+  type: 'idea' | 'token';
+  symbol?: string;
+}
 
 interface StreamManagementProps {
-  projects: Array<{
-    id: string;
-    name: string;
-    type: 'idea' | 'token';
-    symbol?: string;
-  }>;
+  projects: Project[];
   walletAddress: string;
-  className?: string;
 }
 
-interface StreamFormData {
+type StreamingType = 'third-party' | 'onsite';
+
+interface StreamConfig {
   projectId: string;
-  streamUrl: string;
-  streamKey: string;
-  title: string;
-  description: string;
+  streamingType: StreamingType;
+  title?: string;
+  description?: string;
 }
 
-export default function StreamManagement({ projects, walletAddress, className = "" }: StreamManagementProps) {
-  const [streams, setStreams] = useState<ProjectStream[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingStream, setEditingStream] = useState<ProjectStream | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+// Generate stream key from project name
+const generateStreamKey = (projectName: string): string => {
+  return projectName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // Remove all non-alphanumeric characters
+    .trim();
+};
+
+export default function StreamManagement({ projects, walletAddress }: StreamManagementProps) {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [streams, setStreams] = useState<Map<string, ProjectStream>>(new Map());
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [showConfig, setShowConfig] = useState(false);
   
-  // Form state
-  const [formData, setFormData] = useState<StreamFormData>({
+  // FIXED: Use single streamConfig state instead of separate streamingType
+  const [streamConfig, setStreamConfig] = useState<StreamConfig>({
     projectId: '',
-    streamUrl: 'rtmp://in01.erebrus.io/live/',
-    streamKey: '',
+    streamingType: 'third-party',
     title: '',
     description: ''
   });
 
-  // Load user streams
-  const loadStreams = async () => {
-    try {
-      setLoading(true);
-      const userStreams = await StreamingService.getUserStreams(walletAddress);
-      setStreams(userStreams);
-    } catch (error) {
-      console.error('Error loading streams:', error);
-      toast.error('Failed to load streams');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load existing streams
   useEffect(() => {
+    const loadStreams = async () => {
+      setInitialLoading(true);
+      try {
+        const userStreams = await StreamingService.getUserStreams(walletAddress);
+        const streamMap = new Map<string, ProjectStream>();
+        userStreams.forEach(stream => {
+          streamMap.set(stream.projectId, stream);
+        });
+        setStreams(streamMap);
+      } catch (error) {
+        console.error('Error loading streams:', error);
+        toast.error('Failed to load streams');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
     if (walletAddress) {
       loadStreams();
     }
   }, [walletAddress]);
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle project selection
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
+    const existingStream = streams.get(project.id);
     
-    if (!formData.projectId || !formData.streamUrl || !formData.streamKey) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      setActionLoading('save');
-      
-      const project = projects.find(p => p.id === formData.projectId);
-      if (!project) {
-        throw new Error('Project not found');
-      }
-
-      await StreamingService.upsertProjectStream({
-        projectId: formData.projectId,
-        projectType: project.type,
-        walletAddress,
-        streamUrl: formData.streamUrl,
-        streamKey: formData.streamKey,
-        title: formData.title || project.name,
-        description: formData.description
-      });
-
-      toast.success(editingStream ? 'Stream updated successfully' : 'Stream created successfully');
-      
-      // Reset form and reload streams
-      setFormData({
-        projectId: '',
-        streamUrl: 'rtmp://in01.erebrus.io/live/',
-        streamKey: '',
-        title: '',
-        description: ''
-      });
-      setShowAddForm(false);
-      setEditingStream(null);
-      
-      await loadStreams();
-    } catch (error) {
-      console.error('Error saving stream:', error);
-      toast.error('Failed to save stream');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Start/Stop stream
-  const toggleStream = async (stream: ProjectStream) => {
-    try {
-      setActionLoading(stream.id);
-      
-      if (stream.status === 'live') {
-        await StreamingService.stopStream(stream.projectId, walletAddress);
-        toast.success(`Stream stopped for ${stream.title}`);
-      } else {
-        await StreamingService.startStream(stream.projectId, walletAddress);
-        toast.success(`Stream started for ${stream.title}`);
-      }
-      
-      await loadStreams();
-    } catch (error) {
-      console.error('Error toggling stream:', error);
-      toast.error('Failed to update stream status');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Delete stream
-  const deleteStream = async (stream: ProjectStream) => {
-    if (!confirm(`Are you sure you want to delete the stream for "${stream.title}"?`)) {
-      return;
-    }
-
-    try {
-      setActionLoading(stream.id);
-      await StreamingService.deleteProjectStream(stream.projectId, walletAddress);
-      toast.success('Stream deleted successfully');
-      await loadStreams();
-    } catch (error) {
-      console.error('Error deleting stream:', error);
-      toast.error('Failed to delete stream');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Edit stream
-  const editStream = (stream: ProjectStream) => {
-    setFormData({
-      projectId: stream.projectId,
-      streamUrl: stream.streamUrl,
-      streamKey: stream.streamKey,
-      title: stream.title || '',
-      description: stream.description || ''
+    // Load existing streaming type or default to third-party
+    const existingStreamingType = existingStream?.streamingType || 'third-party';
+    
+    console.log('🎯 Project selected:', {
+      projectId: project.id,
+      projectName: project.name,
+      existingStream: existingStream ? {
+        id: existingStream.id,
+        streamingType: existingStream.streamingType,
+        status: existingStream.status
+      } : null,
+      loadedStreamingType: existingStreamingType
     });
-    setEditingStream(stream);
-    setShowAddForm(true);
+    
+    setStreamConfig({
+      projectId: project.id,
+      streamingType: existingStreamingType,
+      title: existingStream?.title || `${project.name} Live Stream`,
+      description: existingStream?.description || `Live streaming for ${project.name}`
+    });
+    setShowConfig(true);
   };
 
-  // Copy HLS URL
-  const copyHlsUrl = (stream: ProjectStream) => {
-    const hlsUrl = convertRtmpToHls(stream.streamUrl, stream.streamKey);
-    navigator.clipboard.writeText(hlsUrl);
-    toast.success('HLS URL copied to clipboard');
+  // FIXED: Update streamConfig.streamingType when user changes selection
+  const handleStreamingTypeChange = (newType: StreamingType) => {
+    console.log('🎯 Streaming type changed to:', newType);
+    setStreamConfig(prev => ({
+      ...prev,
+      streamingType: newType
+    }));
   };
 
-  // Get available projects (not already having streams)
-  const availableProjects = projects.filter(project => 
-    !streams.some(stream => stream.projectId === project.id) || 
-    (editingStream && editingStream.projectId === project.id)
-  );
+  // Create or update stream configuration - FIXED
+  const handleSaveConfig = async () => {
+    if (!selectedProject) return;
 
-  if (loading) {
+    setLoading(true);
+    try {
+      const streamKey = generateStreamKey(selectedProject.name);
+      
+      // FIXED: Use correct URLs and keep streamKey separate
+      let streamUrl = '';
+      if (streamConfig.streamingType === 'onsite') {
+        streamUrl = 'https://webrtc.in01.erebrus.io'; // Base WebRTC URL without streamKey
+      } else {
+        streamUrl = 'rtmp://in01.erebrus.io/live/'; // Correct RTMP URL
+      }
+
+      console.log('💾 Saving stream config:', {
+        projectId: selectedProject.id,
+        streamingType: streamConfig.streamingType,
+        streamUrl,
+        streamKey,
+        title: streamConfig.title
+      });
+
+      const streamData = {
+        projectId: selectedProject.id,
+        projectType: selectedProject.type,
+        walletAddress,
+        streamUrl, // Base URL only
+        streamKey, // Separate stream key
+        streamingType: streamConfig.streamingType, // FIXED: Use from streamConfig
+        title: streamConfig.title,
+        description: streamConfig.description
+      };
+
+      const savedStream = await StreamingService.upsertProjectStream(streamData);
+      
+      console.log('💾 Stream saved successfully:', {
+        savedStreamingType: savedStream.streamingType,
+        savedStreamKey: savedStream.streamKey,
+        savedStatus: savedStream.status
+      });
+      
+      // Update local state
+      setStreams(prev => new Map(prev).set(selectedProject.id, savedStream));
+      
+      toast.success('Stream configuration saved successfully!');
+      setShowConfig(false);
+    } catch (error) {
+      console.error('Error saving stream config:', error);
+      toast.error('Failed to save stream configuration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start streaming
+  const handleStartStream = async (projectId: string) => {
+    setLoading(true);
+    try {
+      const updatedStream = await StreamingService.startStream(projectId, walletAddress);
+      if (updatedStream) {
+        console.log('▶️ Stream started with type:', updatedStream.streamingType);
+        setStreams(prev => new Map(prev).set(projectId, updatedStream));
+        toast.success('Stream started successfully!');
+      }
+    } catch (error) {
+      console.error('Error starting stream:', error);
+      toast.error('Failed to start stream');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Stop streaming
+  const handleStopStream = async (projectId: string) => {
+    setLoading(true);
+    try {
+      const updatedStream = await StreamingService.stopStream(projectId, walletAddress);
+      if (updatedStream) {
+        setStreams(prev => new Map(prev).set(projectId, updatedStream));
+        toast.success('Stream stopped successfully!');
+      }
+    } catch (error) {
+      console.error('Error stopping stream:', error);
+      toast.error('Failed to stop stream');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  if (initialLoading) {
     return (
-      <div className={`bg-[#040A25] rounded-[30px] p-6 ${className}`}>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-        </div>
+      <div className="text-center py-12">
+        <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-400" />
+        <p className="text-gray-400">Loading streaming configuration...</p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-[#040A25] rounded-[30px] p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Radio className="w-6 h-6 text-red-400" />
-          <h3 className="text-xl font-semibold text-white">Stream Management</h3>
-        </div>
-        
-        {availableProjects.length > 0 && (
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Stream
-          </button>
-        )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-white mb-2">Live Streaming</h2>
+        <p className="text-gray-400">
+          Stream your projects live to engage with your community
+        </p>
       </div>
 
-      {/* Add/Edit Stream Form */}
-      {showAddForm && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="mb-6 p-4 bg-gray-800/50 rounded-xl border border-gray-600/50"
-        >
-          <h4 className="text-lg font-medium text-white mb-4">
-            {editingStream ? 'Edit Stream' : 'Add New Stream'}
-          </h4>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Project *
-              </label>
-              <select
-                value={formData.projectId}
-                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                required
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+      {/* Projects Grid */}
+      {!showConfig && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.map((project) => {
+            const stream = streams.get(project.id);
+            const isLive = stream?.status === 'live';
+
+            return (
+              <div
+                key={project.id}
+                className="relative bg-gray-800/50 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer group"
+                onClick={() => handleProjectSelect(project)}
               >
-                <option value="">Select a project</option>
-                {availableProjects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name} {project.symbol && `($${project.symbol})`}
-                  </option>
-                ))}
-              </select>
+                {/* Live indicator */}
+                {isLive && (
+                  <div className="absolute top-3 right-3 flex items-center gap-2 px-2 py-1 bg-red-600/90 rounded-full text-white text-xs font-medium">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    LIVE
+                  </div>
+                )}
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                    {project.type === 'token' ? project.symbol?.[0] || 'T' : 'I'}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="text-white font-medium mb-1">{project.name}</h3>
+                    <p className="text-gray-400 text-sm capitalize mb-2">{project.type}</p>
+                    
+                    {stream ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <CheckCircle className="w-3 h-3 text-green-400" />
+                        <span className="text-green-400">Configured ({stream.streamingType})</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Settings className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-400">Not configured</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Stream Configuration */}
+      {showConfig && selectedProject && (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">
+                  Configure Stream: {selectedProject.name}
+                </h3>
+                <p className="text-gray-400">Set up live streaming for your project</p>
+                {/* Debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    Current type: {streamConfig.streamingType}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowConfig(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  RTMP URL *
-                </label>
-                <input
-                  type="url"
-                  value={formData.streamUrl}
-                  onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
-                  placeholder="rtmp://in01.erebrus.io/live/"
-                  required
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
+            {/* Streaming Type Selection */}
+            <div className="mb-6">
+              <label className="block text-white font-medium mb-3">Streaming Method</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    streamConfig.streamingType === 'third-party'
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
+                  }`}
+                  onClick={() => handleStreamingTypeChange('third-party')}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Monitor className="w-5 h-5 text-blue-400" />
+                    <span className="font-medium text-white">Third-Party Streaming</span>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Use OBS, Streamlabs, or other streaming software
+                  </p>
+                </div>
 
+                <div
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    streamConfig.streamingType === 'onsite'
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
+                  }`}
+                  onClick={() => handleStreamingTypeChange('onsite')}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Camera className="w-5 h-5 text-purple-400" />
+                    <span className="font-medium text-white">Browser Streaming</span>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Stream directly from your browser using webcam
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stream Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Stream Key *
-                </label>
+                <label className="block text-white font-medium mb-2">Stream Title</label>
                 <input
                   type="text"
-                  value={formData.streamKey}
-                  onChange={(e) => setFormData({ ...formData, streamKey: e.target.value })}
-                  placeholder="your-stream-key"
-                  required
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  value={streamConfig.title}
+                  onChange={(e) => setStreamConfig(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="Enter stream title"
                 />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-2">Stream Key</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={generateStreamKey(selectedProject.name)}
+                    readOnly
+                    className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 text-gray-300 cursor-not-allowed"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(generateStreamKey(selectedProject.name))}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors"
+                    title="Copy stream key"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  Auto-generated from project name (readonly)
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Stream Title
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Optional stream title"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description
-              </label>
+            <div className="mb-6">
+              <label className="block text-white font-medium mb-2">Description</label>
               <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Optional stream description"
+                value={streamConfig.description}
+                onChange={(e) => setStreamConfig(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Describe what you'll be streaming about"
               />
             </div>
 
-            {/* Preview HLS URL */}
-            {formData.streamUrl && formData.streamKey && (
-              <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                <p className="text-sm text-blue-300 mb-2">HLS URL Preview:</p>
-                <code className="text-xs text-blue-200 break-all">
-                  {convertRtmpToHls(formData.streamUrl, formData.streamKey)}
-                </code>
+            {/* Third-Party Streaming Instructions */}
+            {streamConfig.streamingType === 'third-party' && (
+              <div className="bg-blue-600/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-400 mt-0.5" />
+                  <div>
+                    <h4 className="text-blue-300 font-medium mb-2">OBS/Streaming Software Setup</h4>
+                    <div className="space-y-2 text-sm text-blue-200">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Server URL:</span>
+                        <code className="bg-black/30 px-2 py-1 rounded text-xs">
+                          rtmp://in01.erebrus.io/live/
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard('rtmp://in01.erebrus.io/live/')}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Stream Key:</span>
+                        <code className="bg-black/30 px-2 py-1 rounded text-xs">
+                          {generateStreamKey(selectedProject.name)}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(generateStreamKey(selectedProject.name))}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
+            {/* Actions */}
             <div className="flex gap-3">
               <button
-                type="submit"
-                disabled={actionLoading === 'save'}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                onClick={handleSaveConfig}
+                disabled={loading || !streamConfig.title?.trim()}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
               >
-                {actionLoading === 'save' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4" />
-                )}
-                {editingStream ? 'Update Stream' : 'Create Stream'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
+                Save Configuration
               </button>
-              
+
               <button
-                type="button"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingStream(null);
-                  setFormData({
-                    projectId: '',
-                    streamUrl: 'rtmp://in01.erebrus.io/live/',
-                    streamKey: '',
-                    title: '',
-                    description: ''
-                  });
-                }}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                onClick={() => setShowConfig(false)}
+                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
               >
                 Cancel
               </button>
             </div>
-          </form>
-        </motion.div>
-      )}
-
-      {/* Streams List */}
-      <div className="space-y-4">
-        {streams.length === 0 ? (
-          <div className="text-center py-12">
-            <Radio className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-            <p className="text-gray-400 mb-4">No streams configured yet</p>
-            <p className="text-sm text-gray-500">
-              Add a stream configuration to start broadcasting your projects
-            </p>
           </div>
-        ) : (
-          streams.map((stream) => {
-            const project = projects.find(p => p.id === stream.projectId);
-            const isLive = stream.status === 'live';
-            
-            return (
-              <motion.div
-                key={stream.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-gray-800/50 rounded-xl border border-gray-600/50 hover:border-gray-500/50 transition-colors"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${isLive ? 'bg-red-500/20' : 'bg-gray-500/20'}`}>
-                      {isLive ? (
-                        <Radio className="w-4 h-4 text-red-400" />
-                      ) : (
-                        <Radio className="w-4 h-4 text-gray-400" />
-                      )}
-                    </div>
-                    
+
+          {/* Stream Interface */}
+          {streams.has(selectedProject.id) && (
+            <div className="mt-6 bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+              <h4 className="text-lg font-bold text-white mb-4">Stream Control</h4>
+              
+              {/* FIXED: Check the actual saved stream's streamingType, not the config */}
+              {streams.get(selectedProject.id)?.streamingType === 'onsite' ? (
+                <WebRTCStreamer
+                  streamKey={generateStreamKey(selectedProject.name)}
+                  onStreamStart={() => handleStartStream(selectedProject.id)}
+                  onStreamStop={() => handleStopStream(selectedProject.id)}
+                  onError={(error) => toast.error(error)}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {/* Third-party streaming controls */}
+                  <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                     <div>
-                      <h4 className="text-white font-medium">
-                        {stream.title || project?.name}
-                      </h4>
-                      <p className="text-sm text-gray-400">
-                        {project?.type === 'token' ? 'Token' : 'Project'} • 
-                        {isLive ? (
-                          <span className="text-red-400 ml-1">Live</span>
-                        ) : (
-                          <span className="text-gray-400 ml-1">Offline</span>
-                        )}
+                      <p className="text-white font-medium">Stream Status</p>
+                      <p className="text-gray-400 text-sm">
+                        {streams.get(selectedProject.id)?.status === 'live' ? 'Currently live' : 'Offline'}
                       </p>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Copy HLS URL */}
-                    <button
-                      onClick={() => copyHlsUrl(stream)}
-                      className="p-2 text-gray-400 hover:text-white transition-colors"
-                      title="Copy HLS URL"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-
-                    {/* Toggle Stream Status */}
-                    <button
-                      onClick={() => toggleStream(stream)}
-                      disabled={actionLoading === stream.id}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isLive
-                          ? 'bg-red-600 hover:bg-red-700 text-white'
-                          : 'bg-green-600 hover:bg-green-700 text-white'
-                      }`}
-                      title={isLive ? 'Stop Stream' : 'Start Stream'}
-                    >
-                      {actionLoading === stream.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : isLive ? (
-                        <Pause className="w-3 h-3" />
+                    
+                    <div className="flex gap-2">
+                      {streams.get(selectedProject.id)?.status === 'live' ? (
+                        <button
+                          onClick={() => handleStopStream(selectedProject.id)}
+                          disabled={loading}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />}
+                          Stop Stream
+                        </button>
                       ) : (
-                        <Play className="w-3 h-3" />
+                        <button
+                          onClick={() => handleStartStream(selectedProject.id)}
+                          disabled={loading}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                          Start Stream
+                        </button>
                       )}
-                      <span className="text-xs">
-                        {isLive ? 'Stop' : 'Start'}
-                      </span>
-                    </button>
-
-                    {/* Edit Stream */}
-                    <button
-                      onClick={() => editStream(stream)}
-                      className="p-2 text-gray-400 hover:text-white transition-colors"
-                      title="Edit Stream"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
-
-                    {/* Delete Stream */}
-                    <button
-                      onClick={() => deleteStream(stream)}
-                      disabled={actionLoading === stream.id}
-                      className="p-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Delete Stream"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    </div>
                   </div>
+
+                  {/* FIXED: Stream URL display with correct logic */}
+                  {streams.get(selectedProject.id)?.status === 'live' && (
+                    <div className="p-4 bg-green-600/10 border border-green-500/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                        <div>
+                          <p className="text-green-300 font-medium">Stream is live!</p>
+                          <p className="text-green-200 text-sm">
+                            Viewers can watch at: 
+                            <code className="ml-2 bg-black/30 px-2 py-1 rounded text-xs">
+                              {/* FIXED: Use the correct logic based on saved stream type */}
+                              {streams.get(selectedProject.id)?.streamingType === 'onsite' 
+                                ? `https://stream.in01.erebrus.io/${generateStreamKey(selectedProject.name)}/index.m3u8`
+                                : `https://stream.in01.erebrus.io/live/${generateStreamKey(selectedProject.name)}/index.m3u8`
+                              }
+                            </code>
+                          </p>
+                          {/* Debug info */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <p className="text-green-100/70 text-xs mt-1">
+                              Saved stream type: {streams.get(selectedProject.id)?.streamingType}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-                {stream.description && (
-                  <p className="text-sm text-gray-300 mb-3 pl-11">
-                    {stream.description}
-                  </p>
-                )}
-
-                <div className="pl-11 space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>RTMP:</span>
-                    <code className="px-2 py-1 bg-gray-700 rounded">
-                      {stream.streamUrl}
-                    </code>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>Key:</span>
-                    <code className="px-2 py-1 bg-gray-700 rounded">
-                      {stream.streamKey}
-                    </code>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>HLS:</span>
-                    <code className="px-2 py-1 bg-gray-700 rounded text-blue-300">
-                      {convertRtmpToHls(stream.streamUrl, stream.streamKey)}
-                    </code>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })
-        )}
-      </div>
+      {/* Empty State */}
+      {projects.length === 0 && !showConfig && (
+        <div className="text-center py-20">
+          <Radio className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+          <p className="text-gray-400 mb-4">No projects available for streaming</p>
+          <p className="text-gray-500 text-sm">
+            Create a project idea or launch a token to start streaming
+          </p>
+        </div>
+      )}
     </div>
   );
 }

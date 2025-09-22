@@ -1,4 +1,4 @@
-// services/streamingService.ts - Fixed URL conversion
+// services/streamingService.ts - Enhanced debugging version
 import { supabase } from '@/lib/supabase';
 
 export interface ProjectStream {
@@ -6,9 +6,10 @@ export interface ProjectStream {
   projectId: string;
   projectType: 'idea' | 'token';
   walletAddress: string;
-  streamUrl: string; // Base RTMP URL
+  streamUrl: string; // Base URL (RTMP or WebRTC base)
   streamKey: string;
   status: 'live' | 'offline';
+  streamingType: 'third-party' | 'onsite'; // Made required to avoid undefined issues
   title?: string;
   description?: string;
   createdAt: string;
@@ -23,69 +24,102 @@ export interface ProjectStreamDB {
   stream_url: string;
   stream_key: string;
   status: 'live' | 'offline';
+  streaming_type: 'third-party' | 'onsite' | null; // Can be null in DB
   title?: string;
   description?: string;
   created_at: string;
   updated_at: string;
 }
 
-// Convert RTMP URL to HLS URL - SIMPLE VERSION
+// Generate stream key from project name - same as frontend
+export const generateStreamKey = (projectName: string): string => {
+  return projectName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // Remove all non-alphanumeric characters
+    .trim();
+};
+
+// Convert RTMP URL to HLS URL for third-party streaming
 export const convertRtmpToHls = (rtmpUrl: string, streamKey: string): string => {
-  console.log('Converting RTMP to HLS:', { rtmpUrl, streamKey });
+  console.log('🔥 convertRtmpToHls called:', { rtmpUrl, streamKey });
   
   if (rtmpUrl.includes('erebrus.io')) {
-    // For Erebrus URLs, use the standard HLS format
+    // For Erebrus RTMP, convert to HLS format with /live/ and /index.m3u8
     const finalUrl = `https://stream.in01.erebrus.io/live/${streamKey}/index.m3u8`;
-    console.log('Generated HLS URL:', finalUrl);
+    console.log('🔥 Generated third-party HLS URL:', finalUrl);
     return finalUrl;
   }
   
   // Fallback for other RTMP servers
   if (rtmpUrl.startsWith('rtmp://')) {
-    const cleanUrl = rtmpUrl.replace('rtmp://', 'http://').replace(/\/live\/?$/, '/hls');
-    return `${cleanUrl}/${streamKey}.m3u8`;
+    const cleanUrl = rtmpUrl.replace('rtmp://', 'https://').replace(/\/live\/?$/, '');
+    return `${cleanUrl}/live/${streamKey}/index.m3u8`;
   }
   
-  // If it's already HTTP/HTTPS, assume it's the base URL
+  // If it's already HTTPS, assume it's the base URL
   const cleanUrl = rtmpUrl.replace(/\/+$/, '');
-  return `${cleanUrl}/${streamKey}/index.m3u8`;
+  return `${cleanUrl}/live/${streamKey}/index.m3u8`;
 };
 
-// Alternative simpler version if you know the exact erebrus format
-export const convertRtmpToHlsSimple = (rtmpUrl: string, streamKey: string): string => {
-  console.log('Converting RTMP to HLS (simple):', { rtmpUrl, streamKey });
+// Convert WebRTC URL to HLS URL for onsite streaming
+export const convertWebRtcToHls = (webrtcUrl: string, streamKey: string): string => {
+  console.log('🌐 convertWebRtcToHls called:', { webrtcUrl, streamKey });
   
-  if (rtmpUrl.includes('erebrus.io')) {
-    // For Erebrus, always use the standard stream.in01.erebrus.io format
-    const finalUrl = `https://stream.in01.erebrus.io/${streamKey}/index.m3u8`;
-    console.log('Generated HLS URL (simple):', finalUrl);
-    return finalUrl;
-  }
-  
-  // Fallback for other servers
-  if (rtmpUrl.startsWith('rtmp://')) {
-    const cleanUrl = rtmpUrl.replace('rtmp://', 'http://').replace(/\/live\/?$/, '/hls');
-    return `${cleanUrl}/${streamKey}.m3u8`;
-  }
-  
-  const cleanUrl = rtmpUrl.replace(/\/+$/, '');
-  return `${cleanUrl}/${streamKey}/index.m3u8`;
+  // For WebRTC streams, the HLS URL does NOT include /live/ and does NOT include /index.m3u8
+  const finalUrl = `https://stream.in01.erebrus.io/${streamKey}/index.m3u8`;
+  console.log('🌐 Generated onsite HLS URL:', finalUrl);
+  return finalUrl;
 };
 
+// Get HLS URL based on streaming type
+// FIXED: Get HLS URL based on streaming type - with proper debugging
+export const getHlsUrl = (streamUrl: string, streamKey: string, streamingType: 'third-party' | 'onsite'): string => {
+  console.log('🎯 getHlsUrl called with:', { 
+    streamUrl, 
+    streamKey, 
+    streamingType,
+    typeOfStreamingType: typeof streamingType,
+    streamingTypeStrictEquality: streamingType === 'onsite',
+    streamingTypeLength: streamingType.length,
+    streamingTypeTrimmed: streamingType.trim()
+  });
+  
+  // FIXED: Add explicit check with debugging
+  if (streamingType === 'onsite') {
+    console.log('🎯 ✅ Routing to convertWebRtcToHls (onsite)');
+    return convertWebRtcToHls(streamUrl, streamKey);
+  } else {
+    console.log('🎯 ❌ Routing to convertRtmpToHls (third-party) - streamingType was:', streamingType);
+    return convertRtmpToHls(streamUrl, streamKey);
+  }
+};
 // Convert between DB and frontend formats
-const dbToFrontend = (dbStream: ProjectStreamDB): ProjectStream => ({
-  id: dbStream.id,
-  projectId: dbStream.project_id,
-  projectType: dbStream.project_type,
-  walletAddress: dbStream.wallet_address,
-  streamUrl: dbStream.stream_url,
-  streamKey: dbStream.stream_key,
-  status: dbStream.status,
-  title: dbStream.title,
-  description: dbStream.description,
-  createdAt: dbStream.created_at,
-  updatedAt: dbStream.updated_at
-});
+const dbToFrontend = (dbStream: ProjectStreamDB): ProjectStream => {
+  const converted = {
+    id: dbStream.id,
+    projectId: dbStream.project_id,
+    projectType: dbStream.project_type,
+    walletAddress: dbStream.wallet_address,
+    streamUrl: dbStream.stream_url,
+    streamKey: dbStream.stream_key,
+    status: dbStream.status,
+    streamingType: dbStream.streaming_type || 'onsite', // Default to onsite if null
+    title: dbStream.title,
+    description: dbStream.description,
+    createdAt: dbStream.created_at,
+    updatedAt: dbStream.updated_at
+  };
+  
+  console.log('🔄 dbToFrontend conversion:', {
+    dbStreamingType: dbStream.streaming_type,
+    dbStreamingTypeIsNull: dbStream.streaming_type === null,
+    dbStreamingTypeIsUndefined: dbStream.streaming_type === undefined,
+    convertedStreamingType: converted.streamingType,
+    streamKey: converted.streamKey
+  });
+  
+  return converted;
+};
 
 const frontendToDb = (stream: Omit<ProjectStream, 'id' | 'createdAt' | 'updatedAt'>): Omit<ProjectStreamDB, 'id' | 'created_at' | 'updated_at'> => ({
   project_id: stream.projectId,
@@ -94,6 +128,7 @@ const frontendToDb = (stream: Omit<ProjectStream, 'id' | 'createdAt' | 'updatedA
   stream_url: stream.streamUrl,
   stream_key: stream.streamKey,
   status: stream.status,
+  streaming_type: stream.streamingType,
   title: stream.title,
   description: stream.description
 });
@@ -104,6 +139,8 @@ export class StreamingService {
    */
   static async getProjectStream(projectId: string): Promise<ProjectStream | null> {
     try {
+      console.log('📡 getProjectStream called for:', projectId);
+      
       const { data, error } = await supabase
         .from('project_streams')
         .select('*')
@@ -112,18 +149,60 @@ export class StreamingService {
 
       if (error) {
         if (error.code === 'PGRST116') {
+          console.log('📡 No stream found for project:', projectId);
           return null; // No stream found
         }
         throw error;
       }
 
-      return data ? dbToFrontend(data as ProjectStreamDB) : null;
+      const result = data ? dbToFrontend(data as ProjectStreamDB) : null;
+      
+      console.log('📡 getProjectStream result:', {
+        projectId,
+        rawDbData: data,
+        convertedResult: result ? {
+          id: result.id,
+          streamingType: result.streamingType,
+          streamKey: result.streamKey,
+          status: result.status
+        } : null
+      });
+      
+      return result;
     } catch (error) {
-      console.error('Error fetching project stream:', error);
+      console.error('📡 Error fetching project stream:', error);
       return null;
     }
   }
 
+  /**
+   * Get HLS URL for a project stream - Enhanced debugging
+   */
+  static async getStreamUrl(projectId: string): Promise<string | null> {
+    try {
+      console.log('🎬 getStreamUrl called for project:', projectId); // This should appear!
+      
+      const stream = await this.getProjectStream(projectId);
+      
+      if (!stream || stream.status !== 'live') {
+        return null;
+      }
+  
+      console.log('🎬 Stream found, generating HLS URL:', { // This should appear!
+        projectId,
+        streamKey: stream.streamKey,
+        streamingType: stream.streamingType
+      });
+  
+      // CRITICAL: This line must call getHlsUrl, not convertRtmpToHls directly
+      const hlsUrl = getHlsUrl(stream.streamUrl, stream.streamKey, stream.streamingType);
+      
+      return hlsUrl;
+    } catch (error) {
+      console.error('🎬 Error getting stream URL:', error);
+      return null;
+    }
+  }
   /**
    * Get all streams for a wallet
    */
@@ -173,33 +252,20 @@ export class StreamingService {
     walletAddress: string;
     streamUrl: string;
     streamKey: string;
+    streamingType?: 'third-party' | 'onsite';
     title?: string;
     description?: string;
   }): Promise<ProjectStream> {
     try {
-      console.log('Upserting stream data:', streamData);
-      
-      // Store the original RTMP URL without conversion
-      // We'll convert it to HLS when needed for playback
-      let processedStreamUrl = streamData.streamUrl;
-      
-      // Only do minimal processing to store a clean RTMP URL
-      if (streamData.streamUrl.startsWith('rtmp://') && streamData.streamUrl.includes('erebrus.io')) {
-        // Normalize the RTMP URL to a standard format for storage
-        processedStreamUrl = streamData.streamUrl.replace(/\/+$/, ''); // Remove trailing slash
-        console.log('Storing RTMP URL:', { 
-          original: streamData.streamUrl, 
-          stored: processedStreamUrl 
-        });
-      }
+      console.log('💾 Upserting stream data:', streamData);
       
       const dbData = frontendToDb({
         ...streamData,
-        streamUrl: processedStreamUrl,
-        status: 'offline' // Default to offline when creating/updating
+        status: 'offline', // Default to offline when creating/updating
+        streamingType: streamData.streamingType || 'third-party'
       });
 
-      console.log('DB data to upsert:', dbData);
+      console.log('💾 DB data to upsert:', dbData);
 
       // First try to get existing stream
       const { data: existingData } = await supabase
@@ -213,7 +279,7 @@ export class StreamingService {
 
       if (existingData) {
         // Update existing stream
-        console.log('Updating existing stream');
+        console.log('💾 Updating existing stream');
         const { data, error } = await supabase
           .from('project_streams')
           .update(dbData)
@@ -223,13 +289,13 @@ export class StreamingService {
           .single();
 
         if (error) {
-          console.error('Update error:', error);
+          console.error('💾 Update error:', error);
           throw new Error(`Failed to update stream: ${error.message}`);
         }
         result = data;
       } else {
         // Insert new stream
-        console.log('Inserting new stream');
+        console.log('💾 Inserting new stream');
         const { data, error } = await supabase
           .from('project_streams')
           .insert([dbData])
@@ -237,7 +303,7 @@ export class StreamingService {
           .single();
 
         if (error) {
-          console.error('Insert error:', error);
+          console.error('💾 Insert error:', error);
           throw new Error(`Failed to create stream: ${error.message}`);
         }
         result = data;
@@ -247,10 +313,19 @@ export class StreamingService {
         throw new Error('No data returned from database operation');
       }
 
-      console.log('Upsert successful:', result);
-      return dbToFrontend(result as ProjectStreamDB);
+      console.log('💾 Upsert successful, raw DB result:', result);
+      const finalResult = dbToFrontend(result as ProjectStreamDB);
+      
+      console.log('💾 Final upserted stream:', {
+        streamingType: finalResult.streamingType,
+        streamKey: finalResult.streamKey,
+        projectId: finalResult.projectId,
+        dbStreamingType: (result as ProjectStreamDB).streaming_type
+      });
+      
+      return finalResult;
     } catch (error) {
-      console.error('Error upserting project stream:', error);
+      console.error('💾 Error upserting project stream:', error);
       if (error instanceof Error) {
         throw new Error(`Stream operation failed: ${error.message}`);
       } else {
@@ -264,6 +339,8 @@ export class StreamingService {
    */
   static async startStream(projectId: string, walletAddress: string): Promise<ProjectStream | null> {
     try {
+      console.log('▶️ Starting stream for:', { projectId, walletAddress });
+      
       // Start the stream
       const { data, error } = await supabase
         .from('project_streams')
@@ -277,6 +354,14 @@ export class StreamingService {
 
       if (data) {
         const stream = dbToFrontend(data as ProjectStreamDB);
+        
+        console.log('▶️ Stream started successfully:', {
+          projectId,
+          streamingType: stream.streamingType,
+          streamKey: stream.streamKey,
+          status: stream.status,
+          dbStreamingType: (data as ProjectStreamDB).streaming_type
+        });
         
         // Create chat room for this stream
         const chatRoomId = `chat_${projectId}`;
@@ -292,12 +377,12 @@ export class StreamingService {
           });
           
           if (chatResponse.ok) {
-            console.log(`Created chat room ${chatRoomId} for stream ${projectId}`);
+            console.log(`▶️ Created chat room ${chatRoomId} for stream ${projectId}`);
           } else {
-            console.warn('Failed to create chat room, but stream started successfully');
+            console.warn('▶️ Failed to create chat room, but stream started successfully');
           }
         } catch (chatError) {
-          console.error('Error creating chat room:', chatError);
+          console.error('▶️ Error creating chat room:', chatError);
           // Don't fail the stream start if chat room creation fails
         }
         
@@ -306,7 +391,7 @@ export class StreamingService {
 
       return null;
     } catch (error) {
-      console.error('Error starting stream:', error);
+      console.error('▶️ Error starting stream:', error);
       throw error;
     }
   }
@@ -393,25 +478,6 @@ export class StreamingService {
   }
 
   /**
-   * Get HLS URL for a project stream
-   */
-  static async getStreamUrl(projectId: string): Promise<string | null> {
-    try {
-      const stream = await this.getProjectStream(projectId);
-      
-      if (!stream || stream.status !== 'live') {
-        return null;
-      }
-
-      // Use the fixed conversion function
-      return convertRtmpToHls(stream.streamUrl, stream.streamKey);
-    } catch (error) {
-      console.error('Error getting stream URL:', error);
-      return null;
-    }
-  }
-
-  /**
    * Check if a project has a live stream
    */
   static async isProjectLive(projectId: string): Promise<boolean> {
@@ -421,6 +487,44 @@ export class StreamingService {
     } catch (error) {
       console.error('Error checking if project is live:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get streaming type for a project
+   */
+  static async getStreamingType(projectId: string): Promise<'third-party' | 'onsite' | null> {
+    try {
+      const stream = await this.getProjectStream(projectId);
+      console.log('🎮 getStreamingType result:', { 
+        projectId, 
+        streamingType: stream?.streamingType,
+        streamExists: !!stream 
+      });
+      return stream?.streamingType || null;
+    } catch (error) {
+      console.error('🎮 Error getting streaming type:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get WebRTC WHIP endpoint for a project
+   */
+  static getWhipEndpoint(streamKey: string): string {
+    return `https://webrtc.in01.erebrus.io/${streamKey}/whip`;
+  }
+
+  /**
+   * Get public HLS viewing URL for a project
+   */
+  static getPublicViewUrl(streamKey: string, streamingType: 'third-party' | 'onsite' = 'third-party'): string {
+    if (streamingType === 'onsite') {
+      // Onsite: no /live/, no /index.m3u8
+      return `https://stream.in01.erebrus.io/${streamKey}/index.m3u8`;
+    } else {
+      // Third-party: with /live/, with /index.m3u8
+      return `https://stream.in01.erebrus.io/live/${streamKey}/index.m3u8`;
     }
   }
 

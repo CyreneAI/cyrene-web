@@ -1,14 +1,14 @@
-// hooks/useProjectStream.ts
+// hooks/useProjectStream.ts - FIXED VERSION
 import { useState, useEffect } from 'react';
-import { StreamingService, ProjectStream, convertRtmpToHls, type ProjectStreamDB } from '@/services/streamingService';
+import { StreamingService, ProjectStream, getHlsUrl, type ProjectStreamDB } from '@/services/streamingService';
 
 // Define LiveStreamSource type locally to avoid import issues
 export type LiveStreamSource =
   | { type: "youtube"; url: string }
   | { type: "twitch"; url: string }
   | { type: "iframe"; url: string }
-  | { type: "hls"; url: string; poster?: string }
-  | { type: "rtmp"; url: string; streamKey: string; poster?: string }
+  | { type: "hls"; url: string; poster?: string; streamingType?: 'third-party' | 'onsite' }
+  | { type: "rtmp"; url: string; streamKey: string; poster?: string; streamingType?: 'third-party' | 'onsite' }
   | { type: "mp4"; url: string; poster?: string };
 
 export function useProjectStream(projectId: string | undefined) {
@@ -18,7 +18,7 @@ export function useProjectStream(projectId: string | undefined) {
   const [streamSource, setStreamSource] = useState<LiveStreamSource | null>(null);
   const [isLive, setIsLive] = useState(false);
 
-  // Helper function to update stream state
+  // FIXED: Helper function to update stream state with proper URL routing
   const updateStreamState = (projectStream: ProjectStream | null) => {
     setStream(projectStream);
     
@@ -26,10 +26,26 @@ export function useProjectStream(projectId: string | undefined) {
       setIsLive(projectStream.status === 'live');
       
       if (projectStream.status === 'live') {
-        const hlsUrl = convertRtmpToHls(projectStream.streamUrl, projectStream.streamKey);
+        console.log('🎮 useProjectStream: Converting stream to HLS source:', {
+          projectId: projectStream.projectId,
+          streamingType: projectStream.streamingType,
+          streamKey: projectStream.streamKey,
+          streamUrl: projectStream.streamUrl
+        });
+
+        // FIXED: Use getHlsUrl with proper routing based on streamingType
+        const hlsUrl = getHlsUrl(projectStream.streamUrl, projectStream.streamKey, projectStream.streamingType);
+        
         setStreamSource({
           type: 'hls',
-          url: hlsUrl
+          url: hlsUrl,
+          streamingType: projectStream.streamingType // Pass the streaming type
+        });
+
+        console.log('🎮 useProjectStream: Generated HLS source:', {
+          type: 'hls',
+          url: hlsUrl,
+          streamingType: projectStream.streamingType
         });
       } else {
         setStreamSource(null);
@@ -51,10 +67,11 @@ export function useProjectStream(projectId: string | undefined) {
         setIsLoading(true);
         setError(null);
         
+        console.log('🎮 useProjectStream: Loading stream for project:', projectId);
         const projectStream = await StreamingService.getProjectStream(projectId);
         updateStreamState(projectStream);
       } catch (err) {
-        console.error('Error loading project stream:', err);
+        console.error('🎮 useProjectStream: Error loading project stream:', err);
         setError('Failed to load stream');
         updateStreamState(null);
       } finally {
@@ -72,11 +89,11 @@ export function useProjectStream(projectId: string | undefined) {
     const subscription = StreamingService.subscribeToStreamUpdates(
       projectId,
       (payload: any) => {
-        console.log('Stream update received:', payload);
+        console.log('🎮 useProjectStream: Stream update received:', payload);
         
         try {
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            // Convert database format to frontend format
+            // FIXED: Convert database format to frontend format with streamingType
             const dbStream = payload.new as ProjectStreamDB;
             if (dbStream) {
               const updatedStream: ProjectStream = {
@@ -87,6 +104,7 @@ export function useProjectStream(projectId: string | undefined) {
                 streamUrl: dbStream.stream_url,
                 streamKey: dbStream.stream_key,
                 status: dbStream.status,
+                streamingType: dbStream.streaming_type || 'third-party', // FIXED: Include streamingType
                 title: dbStream.title,
                 description: dbStream.description,
                 createdAt: dbStream.created_at,
@@ -98,7 +116,7 @@ export function useProjectStream(projectId: string | undefined) {
             updateStreamState(null);
           }
         } catch (err) {
-          console.error('Error processing stream update:', err);
+          console.error('🎮 useProjectStream: Error processing stream update:', err);
         }
       }
     );
@@ -115,10 +133,11 @@ export function useProjectStream(projectId: string | undefined) {
     try {
       setIsLoading(true);
       setError(null);
+      console.log('🎮 useProjectStream: Refreshing stream for project:', projectId);
       const result = await StreamingService.getProjectStream(projectId);
       updateStreamState(result);
     } catch (err) {
-      console.error('Error refreshing stream:', err);
+      console.error('🎮 useProjectStream: Error refreshing stream:', err);
       setError('Failed to refresh stream');
     } finally {
       setIsLoading(false);

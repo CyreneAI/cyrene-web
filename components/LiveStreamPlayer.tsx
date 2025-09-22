@@ -8,8 +8,8 @@ export type LiveStreamSource =
   | { type: "youtube"; url: string }
   | { type: "twitch"; url: string }
   | { type: "iframe"; url: string }
-  | { type: "hls"; url: string; poster?: string }
-  | { type: "rtmp"; url: string; streamKey: string; poster?: string }
+  | { type: "hls"; url: string; poster?: string; streamingType?: 'third-party' | 'onsite' }
+  | { type: "rtmp"; url: string; streamKey: string; poster?: string; streamingType?: 'third-party' | 'onsite' }
   | { type: "mp4"; url: string; poster?: string };
 
 interface LiveStreamPlayerProps {
@@ -25,42 +25,12 @@ interface VideoJsPlayer {
   on(event: string, callback: () => void): void;
   ready(callback: () => void): void;
   error(): { code: number; message: string } | null;
-}
-
-interface VideoJsOptions {
-  fluid?: boolean;
-  responsive?: boolean;
-  playbackRates?: number[];
-  errorDisplay?: boolean;
-  controls?: boolean;
-  preload?: string;
-  autoplay?: boolean;
-  muted?: boolean;
-  liveui?: boolean;
-  html5?: {
-    vhs?: {
-      overrideNative?: boolean;
-    };
-  };
-  sources?: Array<{
-    src: string;
-    type: string;
-  }>;
-}
-
-// Declare Video.js for TypeScript
-declare global {
-  interface Window {
-    videojs: (element: HTMLVideoElement, options: VideoJsOptions) => VideoJsPlayer;
-  }
-}
-
-// Video.js type definitions
-interface VideoJsPlayer {
-  dispose(): void;
-  on(event: string, callback: () => void): void;
-  ready(callback: () => void): void;
-  error(): { code: number; message: string } | null;
+  play(): Promise<void>;
+  pause(): void;
+  src(): string | Array<{ src: string; type: string }>;
+  src(source: string | Array<{ src: string; type: string }>): void;
+  reset(): void;
+  load(): void;
 }
 
 interface VideoJsOptions {
@@ -100,31 +70,7 @@ export default function LiveStreamPlayer({
   const playerRef = useRef<VideoJsPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVideoJsLoaded, setIsVideoJsLoaded] = React.useState(false);
-
-  // Convert RTMP to HLS URL for Erebrus - FIXED VERSION
-  const buildHlsUrl = (rtmpUrl: string, streamKey: string): string => {
-    console.log('Building HLS URL:', { rtmpUrl, streamKey });
-    
-    if (rtmpUrl.includes('erebrus.io')) {
-      // Handle Erebrus URLs - expected format: {base_url}/{stream_key}/index.m3u8
-      // Remove trailing slash if present and ensure proper format
-      const cleanUrl = rtmpUrl.replace(/\/+$/, '');
-      const hlsUrl = `${cleanUrl}/${streamKey}/index.m3u8`;
-      console.log('Generated HLS URL:', hlsUrl);
-      return hlsUrl;
-    }
-    
-    // Fallback for other RTMP servers
-    // Convert rtmp://server/live to http://server/hls
-    if (rtmpUrl.startsWith('rtmp://')) {
-      const cleanUrl = rtmpUrl.replace('rtmp://', 'http://').replace(/\/live\/?$/, '/hls');
-      return `${cleanUrl}/${streamKey}.m3u8`;
-    }
-    
-    // If it's already HTTP/HTTPS, assume it's the base URL
-    const cleanUrl = rtmpUrl.replace(/\/+$/, '');
-    return `${cleanUrl}/${streamKey}/index.m3u8`;
-  };
+  const [playerError, setPlayerError] = React.useState<string | null>(null);
 
   // Cleanup function
   const cleanupPlayer = React.useCallback(() => {
@@ -140,6 +86,38 @@ export default function LiveStreamPlayer({
     }
   }, []);
 
+  // Test HLS stream availability
+  const testStreamAvailability = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        mode: 'cors'
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn('Stream availability test failed:', error);
+      return false; // Assume it might work anyway
+    }
+  };
+
+  // FIXED: Build HLS URL for RTMP sources only
+  const buildHlsUrl = (rtmpUrl: string, streamKey: string, streamingType: 'third-party' | 'onsite' = 'third-party'): string => {
+    console.log('Building HLS URL from RTMP:', { rtmpUrl, streamKey, streamingType });
+    
+    let hlsUrl = '';
+    
+    if (streamingType === 'onsite') {
+      // For onsite (WebRTC) streaming: no /live/ and no /index.m3u8
+      hlsUrl = `https://stream.in01.erebrus.io/${streamKey}/index.m3u8`;
+    } else {
+      // For third-party (OBS) streaming: include /live/ and /index.m3u8
+      hlsUrl = `https://stream.in01.erebrus.io/live/${streamKey}/index.m3u8`;
+    }
+    
+    console.log('Generated HLS URL from RTMP:', hlsUrl);
+    return hlsUrl;
+  };
+
   // Initialize Video.js player for HLS streams
   useEffect(() => {
     if (!isVideoJsLoaded || !source) return;
@@ -149,6 +127,7 @@ export default function LiveStreamPlayer({
       
       // Cleanup any existing player first
       cleanupPlayer();
+      setPlayerError(null);
 
       // Create a new video element to avoid "already initialized" error
       const container = containerRef.current;
@@ -182,32 +161,42 @@ export default function LiveStreamPlayer({
 
       container.appendChild(videoElement);
 
-      // Get the stream URL
+      // FIXED: Determine stream URL without rebuilding if already correct
       let streamUrl = '';
+      
       if (source.type === 'hls') {
+        // FIXED: Trust the URL from StreamingService and don't rebuild it
+        // The StreamingService already provides the correctly formatted URL
         streamUrl = source.url;
+        
+        console.log('Using HLS URL as provided by service:', {
+          url: source.url,
+          streamingType: source.streamingType,
+          message: 'URL is pre-formatted by StreamingService'
+        });
       } else if (source.type === 'rtmp') {
-        streamUrl = buildHlsUrl(source.url, source.streamKey);
+        // Only rebuild for RTMP sources since they need conversion to HLS
+        const streamingType = source.streamingType || 'third-party';
+        streamUrl = buildHlsUrl(source.url, source.streamKey, streamingType);
+        
+        console.log('Converted RTMP to HLS:', {
+          rtmpUrl: source.url,
+          streamKey: source.streamKey,
+          streamingType,
+          generatedHlsUrl: streamUrl
+        });
       }
 
-      console.log('Initializing Video.js with URL:', streamUrl);
+      console.log('Final stream URL for Video.js:', streamUrl);
 
-      // Test if the HLS URL is accessible before initializing player
-      const testUrl = async () => {
-        try {
-          console.log('Testing HLS URL accessibility...');
-          const response = await fetch(streamUrl, { method: 'HEAD' });
-          console.log('HLS URL test response:', response.status, response.statusText);
-          
-          if (!response.ok) {
-            console.warn('HLS URL returned non-OK status:', response.status);
+      // Test stream availability for live streams
+      if (isLive) {
+        testStreamAvailability(streamUrl).then((isAvailable) => {
+          if (!isAvailable) {
+            console.warn('Stream may not be available yet');
           }
-        } catch (error) {
-          console.error('Error testing HLS URL:', error);
-        }
-      };
-      
-      testUrl();
+        });
+      }
 
       try {
         // Initialize Video.js player
@@ -218,9 +207,9 @@ export default function LiveStreamPlayer({
           errorDisplay: true,
           controls: true,
           preload: 'auto',
-          autoplay: isLive,
-          muted: isLive, // Auto-muted for autoplay
-          liveui: true, // Enable live UI
+          autoplay: isLive, // Auto-play for live streams
+          muted: isLive, // Auto-muted for autoplay compliance
+          liveui: isLive, // Enable live UI for live streams
           html5: {
             vhs: {
               overrideNative: true
@@ -236,31 +225,74 @@ export default function LiveStreamPlayer({
         playerRef.current.on('error', function() {
           const error = playerRef.current?.error();
           console.error('Video.js player error:', error);
+          setPlayerError('Stream connection failed. The stream may be offline or experiencing issues.');
         });
 
         playerRef.current.ready(() => {
           console.log('Video.js player is ready');
+          setPlayerError(null);
         });
 
-        // Debug events
-        playerRef.current.on('loadstart', () => console.log('Load started'));
-        playerRef.current.on('loadeddata', () => console.log('Data loaded'));
-        playerRef.current.on('canplay', () => console.log('Can play'));
-        playerRef.current.on('playing', () => console.log('Playing'));
+        // Handle connection state for live streams
+        if (isLive) {
+          playerRef.current.on('loadstart', () => {
+            console.log('Live stream load started');
+            setPlayerError(null);
+          });
+          
+          playerRef.current.on('loadeddata', () => {
+            console.log('Live stream data loaded');
+            setPlayerError(null);
+          });
+          
+          playerRef.current.on('canplay', () => {
+            console.log('Live stream can play');
+            setPlayerError(null);
+          });
+          
+          playerRef.current.on('playing', () => {
+            console.log('Live stream playing');
+            setPlayerError(null);
+          });
+
+          // Auto-retry for live streams with correct Video.js API
+          playerRef.current.on('error', () => {
+            setTimeout(() => {
+              if (playerRef.current) {
+                console.log('Retrying live stream connection...');
+                try {
+                  // Use correct Video.js API for setting source
+                  playerRef.current.src([{ 
+                    src: streamUrl, 
+                    type: 'application/x-mpegURL' 
+                  }]);
+                  playerRef.current.load(); // Reload the player
+                  playerRef.current.play().catch(() => {
+                    setPlayerError('Unable to connect to live stream. Please try refreshing the page.');
+                  });
+                } catch (retryError) {
+                  console.error('Error during retry:', retryError);
+                  setPlayerError('Stream connection failed during retry.');
+                }
+              }
+            }, 5000);
+          });
+        }
 
       } catch (error) {
         console.error('Error initializing Video.js:', error);
+        setPlayerError('Failed to initialize video player');
       }
     }
 
     // Cleanup function
     return cleanupPlayer;
-  }, [isVideoJsLoaded, source, isLive]);
+  }, [isVideoJsLoaded, source, isLive, cleanupPlayer]);
 
   // Cleanup on unmount
   useEffect(() => {
     return cleanupPlayer;
-  }, []);
+  }, [cleanupPlayer]);
 
   return (
     <>
@@ -282,11 +314,17 @@ export default function LiveStreamPlayer({
       <div className={`bg-[#040A25] rounded-[30px] p-4 ${className}`}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-white/90 font-medium">{title}</h3>
-          {/* Live badge */}
+          {/* Live badge with streaming type indicator */}
           {isLive && (
             <span className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-red-500/15 text-red-300">
               <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
               Live
+              {/* Show streaming type if available */}
+              {(source?.type === 'rtmp' || source?.type === 'hls') && source.streamingType && (
+                <span className="text-[10px] opacity-75">
+                  • {source.streamingType === 'onsite' ? 'Browser' : 'Stream'}
+                </span>
+              )}
             </span>
           )}
           {!isLive && source && (
@@ -298,11 +336,37 @@ export default function LiveStreamPlayer({
         </div>
 
         <div className="relative w-full overflow-hidden rounded-2xl bg-black/60" style={{ aspectRatio: "16 / 9" }}>
-          {renderPlayer(source, containerRef, isVideoJsLoaded)}
+          {renderPlayer(source, containerRef, isVideoJsLoaded, playerError, isLive)}
         </div>
 
         {!source && (
           <p className="text-xs text-gray-400 mt-3">No livestream configured for this project yet.</p>
+        )}
+        
+        {playerError && (
+          <div className="mt-3 p-3 bg-red-600/20 border border-red-500/30 rounded-lg">
+            <p className="text-red-300 text-sm">{playerError}</p>
+            {isLive && (
+              <p className="text-red-200/80 text-xs mt-1">
+                The stream may still be starting up. Try refreshing in a few moments.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Stream info for debugging */}
+        {process.env.NODE_ENV === 'development' && source && (
+          <div className="mt-3 p-2 bg-gray-800/50 rounded text-xs text-gray-400 space-y-1">
+            <p>Stream Type: {source.type}</p>
+            <p>URL Used: {source.type === 'hls' ? source.url : source.type === 'rtmp' ? buildHlsUrl(source.url, source.streamKey, source.streamingType || 'third-party') : 'N/A'}</p>
+            <p>Live: {isLive ? 'Yes' : 'No'}</p>
+            {(source.type === 'rtmp' || source.type === 'hls') && source.streamingType && (
+              <p>Streaming Method: {source.streamingType === 'onsite' ? 'Browser (WebRTC)' : 'Third-party (OBS)'}</p>
+            )}
+            <p className="text-yellow-400">
+              Note: HLS URLs are pre-formatted by StreamingService and used as-is
+            </p>
+          </div>
         )}
       </div>
     </>
@@ -312,7 +376,9 @@ export default function LiveStreamPlayer({
 function renderPlayer(
   source?: LiveStreamSource | null,
   containerRef?: React.RefObject<HTMLDivElement | null>,
-  isVideoJsLoaded?: boolean
+  isVideoJsLoaded?: boolean,
+  playerError?: string | null,
+  isLive?: boolean
 ) {
   if (!source) return <Placeholder />;
 
@@ -346,6 +412,19 @@ function renderPlayer(
             <div className="text-center text-white">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
               <p className="text-sm">Loading player...</p>
+            </div>
+          </div>
+        )}
+        {playerError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90">
+            <div className="text-center text-white max-w-sm px-4">
+              <div className="text-red-400 mb-2">⚠️</div>
+              <p className="text-sm mb-2">{playerError}</p>
+              {isLive && (
+                <p className="text-xs text-gray-300">
+                  Stream may be starting or experiencing connectivity issues
+                </p>
+              )}
             </div>
           </div>
         )}

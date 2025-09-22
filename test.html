@@ -1,33 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Livestream Test</title>
-  <!-- Video.js CSS -->
-  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <title>WebRTC WHIP Stream (H264)</title>
 </head>
-<body style="background:#000; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+<body>
+  <h2>Live Streaming via WebRTC (WHIP, H264)</h2>
+  <video id="localVideo" autoplay muted playsinline style="width:480px;height:360px;"></video>
+  <button id="startBtn">Start Stream</button>
 
-  <video
-    id="my-video"
-    class="video-js vjs-big-play-centered"
-    controls
-    autoplay
-    muted
-    preload="auto"
-    width="800"
-    height="450"
-    data-setup='{}'
-  >
-    <source src="https://stream.eu01.erebrus.io/live/sachin/index.m3u8" type="application/x-mpegURL" />
-    <p class="vjs-no-js">
-      To view this video please enable JavaScript, and consider upgrading to a
-      web browser that supports HTML5 video.
-    </p>
-  </video>
+  <script>
+    const localVideo = document.getElementById("localVideo");
+    const startBtn = document.getElementById("startBtn");
 
-  <!-- Video.js script -->
-  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    // Force H264 in SDP
+    function forceH264(sdp) {
+      return sdp
+        .split("\r\n")
+        .filter(line => !line.includes("VP8") && !line.includes("VP9"))
+        .join("\r\n");
+    }
+
+    startBtn.onclick = async () => {
+      try {
+        // 1. Capture webcam + mic
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = stream;
+
+        // 2. Create PeerConnection
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        // Add local tracks
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        // 3. Gather ICE candidates
+        const iceComplete = new Promise(resolve => {
+          pc.onicecandidate = event => {
+            if (!event.candidate) resolve();
+          };
+        });
+
+        // 4. Create local offer
+        const offer = await pc.createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: false });
+        await pc.setLocalDescription(offer);
+
+        // 5. Wait for ICE gathering to complete
+        await iceComplete;
+
+        // 6. Filter SDP to only H264
+        const offerSDP = forceH264(pc.localDescription.sdp);
+
+        // 7. Send the SDP to MediaMTX WHIP endpoint
+        const response = await fetch("https://webrtc.in01.erebrus.io/stream/whip", {
+          method: "POST",
+          body: offerSDP,
+          headers: { "Content-Type": "application/sdp" }
+        });
+
+        if (!response.ok) throw new Error(`WHIP server error: ${response.status}`);
+
+        // 8. Receive answer SDP from server
+        const answerSDP = await response.text();
+        await pc.setRemoteDescription({ type: "answer", sdp: answerSDP });
+
+        console.log("Streaming started via WebRTC (H264)!");
+      } catch (err) {
+        console.error("Failed to start streaming:", err);
+      }
+    };
+  </script>
 </body>
 </html>
