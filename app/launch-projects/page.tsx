@@ -585,7 +585,7 @@ export default function LaunchProjectsPage() {
       tokenName: '',
       tokenSymbol: '',
       totalTokenSupply: 1000000000,
-      migrationQuoteThreshold: 210,
+      migrationQuoteThreshold: 101,
       quoteMint: 'SOL' as QuoteMintType,
       enableFirstBuy: true,
       firstBuyAmountSol: 0.1,
