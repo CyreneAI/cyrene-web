@@ -275,11 +275,11 @@ export class createConfig {
         tokenBaseDecimal: 9, // 9 DECIMALS FOR MEME COIN
         tokenQuoteDecimal: selectedQuoteMint.decimals,
         lockedVestingParam: {
-          totalLockedVestingAmount: 0,                       // ✅ Fixed to match working
-          numberOfVestingPeriod: 0,                          // ✅ Fixed to match working
-          cliffUnlockAmount: 0,                              // ✅ Fixed to match working
-          totalVestingDuration: 0,                           // ✅ Fixed to match working
-          cliffDurationFromMigrationTime: 0,                 // ✅ Fixed to match working
+          totalLockedVestingAmount: 100000000, // 100 MILLION
+          numberOfVestingPeriod: 3, // 3 times
+          cliffUnlockAmount: 50000000, // 50 million immediately released after cliff is reached
+          totalVestingDuration: 15552000, // 6 months in seconds
+          cliffDurationFromMigrationTime: 7776000, // 3 months cliff in seconds
         },
         baseFeeParams: {
           baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
