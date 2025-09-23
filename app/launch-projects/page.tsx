@@ -1539,6 +1539,8 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
 
 // Fundraise Tab Component - FIXED
 // Complete Fixed FundraiseTab Component
+// Complete Fixed FundraiseTab Component with Dynamic Token Calculation
+// Complete Fixed FundraiseTab Component with Dynamic Token Calculation
 interface FundraiseTabProps {
   projectData: ProjectFormData;
   conversionRates: ConversionRate | null;
@@ -1562,12 +1564,235 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
   onSaveProject,
   isSaving
 }) => {
-  // FIXED: Simply pass the event through - parent handles checkbox logic correctly
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  // Calculate expected tokens based on bonding curve approximation
+  const calculateExpectedTokens = (solAmount: number, totalSupply: number): number => {
+    if (!solAmount || solAmount <= 0) return 0;
+    
+    // Bonding curve approximation for early purchases
+    // This assumes roughly linear pricing for small initial purchases
+    // Base rate: 0.1 SOL = ~1% of total supply (10M tokens for 1B supply)
+    const baseRate = 0.01; // 1% of total supply per 0.1 SOL
+    const expectedPercentage = (solAmount / 0.1) * baseRate;
+    const expectedTokens = totalSupply * expectedPercentage;
+    
+    return Math.floor(expectedTokens);
+  };
+
+  // Calculate minimum tokens with slippage protection (5% slippage tolerance)
+  const calculateMinimumTokens = (solAmount: number, totalSupply: number): number => {
+    const expectedTokens = calculateExpectedTokens(solAmount, totalSupply);
+    const slippageTolerance = 0.05; // 5%
+    return Math.floor(expectedTokens * (1 - slippageTolerance));
+  };
+
+  // Dynamic calculation effect
+  const expectedTokens = calculateExpectedTokens(projectData.firstBuyAmountSol, projectData.totalTokenSupply);
+  const suggestedMinimum = calculateMinimumTokens(projectData.firstBuyAmountSol, projectData.totalTokenSupply);
+
+  // Handle input changes with dynamic minimum token updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    // Handle the change first
     onProjectInfoChange(e);
+    
+    // If first buy amount changed, update minimum tokens automatically
+    if (name === 'firstBuyAmountSol') {
+      const solAmount = parseFloat(value) || 0;
+      const newMinimumTokens = calculateMinimumTokens(solAmount, projectData.totalTokenSupply);
+      
+      // Create a synthetic event for minimumTokensOut
+      setTimeout(() => {
+        const syntheticEvent = {
+          target: {
+            name: 'minimumTokensOut',
+            value: newMinimumTokens.toString(),
+            type: 'number'
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
+        onProjectInfoChange(syntheticEvent);
+      }, 0);
+    }
+    
+    // If total supply changed, recalculate minimum tokens
+    if (name === 'totalTokenSupply') {
+      const newSupply = parseInt(value) || 1000000000;
+      const newMinimumTokens = calculateMinimumTokens(projectData.firstBuyAmountSol, newSupply);
+      
+      setTimeout(() => {
+        const syntheticEvent = {
+          target: {
+            name: 'minimumTokensOut',
+            value: newMinimumTokens.toString(),
+            type: 'number'
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
+        onProjectInfoChange(syntheticEvent);
+      }, 0);
+    }
+  };
+
+  // Format numbers with commas for better readability
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
+  // Handle launch button click - show confirmation first
+  const handleLaunchClick = () => {
+    if (!projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage) {
+      return; // Button should be disabled, but just in case
+    }
+    setShowConfirmDialog(true);
+  };
+
+  // Handle confirmed launch
+  const handleConfirmedLaunch = () => {
+    setShowConfirmDialog(false);
+    onLaunchToken();
   };
 
   return (
+    <>
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gray-900 border border-gray-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-cyan-600 rounded-full flex items-center justify-center">
+                  <Rocket className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Confirm Token Launch</h3>
+                  <p className="text-gray-400">Review your token details before launching</p>
+                </div>
+              </div>
+
+              {/* Token Details Review */}
+              <div className="space-y-6 mb-6">
+                {/* Basic Token Info */}
+                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600">
+                  <h4 className="font-semibold text-white mb-3">Token Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Token Name:</span>
+                      <div className="text-white font-medium">{projectData.tokenName}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Token Symbol:</span>
+                      <div className="text-white font-medium">{projectData.tokenSymbol}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Supply:</span>
+                      <div className="text-white font-medium">{formatNumber(projectData.totalTokenSupply)}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Quote Token:</span>
+                      <div className="text-white font-medium">{projectData.quoteMint}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* First Buy Details */}
+                {projectData.enableFirstBuy && (
+                  <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4">
+                    <h4 className="font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      First Buy Protection
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">First Buy Amount:</span>
+                        <div className="text-cyan-300 font-medium">
+                          {projectData.firstBuyAmountSol} SOL
+                          {conversionRates && (
+                            <span className="text-gray-400 ml-2">≈ {calculateFirstBuyValue()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Expected Tokens:</span>
+                        <div className="text-cyan-300 font-medium">~{formatNumber(expectedTokens)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Minimum Tokens:</span>
+                        <div className="text-green-300 font-medium">{formatNumber(projectData.minimumTokensOut)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">% of Supply:</span>
+                        <div className="text-cyan-300 font-medium">
+                          {((expectedTokens / projectData.totalTokenSupply) * 100).toFixed(3)}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-2 bg-cyan-900/30 rounded border border-cyan-500/20">
+                      <p className="text-xs text-cyan-200">
+                        ✅ Your purchase will be executed atomically with pool creation, preventing bot front-running.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!projectData.enableFirstBuy && (
+                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                    <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      No First Buy Protection
+                    </h4>
+                    <p className="text-xs text-yellow-200">
+                      ⚠️ Your token will launch without first buy protection. Bots may front-run your launch.
+                    </p>
+                  </div>
+                )}
+
+                {/* Auto-save warning */}
+                {hasUnsavedChanges && (
+                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+                    <p className="text-sm text-blue-200">
+                      📝 <strong>Note:</strong> Your latest changes will be automatically saved before launching.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmedLaunch}
+                  className="flex-2 px-6 py-3 bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white rounded-lg font-medium transition-all disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Launching...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <Rocket className="w-4 h-4" />
+                      <span>Confirm Launch</span>
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1626,7 +1851,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         </div>
       </div>
 
-      {/* Bot Protection Section - FIXED CHECKBOX */}
+      {/* Bot Protection Section - ENHANCED WITH DYNAMIC CALCULATION */}
       <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Zap className="w-6 h-6 text-cyan-400" />
@@ -1644,7 +1869,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 id="enableFirstBuy"
                 name="enableFirstBuy"
                 checked={projectData.enableFirstBuy}
-                onChange={handleInputChange} // This now works correctly
+                onChange={handleInputChange}
                 className="sr-only"
                 disabled={isLoading}
               />
@@ -1686,6 +1911,27 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
               exit={{ opacity: 0, height: 0 }}
               className="space-y-4"
             >
+              {/* Token Purchase Calculator */}
+              {projectData.firstBuyAmountSol > 0 && (
+                <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-blue-300 mb-2">📊 Purchase Calculation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-400">Expected tokens:</span>
+                      <div className="text-blue-300 font-mono">{formatNumber(expectedTokens)}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Min tokens (95%):</span>
+                      <div className="text-green-300 font-mono">{formatNumber(suggestedMinimum)}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">% of supply:</span>
+                      <div className="text-cyan-300 font-mono">{((expectedTokens / projectData.totalTokenSupply) * 100).toFixed(3)}%</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2">
                 <div>
                   <label className="block text-gray-300 text-sm font-medium mb-2">
@@ -1711,19 +1957,39 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 <div>
                   <label className="block text-gray-300 text-sm font-medium mb-2">
                     Minimum Tokens Expected
+                    <span className="ml-2 px-1 py-0.5 bg-green-600/20 text-green-400 text-xs rounded">AUTO</span>
                   </label>
-                  <input
-                    type="number"
-                    name="minimumTokensOut"
-                    value={projectData.minimumTokensOut}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                    min="1"
-                    disabled={isLoading}
-                    required={projectData.enableFirstBuy}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="minimumTokensOut"
+                      value={projectData.minimumTokensOut}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                      min="1"
+                      disabled={isLoading}
+                      required={projectData.enableFirstBuy}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const syntheticEvent = {
+                          target: {
+                            name: 'minimumTokensOut',
+                            value: suggestedMinimum.toString(),
+                            type: 'number'
+                          }
+                        } as React.ChangeEvent<HTMLInputElement>;
+                        onProjectInfoChange(syntheticEvent);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors"
+                      disabled={isLoading}
+                    >
+                      Auto
+                    </button>
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Slippage protection
+                    Slippage protection (suggested: {formatNumber(suggestedMinimum)})
                   </div>
                 </div>
               </div>
@@ -1762,6 +2028,9 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
               disabled={isLoading}
               min="1"
             />
+            <div className="text-xs text-gray-500 mt-1">
+              {formatNumber(projectData.totalTokenSupply)} tokens total
+            </div>
           </div>
 
           <div>
@@ -1808,7 +2077,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
 
       {/* Launch Button */}
       <button
-        onClick={onLaunchToken}
+        onClick={handleLaunchClick}
         className="w-full bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage}
       >
@@ -1825,7 +2094,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         ) : projectData.enableFirstBuy ? (
           <div className="flex items-center justify-center gap-2">
             <Rocket className="w-5 h-5" />
-            <span>Launch Token with First Buy ({projectData.firstBuyAmountSol} SOL)</span>
+            <span>Launch Token with First Buy ({projectData.firstBuyAmountSol} SOL → ~{formatNumber(expectedTokens)} tokens)</span>
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2">
@@ -1835,5 +2104,6 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
         )}
       </button>
     </motion.div>
+    </>
   );
 };
