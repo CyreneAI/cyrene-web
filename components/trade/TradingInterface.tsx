@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import { Loader2, ExternalLink } from 'lucide-react'
 import { useAppKitProvider } from '@reown/appkit/react'
-import { PublicKey, Connection } from '@solana/web3.js'
-import { DynamicBondingCurveClient } from '@meteora-ag/dynamic-bonding-curve-sdk'
-import { BN } from 'bn.js'
+import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js'
 import axios from 'axios'
 import { toast } from 'sonner'
 import type { Provider } from "@reown/appkit-adapter-solana/react"
+import { initializeSDK, getQuotes, createTransaction, getNextTxn, checkStatus, Quote } from '@blockend/compass-sdk'
 
 // Types
 interface TokenData {
@@ -28,15 +27,23 @@ interface TradingInterfaceProps {
   onSell?: (amount: number) => void
 }
 
-interface CustomPoolQuote {
-  amountOut: string
-  minimumAmountOut: string
-  tradingFee: string
-  protocolFee: string
-}
+// Using Quote type from SDK
 
 // Constants
 const SOL_USDC_PAIR_ADDRESS = '58oQChx4yWmvKdwLLZzBi4ChoCc2fqbAaGv_2aK_A8p'
+const SOL_NATIVE_ADDRESS = 'So11111111111111111111111111111111111111112'
+
+// Initialize SDK once
+let sdkInitialized = false
+const initializeCompassSDK = () => {
+  if (!sdkInitialized && process.env.NEXT_PUBLIC_BLOCKEND_API_KEY) {
+    initializeSDK({
+      apiKey: process.env.NEXT_PUBLIC_BLOCKEND_API_KEY,
+      integratorId: process.env.NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID || 'default',
+    })
+    sdkInitialized = true
+  }
+}
 
 const TradingInterface: React.FC<TradingInterfaceProps> = ({
   tokenData,
@@ -55,7 +62,13 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const [txStatus, setTxStatus] = useState<string>('')
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const [solPrice, setSolPrice] = useState<number>(0)
-  const [customPoolQuote, setCustomPoolQuote] = useState<CustomPoolQuote | null>(null)
+  const [compassQuote, setCompassQuote] = useState<Quote | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Initialize SDK on mount
+  useEffect(() => {
+    initializeCompassSDK()
+  }, [])
 
   // Get Solana connection
   const getSolanaConnection = async (): Promise<Connection> => {
@@ -126,91 +139,171 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     setSolAmount(calculateSolFromUsd(value))
   }
 
-  // Get quote from Meteora SDK (for active bonding curves)
-  const getCustomPoolQuote = React.useCallback(async () => {
-    if (!tokenData.poolAddress || tokenData.tradeStatus !== 'active') return
+  // Get quote using Blockend Compass SDK
+  const getCompassQuote = React.useCallback(async (walletAddress?: string) => {
+    if (!tokenData.address || tokenData.tradeStatus !== 'active') return
 
     try {
-      const amountInLamports = parseFloat(solAmount) * 1e9
-      if (isNaN(amountInLamports) || amountInLamports <= 0) {
-        setCustomPoolQuote(null)
+      const amountInSol = parseFloat(solAmount)
+      if (isNaN(amountInSol) || amountInSol <= 0) {
+        setCompassQuote(null)
         return
       }
 
       setLoading(true)
-      const connection = await getSolanaConnection()
-      const client = new DynamicBondingCurveClient(connection, "confirmed")
-      const poolPublicKey = new PublicKey(tokenData.poolAddress)
+      setError(null)
       
-      const virtualPool = await client.state.getPool(poolPublicKey)
-      if (!virtualPool) throw new Error("Pool not found!")
+      // Calculate input amount in smallest unit (lamports for SOL)
+      const inputAmount = (amountInSol * 1e9).toString()
       
-      const config = await client.state.getPoolConfig(virtualPool.config)
-      const slot = await connection.getSlot()
-      const blockTime = await connection.getBlockTime(slot)
-      const currentPoint = new BN(blockTime || 0)
-      
-      const quote = await client.pool.swapQuote({
-        virtualPool,
-        config,
-        swapBaseForQuote: false,
-        amountIn: new BN(amountInLamports),
-        slippageBps: Math.floor(slippage * 100),
-        hasReferral: false,
-        currentPoint,
+      const quotes = await getQuotes({
+        fromChainId: 'sol',
+        fromAssetAddress: SOL_NATIVE_ADDRESS,
+        toChainId: 'sol',
+        toAssetAddress: tokenData.address,
+        inputAmount: inputAmount, // Amount in lamports
+        inputAmountDisplay: solAmount,
+        userWalletAddress: walletAddress || '11111111111111111111111111111111',
+        recipient: walletAddress || '11111111111111111111111111111111',
+        slippage: Math.floor(slippage * 100), // Convert to basis points
+        sortBy: 'output', // Sort by best output amount
       })
-      
-      setCustomPoolQuote({
-        amountOut: quote.amountOut.toString(),
-        minimumAmountOut: quote.minimumAmountOut.toString(),
-        tradingFee: quote.fee.trading.toString(),
-        protocolFee: quote.fee.protocol.toString(),
-      })
+
+      if (quotes?.data?.quotes && quotes.data.quotes.length > 0) {
+        // Get the best quote (first one is usually recommended)
+        const bestQuote = quotes.data.quotes[0]
+        setCompassQuote(bestQuote)
+      } else {
+        setError('No routes found for this swap')
+        setCompassQuote(null)
+      }
     } catch (error) {
-      console.error('Error getting custom pool quote:', error)
-      setCustomPoolQuote(null)
+      console.error('Error getting Compass quote:', error)
+      setCompassQuote(null)
+      setError(error instanceof Error ? error.message : "Failed to get quote")
       toast.error(error instanceof Error ? error.message : "Failed to get quote.")
     } finally {
       setLoading(false)
     }
-  }, [solAmount, slippage, tokenData.poolAddress, tokenData.tradeStatus])
+  }, [solAmount, slippage, tokenData.address, tokenData.tradeStatus])
 
-  // Execute swap transaction (for active bonding curves)
-  const executeCustomPoolSwap = async () => {
-    if (!tokenData.poolAddress || !isConnected || tokenData.tradeStatus !== 'active') {
+  // Execute swap using Blockend Compass SDK (manual flow)
+  const executeCompassSwap = async () => {
+    if (!compassQuote || !isConnected || tokenData.tradeStatus !== 'active') {
       toast.error('Missing required data for swap')
       return
     }
 
+    if (!solanaWalletProvider?.publicKey) {
+      toast.error('Wallet not connected')
+      return
+    }
+
     try {
-      setTxStatus('Preparing swap...')
       setLoading(true)
-      
-      const amountInLamports = parseFloat(solAmount) * 1e9
-      if (isNaN(amountInLamports) || amountInLamports <= 0) throw new Error('Invalid amount')
-      
-      const connection = await getSolanaConnection()
-      const client = new DynamicBondingCurveClient(connection, "confirmed")
-      const poolPublicKey = new PublicKey(tokenData.poolAddress)
-      
+      setError(null)
       setTxStatus('Creating transaction...')
-      // Note: This would need the actual user's wallet address
-      // const userAddress = new PublicKey(address) // Get from wallet
-      
-      // For now, we'll just show success without actually executing
-      setTxStatus('Transaction would be executed here...')
-      
-      setTimeout(() => {
-        toast.success('Swap would be successful!')
-        onBuy?.(parseFloat(solAmount))
-        setTxStatus('')
-        setLoading(false)
-      }, 2000)
-      
+
+      // Step 1: Create transaction
+      const txResponse = await createTransaction({
+        routeId: compassQuote.routeId,
+      })
+
+      if (!txResponse?.data?.steps || txResponse.data.steps.length === 0) {
+        throw new Error('No transaction steps found')
+      }
+
+      const connection = await getSolanaConnection()
+
+      // Step 2: Execute each step
+      for (const step of txResponse.data.steps) {
+        setTxStatus(`Executing ${step.stepType} transaction...`)
+
+        // Get transaction data for this step
+        const nextTxResponse = await getNextTxn({
+          routeId: compassQuote.routeId,
+          stepId: step.stepId,
+        })
+
+        if (!nextTxResponse?.data?.txnData?.txnSol?.data) {
+          throw new Error('No transaction data found')
+        }
+
+        // Deserialize and sign transaction
+        const txnBuffer = Buffer.from(nextTxResponse.data.txnData.txnSol.data, 'base64')
+        const transaction = VersionedTransaction.deserialize(txnBuffer)
+
+        setTxStatus('Please approve transaction in wallet...')
+        
+        // Sign and send transaction - returns signature as string
+        const signature = await solanaWalletProvider.signAndSendTransaction(transaction)
+        console.log('Transaction signature:', signature)
+
+        setTxStatus('Confirming transaction...')
+
+        // Wait for confirmation
+        await connection.confirmTransaction(signature, 'confirmed')
+
+        // Step 3: Check status
+        let currentStatus = 'in-progress'
+        let attempts = 0
+        const maxAttempts = 30
+
+        while (currentStatus === 'in-progress' && attempts < maxAttempts) {
+          try {
+            const statusResponse = await checkStatus({
+              routeId: compassQuote.routeId,
+              stepId: step.stepId,
+              txnHash: signature,
+            })
+
+            if (statusResponse?.data?.status) {
+              currentStatus = statusResponse.data.status
+
+              if (currentStatus === 'success') {
+                setTxStatus('Transaction successful!')
+                toast.success('Swap successful!')
+                onBuy?.(parseFloat(solAmount))
+                
+                // Refresh quote after successful swap
+                setTimeout(() => {
+                  if (solanaWalletProvider?.publicKey) {
+                    getCompassQuote(solanaWalletProvider.publicKey.toString())
+                  }
+                }, 1000)
+                break
+              } else if (currentStatus === 'failed') {
+                throw new Error('Transaction failed on blockchain')
+              } else if (currentStatus === 'partial-success') {
+                toast.warning('Swap partially successful')
+                break
+              }
+            }
+          } catch (statusError) {
+            console.log('Status check attempt failed, retrying...', statusError)
+          }
+
+          // Wait 2 seconds before next status check
+          if (currentStatus === 'in-progress') {
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            attempts++
+          }
+        }
+
+        if (attempts >= maxAttempts) {
+          console.warn('Status check timeout - transaction may still succeed')
+          toast.warning('Transaction submitted - check your wallet for confirmation')
+        }
+      }
+
+      setTxStatus('')
+
     } catch (error) {
       console.error('Swap failed:', error)
       toast.error(error instanceof Error ? error.message : 'Swap failed.')
+      setError(error instanceof Error ? error.message : 'Swap failed')
       setTxStatus('')
+    } finally {
       setLoading(false)
     }
   }
@@ -229,11 +322,23 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   }, [fetchSolPrice])
 
   useEffect(() => {
-    if (tokenData.poolAddress && solAmount && tokenData.tradeStatus === 'active') {
-      const debounceTimer = setTimeout(() => getCustomPoolQuote(), 500)
+    if (tokenData.address && solAmount && tokenData.tradeStatus === 'active') {
+      const debounceTimer = setTimeout(() => {
+        const walletAddress = solanaWalletProvider?.publicKey?.toString()
+        getCompassQuote(walletAddress)
+      }, 500)
       return () => clearTimeout(debounceTimer)
     }
-  }, [solAmount, slippage, tokenData.poolAddress, tokenData.tradeStatus, getCustomPoolQuote])
+  }, [solAmount, slippage, tokenData.address, tokenData.tradeStatus, getCompassQuote, solanaWalletProvider])
+
+  // Load SOL balance when wallet connects
+  useEffect(() => {
+    if (isConnected && solanaWalletProvider?.publicKey) {
+      checkSOLBalance(solanaWalletProvider.publicKey.toString())
+        .then(balance => setSolBalance(balance))
+        .catch(error => console.error('Failed to load balance:', error))
+    }
+  }, [isConnected, solanaWalletProvider])
 
   // If token is graduated, show Jupiter link
   if (tokenData.tradeStatus === 'graduated') {
@@ -312,7 +417,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         <div className="flex items-center min-w-0">
           <input
             type="text"
-            value={customPoolQuote ? (parseFloat(customPoolQuote.amountOut) / 1e9).toFixed(4) : '...'}
+            value={compassQuote?.outputAmountDisplay || '...'}
             readOnly
             className="flex-1 min-w-0 truncate bg-transparent text-black text-xl font-medium outline-none"
           />
@@ -320,28 +425,39 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
             <span className="font-medium text-black text-sm">{tokenData.symbol}</span>
           </div>
         </div>
-        {customPoolQuote && (
+        {compassQuote?.providerDetails && (
           <div className="mt-1 text-xs text-black font-medium">
-            Minimum: {(parseFloat(customPoolQuote.minimumAmountOut) / 1e9).toFixed(4)}
+            via {compassQuote.providerDetails.name}
+          </div>
+        )}
+        {compassQuote?.tags?.includes('BEST') && (
+          <div className="mt-1">
+            <span className="text-xs bg-green-500/20 text-green-700 px-2 py-0.5 rounded">
+              Best Rate
+            </span>
           </div>
         )}
       </div>
 
       {/* Trading Fees */}
-      {customPoolQuote && (
+      {compassQuote?.fee && compassQuote.fee.length > 0 && (
         <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2 text-sm mb-4">
-          <div className="flex justify-between">
-            <span className="text-gray-300">Trading Fee:</span>
-            <span className="font-medium text-white">
-              {(parseFloat(customPoolQuote.tradingFee) / 1e9).toFixed(6)} SOL
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-300">Protocol Fee:</span>
-            <span className="font-medium text-white">
-              {(parseFloat(customPoolQuote.protocolFee) / 1e9).toFixed(6)} SOL
-            </span>
-          </div>
+          {compassQuote.fee.map((fee, index) => (
+            <div key={index} className="flex justify-between">
+              <span className="text-gray-300 capitalize">{fee.type} Fee:</span>
+              <span className="font-medium text-white">
+                {(parseFloat(fee.amountInToken) / Math.pow(10, fee.token.decimals)).toFixed(6)} {fee.token.symbol}
+              </span>
+            </div>
+          ))}
+          {compassQuote.estimatedTimeInSeconds && (
+            <div className="flex justify-between pt-2 border-t border-white/10">
+              <span className="text-gray-300">Est. Time:</span>
+              <span className="font-medium text-white">
+                ~{compassQuote.estimatedTimeInSeconds}s
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -353,10 +469,20 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         </div>
       )}
 
-  {/* Action Buttons */}
+      {/* Error Display */}
+      {error && !loading && (
+        <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20 mb-4">
+          <span className="text-red-400 text-sm">{error}</span>
+        </div>
+      )}
+
+      {/* Action Buttons */}
       <div className="flex gap-2">
         <button
-          onClick={getCustomPoolQuote}
+          onClick={() => {
+            const walletAddress = solanaWalletProvider?.publicKey?.toString()
+            getCompassQuote(walletAddress)
+          }}
           disabled={loading}
           className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl disabled:opacity-50 transition-colors text-sm"
         >
@@ -365,8 +491,8 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         
         {isConnected ? (
           <button
-            onClick={executeCustomPoolSwap}
-            disabled={loading || !customPoolQuote}
+            onClick={executeCompassSwap}
+            disabled={loading || !compassQuote || !!error}
             className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm relative overflow-visible"
           >
             {loading ? 'Processing...' : 'Swap'}
@@ -381,12 +507,12 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         )}
       </div>
 
-      {/* Loading overlay (covers the trading card when running swaps/quote fetch) */}
+      {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 bg-black/50 rounded-[30px] z-20 flex items-center justify-center">
           <div className="flex items-center gap-3 bg-white/6 px-5 py-3 rounded-lg">
             <Loader2 className="animate-spin h-5 w-5 text-white" />
-            <div className="text-white text-sm">{txStatus || 'Processing transaction...'}</div>
+            <div className="text-white text-sm">{txStatus || 'Processing...'}</div>
           </div>
         </div>
       )}
