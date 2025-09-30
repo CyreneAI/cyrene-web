@@ -401,7 +401,6 @@ export function useWalletAuth() {
   // Cleanup on disconnection - but be more careful about clearing on refresh
   useEffect(() => {
     if (!isConnected) {
-      console.log('Wallet disconnected, clearing auth cookies');
       // Add a small delay to avoid clearing on page refresh
       const timeoutId = setTimeout(() => {
         ['solana', 'evm'].forEach(chainType => {

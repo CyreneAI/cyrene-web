@@ -268,8 +268,8 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
     if (token.dammPoolAddress) {
       window.open(`https://jup.ag/swap/SOL-${token.contractAddress}`, '_blank');
     } else {
-      // Navigate to explore projects or token details
-      window.location.href = '/explore-projects';
+      // Navigate to individual project preview page
+      window.location.href = `/preview-page?tokenAddress=${token.contractAddress}`;
     }
   };
 
@@ -278,7 +278,8 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
       <motion.div
         whileHover={{ y: -5, scale: 1.02 }}
         transition={{ duration: 0.3 }}
-        className="relative w-[340px] h-[316px] bg-[#000010] rounded-[30px] overflow-hidden mx-auto"
+        onClick={handleActionClick}
+        className="relative w-[340px] h-[316px] bg-[#000010] rounded-[30px] overflow-hidden mx-auto cursor-pointer"
       >
         {/* Token Image Container */}
         <div className="absolute w-[120px] h-[120px] top-4 left-[15px] rounded-[20px] border border-solid border-[#ffffff0d] bg-gradient-to-br from-blue-600/20 to-purple-600/20 overflow-hidden">
@@ -348,17 +349,9 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
           )}
         </p>
 
-        {/* Action Button */}
-        <div className="absolute top-[258px] left-[249px]">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleActionClick}
-            className="inline-flex items-center justify-center gap-[14.95px] px-[22.42px] py-[7.47px] bg-[#00000033] rounded-[37.36px] border-none relative overflow-hidden group"
-            style={{
-              background: 'rgba(0, 0, 0, 0.2)',
-            }}
-          >
+        {/* Action Icon (Visual Indicator) */}
+        <div className="absolute top-[258px] left-[249px] pointer-events-none">
+          <div className="inline-flex items-center justify-center gap-[14.95px] px-[22.42px] py-[7.47px] bg-[#00000033] rounded-[37.36px] border-none relative overflow-hidden group-hover:opacity-80 transition-opacity">
             {/* Gradient Border Effect */}
             <div className="absolute inset-0 p-[0.75px] rounded-[37.36px] bg-gradient-to-r from-[#324172] via-[#36467a] to-[#283061] opacity-60 group-hover:opacity-100 transition-opacity" 
                  style={{
@@ -369,17 +362,14 @@ const TokenCarouselCard: React.FC<TokenCarouselCardProps> = ({ token, fetchToken
             />
             
             {/* Arrow Icon */}
-            <motion.div
-              whileHover={{ x: 2 }}
-              transition={{ duration: 0.2 }}
-            >
+            <div>
               {token.dammPoolAddress ? (
                 <ExternalLink className="relative w-[20.92px] h-[20.92px] aspect-[1] text-[#9daad7] group-hover:text-white transition-colors" />
               ) : (
                 <TrendingUp className="relative w-[20.92px] h-[20.92px] aspect-[1] text-[#9daad7] group-hover:text-white transition-colors" />
               )}
-            </motion.div>
-          </motion.button>
+            </div>
+          </div>
         </div>
 
         {/* Status Badge (Top Right Corner) */}
