@@ -53,6 +53,9 @@ export interface ProjectIdeaDB {
   launched_token_id?: string | null;
   created_at: string;
   updated_at: string;
+  is_verified: boolean;
+  verified_by?: string | null;
+  verified_at?: string | null;
 }
 
 export interface ProjectIdeaData {
@@ -83,6 +86,9 @@ export interface ProjectIdeaData {
   launchedTokenId?: string;
   createdAt?: string;
   updatedAt?: string;
+  isVerified?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
 }
 
 // Updated launched token types with hidden support
@@ -103,6 +109,9 @@ export interface LaunchedTokenDB {
   project_idea_id: string | null;
   created_at: string;
   updated_at: string;
+  is_verified: boolean;
+  verified_by?: string | null;
+  verified_at?: string | null;
 }
 
 export interface LaunchedTokenData {
@@ -118,6 +127,9 @@ export interface LaunchedTokenData {
   isHidden: boolean; // NEW: Hidden status
   launchedAt: number;
   projectIdeaId?: string;
+  isVerified: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
 }
 
 // Updated convert functions for launched tokens with hidden support
@@ -133,7 +145,10 @@ export const dbToFrontend = (dbToken: LaunchedTokenDB): LaunchedTokenData => ({
   tradeStatus: dbToken.trade_status,
   isHidden: dbToken.is_hidden, // NEW
   launchedAt: dbToken.launched_at,
-  projectIdeaId: dbToken.project_idea_id || undefined
+  projectIdeaId: dbToken.project_idea_id || undefined,
+  isVerified: dbToken.is_verified,
+  verifiedBy: dbToken.verified_by || undefined,
+  verifiedAt: dbToken.verified_at || undefined
 });
 
 export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): Omit<LaunchedTokenDB, 'id' | 'created_at' | 'updated_at'> => ({
@@ -149,7 +164,10 @@ export const frontendToDb = (token: LaunchedTokenData, walletAddress: string): O
   trade_status: token.tradeStatus,
   is_hidden: token.isHidden, // NEW
   launched_at: token.launchedAt,
-  project_idea_id: token.projectIdeaId || null
+  project_idea_id: token.projectIdeaId || null,
+  is_verified: token.isVerified,  
+  verified_by: token.verifiedBy || null,
+  verified_at: token.verifiedAt || null
 });
 
 export interface ProjectStreamDB {
@@ -208,7 +226,10 @@ export const projectIdeaDbToFrontend = (dbIdea: ProjectIdeaDB): ProjectIdeaData 
   isLaunched: dbIdea.is_launched,
   launchedTokenId: dbIdea.launched_token_id || undefined,
   createdAt: dbIdea.created_at,
-  updatedAt: dbIdea.updated_at
+  updatedAt: dbIdea.updated_at,
+  isVerified: dbIdea.is_verified,
+  verifiedBy: dbIdea.verified_by || undefined,
+  verifiedAt: dbIdea.verified_at || undefined
 });
 
 export const projectIdeaFrontendToDb = (idea: ProjectIdeaData, walletAddress: string): Omit<ProjectIdeaDB, 'id' | 'created_at' | 'updated_at'> => ({
@@ -236,7 +257,10 @@ export const projectIdeaFrontendToDb = (idea: ProjectIdeaData, walletAddress: st
   minimum_tokens_out: idea.minimumTokensOut,
   trade_status: idea.tradeStatus,
   is_launched: idea.isLaunched,
-  launched_token_id: idea.launchedTokenId || null
+  launched_token_id: idea.launchedTokenId || null,
+  is_verified: idea.isVerified || false,
+  verified_by: idea.verifiedBy || null,
+  verified_at: idea.verifiedAt || null
 });
 
 // Category and Industry types (unchanged)

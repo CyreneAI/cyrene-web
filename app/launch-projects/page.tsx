@@ -693,6 +693,7 @@ export default function LaunchProjectsPage() {
         metadataUri: poolResult.metadataUri,
         tradeStatus: projectData.tradeStatus,
         isHidden: false,
+        isVerified: false,
         launchedAt: Date.now(),
         projectIdeaId: existingIdeaId
       };

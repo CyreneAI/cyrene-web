@@ -11,7 +11,8 @@ import {
   Instagram,
   Twitter,
   Radio,
-  VideoIcon
+  VideoIcon,
+  ShieldCheck
 } from 'lucide-react';
 import { FaXTwitter } from "react-icons/fa6";
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ import StarCanvas from '@/components/StarCanvas';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { ProjectIdeasService } from '@/services/projectIdeasService';
 import { StreamingService } from '@/services/streamingService';
+import { VerificationService } from '@/services/verificationService';
 import { LaunchedTokenData, ProjectIdeaData } from '@/lib/supabase';
 import React from 'react';
 import { useAppKitAccount } from "@reown/appkit/react";
@@ -49,6 +51,13 @@ interface LiveStreamInfo {
   streamKey?: string;
 }
 
+// Verification Badge Component
+const VerifiedBadge = ({ className = "" }: { className?: string }) => (
+  <div className={`flex items-center gap-1 ${className}`} title="Verified by CyreneAI">
+    <ShieldCheck className="w-4 h-4 text-blue-400" />
+  </div>
+);
+
 export default function ExploreProjectsPage() {
   const router = useRouter();
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
@@ -60,8 +69,22 @@ export default function ExploreProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
+  const [isCyreneTeamMember, setIsCyreneTeamMember] = useState(false);
   
-  const { address } = useAppKitAccount();
+  const { address, isConnected } = useAppKitAccount();
+
+  // Check if user is a CyreneAI team member
+  useEffect(() => {
+    const checkTeamMembership = async () => {
+      if (address) {
+        const isMember = await VerificationService.isCyreneAITeamMember(address);
+        setIsCyreneTeamMember(isMember);
+      } else {
+        setIsCyreneTeamMember(false);
+      }
+    };
+    checkTeamMembership();
+  }, [address]);
 
   // Function to fetch metadata from IPFS
   const fetchTokenMetadata = useCallback(async (metadataUri: string): Promise<TokenMetadata | null> => {
@@ -163,7 +186,7 @@ export default function ExploreProjectsPage() {
     return () => clearInterval(interval);
   }, [loadLiveStreams]);
 
-  // Enhanced filtering that prioritizes live streams
+  // Enhanced filtering that prioritizes verified and live streams
   useEffect(() => {
     let filteredTokensResult = launchedTokens;
     let filteredIdeasResult = projectIdeas;
@@ -184,12 +207,16 @@ export default function ExploreProjectsPage() {
       );
     }
 
-    // Sort by live streams first, then by latest
+    // Sort by verified first, then live streams, then by latest
     const sortedTokens = filteredTokensResult.sort((a, b) => {
+      // Verified first
+      if (a.isVerified && !b.isVerified) return -1;
+      if (!a.isVerified && b.isVerified) return 1;
+      
       const aIsLive = isProjectLiveStreaming(a.projectIdeaId || a.contractAddress);
       const bIsLive = isProjectLiveStreaming(b.projectIdeaId || b.contractAddress);
       
-      // Live streams first
+      // Then live streams
       if (aIsLive && !bIsLive) return -1;
       if (!aIsLive && bIsLive) return 1;
       
@@ -198,10 +225,14 @@ export default function ExploreProjectsPage() {
     });
     
     const sortedIdeas = filteredIdeasResult.sort((a, b) => {
+      // Verified first
+      if (a.isVerified && !b.isVerified) return -1;
+      if (!a.isVerified && b.isVerified) return 1;
+      
       const aIsLive = isProjectLiveStreaming(a.id || '');
       const bIsLive = isProjectLiveStreaming(b.id || '');
       
-      // Live streams first
+      // Then live streams
       if (aIsLive && !bIsLive) return -1;
       if (!aIsLive && bIsLive) return 1;
       
@@ -272,6 +303,20 @@ export default function ExploreProjectsPage() {
             >
               Discover projects and tokens at every stage
             </motion.p>
+            
+            {/* Admin badge for CyreneAI team members */}
+            {/* {isCyreneTeamMember && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 border border-purple-500/30 rounded-full text-purple-300 text-sm mb-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>CyreneAI Team - Verification Controls Active</span>
+              </motion.div>
+            )} */}
+            
             {/* Live stream indicator */}
             {liveStreamCount > 0 && (
               <motion.div
@@ -380,6 +425,8 @@ export default function ExploreProjectsPage() {
                             index={index}
                             formatDate={formatDate}
                             streamInfo={getStreamInfo(idea.id || '')}
+                            isCyreneTeamMember={isCyreneTeamMember}
+                            onVerificationChange={() => loadAllData(false)}
                           />
                         ))
                       )}
@@ -432,6 +479,8 @@ export default function ExploreProjectsPage() {
                             formatDate={formatDate}
                             fetchTokenMetadata={fetchTokenMetadata}
                             streamInfo={getStreamInfo(token.projectIdeaId || token.contractAddress)}
+                            isCyreneTeamMember={isCyreneTeamMember}
+                            onVerificationChange={() => loadAllData(false)}
                           />
                         ))
                       )}
@@ -447,17 +496,27 @@ export default function ExploreProjectsPage() {
   );
 }
 
-// Project Idea Card Component - Enhanced with streaming info
+// Project Idea Card Component - Enhanced with verification controls
 interface ProjectIdeaCardProps {
   idea: ProjectIdeaData;
   index: number;
   formatDate: (timestamp: number | string) => string;
   streamInfo: LiveStreamInfo | null;
+  isCyreneTeamMember: boolean;
+  onVerificationChange: () => void;
 }
 
-const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDate, streamInfo }) => {
+const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ 
+  idea, 
+  index, 
+  formatDate, 
+  streamInfo,
+  isCyreneTeamMember,
+  onVerificationChange
+}) => {
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
+  const [isVerifying, setIsVerifying] = useState(false);
   
   const { stats, isLoading: socialLoading } = useSocialInteractions(
     idea.id || '', 
@@ -477,6 +536,29 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleVerificationToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!address || !idea.id) return;
+
+    setIsVerifying(true);
+    try {
+      const result = idea.isVerified 
+        ? await VerificationService.unverifyProjectIdea(idea.id, address)
+        : await VerificationService.verifyProjectIdea(idea.id, address);
+      
+      if (result.success) {
+        toast.success(idea.isVerified ? 'Project unverified' : 'Project verified!');
+        onVerificationChange();
+      } else {
+        toast.error(result.error || 'Failed to update verification');
+      }
+    } catch (error) {
+      toast.error('Failed to update verification');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const isLive = streamInfo?.isLive || false;
   const streamingType = streamInfo?.streamingType;
 
@@ -489,6 +571,8 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
       className={`relative bg-gray-900/80 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/90 transition-all duration-300 group shadow-lg cursor-pointer ${
         isLive 
           ? 'border-green-500/60 ring-1 ring-green-400/20' 
+          : idea.isVerified
+          ? 'border-blue-500/40 ring-1 ring-blue-400/10'
           : 'border-gray-700/50 hover:border-gray-600/60'
       }`}
     >
@@ -525,9 +609,12 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={idea.projectName}>
-            {idea.projectName}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={idea.projectName}>
+              {idea.projectName}
+            </h3>
+            {idea.isVerified && <VerifiedBadge />}
+          </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <span>{idea.projectCategory}</span>
             <span>•</span>
@@ -544,6 +631,27 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Verification button for CyreneAI team members */}
+          {isCyreneTeamMember && (
+            <button
+              onClick={handleVerificationToggle}
+              disabled={isVerifying}
+              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
+                idea.isVerified 
+                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+                  : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
+              }`}
+              title={idea.isVerified ? 'Click to unverify' : 'Click to verify'}
+            >
+              {isVerifying ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-3 h-3" />
+              )}
+              <span>{idea.isVerified ? 'Verified' : 'Verify'}</span>
+            </button>
+          )}
+          
           {idea.githubUrl && (
             <button
               onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
@@ -642,7 +750,7 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
   );
 };
 
-// Token Card Component - Enhanced with streaming info
+// Token Card Component - Enhanced with verification controls
 interface TokenCardProps {
   token: LaunchedTokenData;
   index: number;
@@ -650,6 +758,8 @@ interface TokenCardProps {
   formatDate: (timestamp: number | string) => string;
   fetchTokenMetadata: (metadataUri: string) => Promise<TokenMetadata | null>;
   streamInfo: LiveStreamInfo | null;
+  isCyreneTeamMember: boolean;
+  onVerificationChange: () => void;
 }
 
 const TokenCard: React.FC<TokenCardProps> = React.memo(({ 
@@ -658,7 +768,9 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
   onTradeClick, 
   formatDate, 
   fetchTokenMetadata,
-  streamInfo
+  streamInfo,
+  isCyreneTeamMember,
+  onVerificationChange
 }) => {
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
@@ -666,6 +778,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
   const [imageLoading, setImageLoading] = useState(false);
   const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const projectIdForSocial = token.projectIdeaId || token.contractAddress;
   
@@ -709,6 +822,29 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
     onTradeClick();
   };
 
+  const handleVerificationToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!address) return;
+
+    setIsVerifying(true);
+    try {
+      const result = token.isVerified 
+        ? await VerificationService.unverifyToken(token.contractAddress, address)
+        : await VerificationService.verifyToken(token.contractAddress, address);
+      
+      if (result.success) {
+        toast.success(token.isVerified ? 'Token unverified' : 'Token verified!');
+        onVerificationChange();
+      } else {
+        toast.error(result.error || 'Failed to update verification');
+      }
+    } catch (error) {
+      toast.error('Failed to update verification');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   useEffect(() => {
     const loadTokenImage = async () => {
       if (!token.metadataUri) {
@@ -748,6 +884,8 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       className={`bg-gray-900/90 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/95 transition-all duration-300 group shadow-xl cursor-pointer relative ${
         isLive 
           ? 'border-green-500/60 ring-1 ring-green-400/20' 
+          : token.isVerified
+          ? 'border-blue-500/40 ring-1 ring-blue-400/10'
           : 'border-gray-700/60 hover:border-gray-600/70'
       }`}
     >
@@ -786,9 +924,12 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={token.tokenName}>
-            {token.tokenName}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={token.tokenName}>
+              {token.tokenName}
+            </h3>
+            {token.isVerified && <VerifiedBadge />}
+          </div>
           <div className="flex items-center gap-2 text-xs text-gray-300">
             <span className="font-mono">${token.tokenSymbol}</span>
             <span>•</span>
@@ -812,6 +953,27 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Verification button for CyreneAI team members */}
+          {isCyreneTeamMember && (
+            <button
+              onClick={handleVerificationToggle}
+              disabled={isVerifying}
+              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
+                token.isVerified 
+                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+                  : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
+              }`}
+              title={token.isVerified ? 'Click to unverify' : 'Click to verify'}
+            >
+              {isVerifying ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-3 h-3" />
+              )}
+              <span>{token.isVerified ? 'Verified' : 'Verify'}</span>
+            </button>
+          )}
+          
           <button
             onClick={handleTradeClick}
             className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-blue-500/30"

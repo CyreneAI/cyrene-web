@@ -751,7 +751,7 @@ export default function ProjectPreviewPage() {
       </div>
 
       {/* Leverage Trading Modal */}
-      {/* {showLeverageTrading && launchedToken && (
+      {showLeverageTrading && launchedToken && (
         <LeverageTrading
           tokenAddress={launchedToken.contractAddress}
           tokenSymbol={launchedToken.tokenSymbol}
@@ -760,7 +760,7 @@ export default function ProjectPreviewPage() {
           isConnected={isConnected}
           onConnectWallet={handleConnectWallet}
         />
-      )} */}
+      )}
     </>
   );
 }
