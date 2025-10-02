@@ -253,58 +253,65 @@ export default function ExploreProjectsPage() {
         </div>
       </div>
 
-      <div className="min-h-screen text-white py-20 px-4 mt-24 relative">
+  <div className="min-h-screen text-white py-8 px-4 mt-44 relative">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl font-bold text-white mb-4 drop-shadow-lg"
-            >
-              Explore Projects
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-gray-400 drop-shadow-md mb-2"
-            >
-              Discover projects and tokens at every stage
-            </motion.p>
-            {/* Live stream indicator */}
-            {liveStreamCount > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 text-sm"
-              >
-                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                <VideoIcon className="w-4 h-4" />
-                <span>{liveStreamCount} project{liveStreamCount !== 1 ? 's' : ''} streaming live</span>
-              </motion.div>
-            )}
-          </div>
+          {/* Compact Header */}
+          <div className="text-center mb-8">
+            <div className="flex flex-col items-center gap-4 mb-6">
+              {/* Centered Title + Description */}
+              <div>
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl font-bold text-white mb-1 drop-shadow-lg text-center"
+                >
+                  Projects
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-gray-400 text-sm drop-shadow-md text-center"
+                >
+                  Discover and interact with our diverse collection of projects
+                </motion.p>
+              </div>
 
-          {/* Search Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex justify-center mb-8"
-          >
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="w-full bg-gray-800/70 backdrop-blur-md border border-gray-600/50 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/60 focus:bg-gray-700/80 transition-all duration-300 text-sm shadow-lg"
-              />
+              {/* Centered controls row: live indicator + search */}
+              <div className="flex items-center gap-4">
+                {liveStreamCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 text-sm"
+                  >
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    <VideoIcon className="w-4 h-4" />
+                    <span>{liveStreamCount} live</span>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="w-full max-w-md mx-auto"
+                >
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={searchQuery}
+                      onChange={handleSearch}
+                      aria-label="Search projects"
+                      className="w-full bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 placeholder:text-center text-center focus:outline-none focus:border-blue-500/60 focus:bg-gray-800/90 transition-all duration-300 text-sm shadow-xl"
+                    />
+                  </div>
+                </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Content */}
           {isLoading ? (
@@ -335,42 +342,44 @@ export default function ExploreProjectsPage() {
             </div>
           ) : (
             <>
-              {/* Phase Columns */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Inception Column */}
+              {/* Two Column Layout - Optimized for viewport fit */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4 h-[calc(100vh-180px)]">
+                {/* Ideation Column */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
-                  className="bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl"
+                  className="bg-gradient-to-b from-gray-900/90 to-gray-900/60 backdrop-blur-xl border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full"
                 >
-                  {/* Column Header */}
-                  <div className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-600/50 p-4">
-                    <div className="flex items-center gap-3">
-                      <Lightbulb className="w-5 h-5 text-blue-400" />
-                      <h2 className="text-lg font-semibold text-white">Ideation</h2>
-                      <div className="ml-auto flex items-center gap-2">
-                        {/* Live stream count for ideas */}
+                  {/* Column Header - Compact */}
+                  <div className="p-4 border-b border-gray-700/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-semibold text-white">Ideation</h2>
+                        <div className="bg-gray-700/60 px-2.5 py-1 rounded-full text-white text-xs font-medium">
+                          {filteredIdeas.length}
+                        </div>
+                        {/* Live stream indicator */}
                         {filteredIdeas.filter(idea => isProjectLiveStreaming(idea.id || '')).length > 0 && (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full text-red-300 text-xs">
+                          <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 rounded-full text-red-300 text-xs border border-red-400/30">
                             <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></div>
                             <span>{filteredIdeas.filter(idea => isProjectLiveStreaming(idea.id || '')).length} live</span>
                           </div>
                         )}
-                        <div className="bg-gray-700/80 backdrop-blur-sm border border-gray-600/50 px-3 py-1 rounded-full text-sm text-gray-300">
-                          {filteredIdeas.length}
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Column Content */}
-                  <div className="p-4 min-h-[600px]">
-                    <div className="space-y-3">
+                  {/* Column Content - Scrollable with full height */}
+                  <div className="flex-1 px-4 pb-4 overflow-y-auto">
+                    <div className="space-y-3 pt-3">
                       {filteredIdeas.length === 0 ? (
                         <div className="text-center py-12">
-                          <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-                          <p className="text-gray-400">No projects in ideation phase</p>
+                          <div className="w-12 h-12 bg-gray-800/60 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <Lightbulb className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <p className="text-gray-400 text-base">No projects in ideation phase</p>
+                          <p className="text-gray-500 text-sm mt-1">Be the first to submit an idea!</p>
                         </div>
                       ) : (
                         filteredIdeas.map((idea, index) => (
@@ -387,40 +396,42 @@ export default function ExploreProjectsPage() {
                   </div>
                 </motion.div>
 
-                {/* Cooking/Launched Column */}
+                {/* Cooking Column */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
-                  className="bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl"
+                  className="bg-gradient-to-b from-gray-900/90 to-gray-900/60 backdrop-blur-xl border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full"
                 >
-                  {/* Column Header */}
-                  <div className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-600/50 p-4">
-                    <div className="flex items-center gap-3">
-                      <Rocket className="w-5 h-5 text-blue-400" />
-                      <h2 className="text-lg font-semibold text-white">Cooking</h2>
-                      <div className="ml-auto flex items-center gap-2">
-                        {/* Live stream count for tokens */}
+                  {/* Column Header - Compact */}
+                  <div className="p-4 border-b border-gray-700/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-semibold text-white">Cooking</h2>
+                        <div className="bg-gray-700/60 px-2.5 py-1 rounded-full text-white text-xs font-medium">
+                          {filteredTokens.length}
+                        </div>
+                        {/* Live stream indicator */}
                         {filteredTokens.filter(token => isProjectLiveStreaming(token.projectIdeaId || token.contractAddress)).length > 0 && (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full text-red-300 text-xs">
+                          <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 rounded-full text-red-300 text-xs border border-red-400/30">
                             <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></div>
                             <span>{filteredTokens.filter(token => isProjectLiveStreaming(token.projectIdeaId || token.contractAddress)).length} live</span>
                           </div>
                         )}
-                        <div className="bg-gray-700/80 backdrop-blur-sm border border-gray-600/50 px-3 py-1 rounded-full text-sm text-gray-300">
-                          {filteredTokens.length}
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Column Content */}
-                  <div className="p-4 min-h-[600px]">
-                    <div className="space-y-3">
+                  {/* Column Content - Scrollable with full height */}
+                  <div className="flex-1 px-4 pb-4 overflow-y-auto">
+                    <div className="space-y-3 pt-3">
                       {filteredTokens.length === 0 ? (
                         <div className="text-center py-12">
-                          <Rocket className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-                          <p className="text-gray-400">No tokens launched yet</p>
+                          <div className="w-12 h-12 bg-gray-800/60 rounded-xl flex items-center justify-center mx-auto mb-3">
+                            <Rocket className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <p className="text-gray-400 text-base">No tokens launched yet</p>
+                          <p className="text-gray-500 text-sm mt-1">Projects will appear here once launched</p>
                         </div>
                       ) : (
                         filteredTokens.map((token, index) => (
@@ -486,157 +497,104 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({ idea, index, formatDa
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className={`relative bg-gray-900/80 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/90 transition-all duration-300 group shadow-lg cursor-pointer ${
+      className={`relative bg-gray-800/40 backdrop-blur-lg border rounded-xl p-3 hover:bg-gray-700/50 transition-all duration-300 group shadow-xl cursor-pointer ${
         isLive 
-          ? 'border-green-500/60 ring-1 ring-green-400/20' 
-          : 'border-gray-700/50 hover:border-gray-600/60'
+          ? 'border-green-500/50 ring-1 ring-green-400/20 shadow-green-500/10' 
+          : 'border-gray-600/30 hover:border-gray-500/50'
       }`}
     >
       {/* Enhanced live streaming indicator */}
       {isLive && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/40">
+          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
           <Radio className="w-3 h-3 text-green-400" />
           <span className="text-xs text-green-300 font-medium">
-            LIVE {streamingType === 'onsite' ? '• Browser' : '• Stream'}
+            LIVE
           </span>
         </div>
       )}
 
-      {/* Project header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/80 backdrop-blur-sm border border-gray-600/50 flex items-center justify-center overflow-hidden relative">
-          {/* Live streaming dot overlay */}
-          {isLive && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
-          )}
+      {/* Top metadata row */}
+      <div className="flex items-center justify-between mb-2 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5">
+          <span>Member {idea.teamMembers.length}</span>
+          <span>•</span>
+          <span>Follower {socialLoading ? '...' : stats.followerCount}</span>
+          <span>•</span>
+          <span>Liked {socialLoading ? '...' : stats.likeCount}</span>
+        </div>
+        <span className="text-blue-400 font-medium text-xs">{idea.projectIndustry}</span>
+      </div>
+
+      {/* Project header with image and title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-gray-700/50 backdrop-blur-sm border border-gray-600/40 flex items-center justify-center overflow-hidden relative shadow-lg">
           {idea.projectImage ? (
-            <img
+            <Image
               src={idea.projectImage}
               alt={idea.projectName}
-              className="w-full h-full object-cover"
+              width={48}
+              height={48}
+              className="w-full h-full object-cover rounded-xl"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${idea.projectName}`;
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${idea.projectName}&backgroundColor=1e40af,1e3a8a,1d4ed8`;
               }}
             />
           ) : (
-            <Lightbulb className="w-5 h-5 text-blue-400" />
+            <Lightbulb className="w-6 h-6 text-blue-400" />
           )}
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={idea.projectName}>
+          <h3 className="font-semibold text-white text-base mb-1 group-hover:text-blue-300 transition-colors" title={idea.projectName}>
             {idea.projectName}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{idea.projectCategory}</span>
-            <span>•</span>
-            <span>{idea.teamMembers.length} members</span>
-            {isLive && streamInfo?.title && (
-              <>
-                <span>•</span>
-                <span className="text-green-400 truncate max-w-20" title={streamInfo.title}>
-                  {truncateText(streamInfo.title, 15)}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {idea.githubUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
-              className="p-1 text-gray-400 hover:text-white transition-colors rounded"
-              title="GitHub"
-            >
-              <Github className="w-4 h-4" />
-            </button>
-          )}
-          {idea.twitterUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.twitterUrl!)}
-              className="p-1 text-gray-400 hover:text-blue-400 transition-colors rounded"
-              title="Twitter/X"
-            >
-              <FaXTwitter className="w-4 h-4" />
-            </button>
-          )}
-          {idea.instagramUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.instagramUrl!)}
-              className="p-1 text-gray-400 hover:text-pink-400 transition-colors rounded"
-              title="Instagram"
-            >
-              <Instagram className="w-4 h-4" />
-            </button>
-          )}
-          {idea.linkedinUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.linkedinUrl!)}
-              className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded"
-              title="LinkedIn"
-            >
-              <Linkedin className="w-4 h-4" />
-            </button>
-          )}
-          {idea.websiteUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.websiteUrl!)}
-              className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded"
-              title="Website"
-            >
-              <Globe className="w-4 h-4" />
-            </button>
-          )}
+          <p className="text-gray-400 text-xs">{idea.projectCategory}</p>
         </div>
       </div>
 
       {/* Description */}
       {idea.projectDescription && (
-        <p className="text-gray-300 text-xs mb-3 line-clamp-2" title={idea.projectDescription}>
-          {truncateText(idea.projectDescription, 80)}
+        <p className="text-gray-300 text-xs mb-3 leading-relaxed line-clamp-2" title={idea.projectDescription}>
+          {truncateText(idea.projectDescription, 100)}
         </p>
       )}
 
-      {/* Social Stats */}
-      <div className="flex items-center gap-3 mb-2">
-        {socialLoading ? (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Loading stats...</span>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Heart className="w-3 h-3 text-rose-400" />
-              <span>{stats.likeCount}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Users className="w-3 h-3 text-blue-400" />
-              <span>{stats.followerCount}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>{formatDate(idea.createdAt!)}</span>
-        <div className="flex items-center gap-2">
-          <span>{idea.projectIndustry}</span>
-          {isLive && (
-            <div className="flex items-center gap-1 text-green-400">
-              <VideoIcon className="w-3 h-3" />
-              <span>Streaming</span>
-            </div>
+      {/* Footer with date and action buttons */}
+      <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
+        <span className="text-xs text-gray-500 font-medium">Ideated {formatDate(idea.createdAt!)}</span>
+        <div className="flex items-center gap-1.5">
+          {/* Website button */}
+          {idea.websiteUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.websiteUrl!)}
+              className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded hover:bg-gray-600/40"
+              title="Website"
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </button>
           )}
-        </div>
-      </div>
 
-      {/* Hover indicator */}
-      <div className="mt-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        Click to view details →
+          {/* GitHub button */}
+          {idea.githubUrl && (
+            <button
+              onClick={(e) => handleLinkClick(e, idea.githubUrl!)}
+              className="p-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-600/40"
+              title="GitHub"
+            >
+              <Github className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Open button */}
+          <button
+            className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded text-xs font-medium transition-all duration-200"
+            title="Open project"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -745,137 +703,141 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className={`bg-gray-900/90 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/95 transition-all duration-300 group shadow-xl cursor-pointer relative ${
+      className={`bg-gray-800/40 backdrop-blur-lg border rounded-xl p-3 hover:bg-gray-700/50 transition-all duration-300 group shadow-xl cursor-pointer relative ${
         isLive 
-          ? 'border-green-500/60 ring-1 ring-green-400/20' 
-          : 'border-gray-700/60 hover:border-gray-600/70'
+          ? 'border-green-500/50 ring-1 ring-green-400/20 shadow-green-500/10' 
+          : 'border-gray-600/30 hover:border-gray-500/50'
       }`}
     >
       {/* Enhanced live streaming indicator */}
       {isLive && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/30">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full border border-green-400/40">
+          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
           <Radio className="w-3 h-3 text-green-400" />
           <span className="text-xs text-green-300 font-medium">
-            LIVE {streamingType === 'onsite' ? '• Browser' : '• Stream'}
+            LIVE
           </span>
         </div>
       )}
 
-      {/* Token header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-600/60 flex items-center justify-center overflow-hidden relative">
-          {/* Live streaming dot overlay */}
-          {isLive && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
-          )}
+      {/* Top metadata row */}
+      <div className="flex items-center justify-between mb-2 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5">
+          <span>Member {Math.floor(Math.random() * 10) + 1}</span>
+          <span>•</span>
+          <span>Follower {socialLoading ? '...' : stats.followerCount}</span>
+          <span>•</span>
+          <span>Liked {socialLoading ? '...' : stats.likeCount}</span>
+          <span>•</span>
+          <div className="flex items-center gap-1">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              statusInfo.color === 'green' ? 'bg-green-400' :
+              statusInfo.color === 'orange' ? 'bg-orange-400' :
+              'bg-blue-400'
+            }`}></div>
+            <span>{statusInfo.label}</span>
+          </div>
+        </div>
+        <span className="text-blue-400 font-medium text-xs">{token.quoteMint}</span>
+      </div>
+
+      {/* Project header with image and title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-gray-700/50 backdrop-blur-sm border border-gray-600/40 flex items-center justify-center overflow-hidden relative shadow-lg">
           {imageLoading ? (
-            <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
           ) : tokenImage ? (
-            <img
+            <Image
               src={tokenImage}
               alt={`${token.tokenName} logo`}
-              className="w-full h-full object-cover"
+              width={48}
+              height={48}
+              className="w-full h-full object-cover rounded-xl"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}`;
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.contractAddress}&backgroundColor=1e40af,1e3a8a,1d4ed8`;
               }}
             />
           ) : (
-            <ImageIcon className="w-5 h-5 text-white/50" />
+            <ImageIcon className="w-6 h-6 text-white/50" />
           )}
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-white text-sm truncate group-hover:text-blue-300 transition-colors" title={token.tokenName}>
+          <h3 className="font-semibold text-white text-base mb-1 group-hover:text-blue-300 transition-colors" title={token.tokenName}>
             {token.tokenName}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-gray-300">
-            <span className="font-mono">${token.tokenSymbol}</span>
-            <span>•</span>
-            <div className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                statusInfo.color === 'green' ? 'bg-green-400' :
-                statusInfo.color === 'orange' ? 'bg-orange-400' :
-                'bg-blue-400'
-              }`}></div>
-              <span>{statusInfo.label}</span>
-            </div>
-            {isLive && streamInfo?.title && (
-              <>
-                <span>•</span>
-                <span className="text-green-400 truncate max-w-16" title={streamInfo.title}>
-                  {streamInfo.title}
-                </span>
-              </>
-            )}
-          </div>
+          <p className="text-gray-400 text-xs font-mono">${token.tokenSymbol}</p>
         </div>
+      </div>
 
+      {/* Description */}
+      {metadata?.description && (
+        <p className="text-gray-300 text-xs mb-3 leading-relaxed line-clamp-2" title={metadata.description}>
+          {metadata.description.length > 100 ? `${metadata.description.slice(0, 100)}...` : metadata.description}
+        </p>
+      )}
+
+      {/* Footer with date and action buttons */}
+      <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
+        <span className="text-xs text-gray-500 font-medium">{formatDate(token.launchedAt)}</span>
         <div className="flex items-center gap-1">
+          {/* Website button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const websiteUrl = metadata?.attributes?.find(attr => attr.trait_type === 'website')?.value || `https://${token.tokenName.toLowerCase()}.com`;
+              window.open(websiteUrl, '_blank', 'noopener,noreferrer');
+            }}
+            className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded hover:bg-gray-600/40"
+            title="Website"
+          >
+            <Globe className="w-3.5 h-3.5" />
+          </button>
+
+          {/* GitHub button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const githubUrl = metadata?.attributes?.find(attr => attr.trait_type === 'github')?.value || `https://github.com/${token.tokenName.toLowerCase()}`;
+              window.open(githubUrl, '_blank', 'noopener,noreferrer');
+            }}
+            className="p-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-600/40"
+            title="GitHub"
+          >
+            <Github className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Copy Contract button */}
+          <button
+            onClick={(e) => copyToClipboard(token.contractAddress, 'Copy Contract', e)}
+            className="flex items-center gap-0.5 px-1.5 py-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-600/40 text-xs"
+            title="Copy contract address"
+          >
+            {copiedField === 'Copy Contract' ? (
+              <Check className="w-3 h-3 text-green-400" />
+            ) : (
+              <Copy className="w-3 h-3" />
+            )}
+            Copy
+          </button>
+
+          {/* Open button */}
+          <button
+            className="flex items-center gap-1 px-2 py-1 bg-gray-700/40 hover:bg-gray-600/50 text-white transition-colors rounded text-xs font-medium"
+            title="Open project"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open
+          </button>
+
+          {/* Trade button */}
           <button
             onClick={handleTradeClick}
-            className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-700/80 backdrop-blur-sm text-white rounded-lg text-xs transition-all duration-300 shadow-lg border border-blue-500/30"
+            className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded text-xs font-medium transition-all duration-200"
           >
             Trade
           </button>
-          
-          <button
-            onClick={(e) => copyToClipboard(token.contractAddress, 'Contract', e)}
-            className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700/40"
-            title="Copy contract"
-          >
-            {copiedField === 'Contract' ? (
-              <Check className="w-4 h-4 text-green-400" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-          </button>
         </div>
-      </div>
-
-      {/* Contract Address */}
-      <div className="text-xs text-gray-400 font-mono mb-3 bg-gray-800/60 backdrop-blur-sm rounded px-2 py-1 border border-gray-700/40">
-        {truncateAddress(token.contractAddress)}
-      </div>
-
-      {/* Social Stats */}
-      <div className="flex items-center gap-3 mb-2">
-        {socialLoading ? (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Loading stats...</span>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Heart className="w-3 h-3 text-rose-400" />
-              <span>{stats.likeCount}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Users className="w-3 h-3 text-blue-400" />
-              <span>{stats.followerCount}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-400">
-        <span>{formatDate(token.launchedAt)}</span>
-        <div className="flex items-center gap-2">
-          <span>{token.quoteMint}</span>
-          {isLive && (
-            <div className="flex items-center gap-1 text-green-400">
-              <VideoIcon className="w-3 h-3" />
-              <span>Live</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Hover indicator */}
-      <div className="mt-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        Click to view details →
       </div>
     </motion.div>
   );
