@@ -4,20 +4,35 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
-import StarCanvas from "@/components/StarCanvas";
-import { Github, Globe, FileText, Users, Lightbulb, Rocket, Wallet, Linkedin, Twitter, Github as GithubIcon, ArrowLeft, Heart, UserPlus, Loader2, AlertCircle, Instagram, ChartArea } from "lucide-react";
+import { 
+  Github, 
+  Globe, 
+  FileText, 
+  Users, 
+  Lightbulb, 
+  Rocket, 
+  Wallet, 
+  Linkedin, 
+  ArrowLeft, 
+  Heart, 
+  UserPlus, 
+  Loader2, 
+  AlertCircle, 
+  Instagram, 
+  ChartArea,
+  TrendingUp 
+} from "lucide-react";
 import { ProjectIdeasService } from '@/services/projectIdeasService';
 import { LaunchedTokensService } from '@/services/launchedTokensService';
 import { ProjectIdeaData, LaunchedTokenData } from '@/lib/supabase';
 import { useSocialInteractions } from '@/hooks/useSocialInteractions';
 import { useAppKitAccount } from "@reown/appkit/react";
+import { useAppKit } from "@reown/appkit/react";
 import { toast } from 'sonner';
 import { FaXTwitter } from "react-icons/fa6";
-
 import { useProjectStream } from '@/hooks/useProjectStream';
 import LiveStreamPlayer from "@/components/LiveStreamPlayer";
-
-
+import LeverageTrading from "@/components/LeverageTrading";
 
 interface TokenMetadata {
   name: string;
@@ -34,6 +49,7 @@ export default function ProjectPreviewPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { address, isConnected } = useAppKitAccount();
+  const { open } = useAppKit();
   const ideaId = searchParams.get('ideaId');
   const tokenAddress = searchParams.get('tokenAddress');
   
@@ -45,12 +61,15 @@ export default function ProjectPreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
   
+  // Leverage trading modal state
+  const [showLeverageTrading, setShowLeverageTrading] = useState(false);
+  
   // One-liner states
   const [oneLiner, setOneLiner] = useState<string>('');
   const [isGeneratingOneLiner, setIsGeneratingOneLiner] = useState(false);
   const [oneLinerError, setOneLinerError] = useState<string | null>(null);
 
-  // Use streaming hook - after currentProjectId is declared
+  // Use streaming hook
   const { streamSource, isLive } = useProjectStream(currentProjectId);
 
   // Social interactions hook
@@ -62,6 +81,13 @@ export default function ProjectPreviewPage() {
     toggleLike,
     toggleFollow
   } = useSocialInteractions(currentProjectId || '', isConnected ? address : undefined);
+
+  // Handle wallet connection
+  const handleConnectWallet = () => {
+    if (!isConnected) {
+      open();
+    }
+  };
 
   // Generate one-liner from description
   const generateOneLiner = async (description: string) => {
@@ -95,7 +121,6 @@ export default function ProjectPreviewPage() {
     } catch (error) {
       console.error('Error generating one-liner:', error);
       setOneLinerError('Failed to generate tagline');
-      // Fallback to original description
       setOneLiner(description);
     } finally {
       setIsGeneratingOneLiner(false);
@@ -126,7 +151,6 @@ export default function ProjectPreviewPage() {
       
       try {
         if (ideaId) {
-          // Load project idea using public access method
           const idea = await ProjectIdeasService.getPublicProjectIdeaById(ideaId);
           
           if (idea) {
@@ -136,7 +160,6 @@ export default function ProjectPreviewPage() {
             setError('Project idea not found');
           }
         } else if (tokenAddress) {
-          // Load launched token with project idea details
           const result = await LaunchedTokensService.getPublicTokenWithProjectIdea(tokenAddress);
           
           if (result) {
@@ -145,11 +168,9 @@ export default function ProjectPreviewPage() {
               setProjectIdea(result.projectIdea);
               setCurrentProjectId(result.projectIdea.id!);
             } else {
-              // Use token contract address as project ID if no project idea
               setCurrentProjectId(result.token.contractAddress);
             }
             
-            // Load token metadata if available
             if (result.token.metadataUri) {
               const metadata = await fetchTokenMetadata(result.token.metadataUri);
               setTokenMetadata(metadata);
@@ -435,22 +456,31 @@ export default function ProjectPreviewPage() {
                   </a>
                 )}
                 {launchedToken && (
-                  <button 
-                    onClick={() => {
-                      const params = new URLSearchParams({
-                        tokenAddress: launchedToken.contractAddress,
-                        tokenName: launchedToken.tokenName,
-                        tokenSymbol: launchedToken.tokenSymbol,
-                        poolAddress: launchedToken.dbcPoolAddress || '',
-                        metadataUri: launchedToken.metadataUri || '',
-                        tradeStatus: launchedToken.tradeStatus ? 'active' : 'graduated'
-                      });
-                      router.push(`/trade?${params.toString()}`);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 text-white px-5 py-2 hover:bg-blue-700 transition"
-                  >
-                    <ChartArea className="w-4 h-4" /> Trade
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          tokenAddress: launchedToken.contractAddress,
+                          tokenName: launchedToken.tokenName,
+                          tokenSymbol: launchedToken.tokenSymbol,
+                          poolAddress: launchedToken.dbcPoolAddress || '',
+                          metadataUri: launchedToken.metadataUri || '',
+                          tradeStatus: launchedToken.tradeStatus ? 'active' : 'graduated'
+                        });
+                        router.push(`/trade?${params.toString()}`);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 text-white px-5 py-2 hover:bg-blue-700 transition"
+                    >
+                      <ChartArea className="w-4 h-4" /> Trade
+                    </button>
+                    
+                    <button 
+                      onClick={() => setShowLeverageTrading(true)}
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-5 py-2 hover:opacity-90 transition"
+                    >
+                      <TrendingUp className="w-4 h-4" /> Leverage Trade
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -481,7 +511,6 @@ export default function ProjectPreviewPage() {
             {/* Right: Hero image / poster */}
             <div className="lg:col-span-1">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-gray-600/50">
-                {/* Blurred background */}
                 <div
                   className="absolute inset-0"
                   style={{
@@ -492,8 +521,6 @@ export default function ProjectPreviewPage() {
                     transform: "scale(1.2)",
                   }}
                 />
-
-                {/* Foreground crisp image */}
                 <Image
                   src={projectData.image || "/Cyrene cover_85 2.png"}
                   alt="Project cover"
@@ -507,7 +534,7 @@ export default function ProjectPreviewPage() {
             </div>
           </div>
 
-          {/* Livestream Section - Only show if stream exists or is live */}
+          {/* Livestream Section */}
           {(streamSource || isLive) && (
             <LiveStreamPlayer
               source={streamSource}
@@ -658,7 +685,7 @@ export default function ProjectPreviewPage() {
                           )}
                           {member.githubUrl && (
                             <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300" aria-label="GitHub">
-                              <GithubIcon className="w-4 h-4" />
+                              <Github className="w-4 h-4" />
                             </a>
                           )}
                         </div>
@@ -722,6 +749,18 @@ export default function ProjectPreviewPage() {
           </div>
         </div>
       </div>
+
+      {/* Leverage Trading Modal */}
+      {/* {showLeverageTrading && launchedToken && (
+        <LeverageTrading
+          tokenAddress={launchedToken.contractAddress}
+          tokenSymbol={launchedToken.tokenSymbol}
+          tokenName={launchedToken.tokenName}
+          onClose={() => setShowLeverageTrading(false)}
+          isConnected={isConnected}
+          onConnectWallet={handleConnectWallet}
+        />
+      )} */}
     </>
   );
 }

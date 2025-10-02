@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Loader2, ExternalLink } from 'lucide-react'
+import { Loader2, ExternalLink, ChevronDown, Search } from 'lucide-react'
 import { useAppKitProvider } from '@reown/appkit/react'
 import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js'
 import axios from 'axios'
@@ -27,11 +27,23 @@ interface TradingInterfaceProps {
   onSell?: (amount: number) => void
 }
 
-// Using Quote type from SDK
+interface Chain {
+  chainId: string
+  name: string
+  image: string
+  networkType: 'evm' | 'sol' | 'cosmos'
+  symbol: string
+}
 
-// Constants
-const SOL_USDC_PAIR_ADDRESS = '58oQChx4yWmvKdwLLZzBi4ChoCc2fqbAaGv_2aK_A8p'
-const SOL_NATIVE_ADDRESS = 'So11111111111111111111111111111111111111112'
+interface Token {
+  address: string
+  symbol: string
+  name: string
+  decimals: number
+  chainId: string
+  image?: string
+  isNative: boolean
+}
 
 // Initialize SDK once
 let sdkInitialized = false
@@ -55,20 +67,163 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const { walletProvider: solanaWalletProvider } = useAppKitProvider<Provider>('solana')
   
   // Trading state
-  const [solAmount, setSolAmount] = useState<string>('0.1')
-  const [usdAmount, setUsdAmount] = useState<string>('')
+  const [fromAmount, setFromAmount] = useState<string>('0.1')
   const [slippage, setSlippage] = useState<number>(0.5)
   const [loading, setLoading] = useState<boolean>(false)
   const [txStatus, setTxStatus] = useState<string>('')
-  const [solBalance, setSolBalance] = useState<number | null>(null)
-  const [solPrice, setSolPrice] = useState<number>(0)
   const [compassQuote, setCompassQuote] = useState<Quote | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Chain and token selection
+  const [chains, setChains] = useState<Chain[]>([])
+  const [tokens, setTokens] = useState<Token[]>([])
+  const [selectedChain, setSelectedChain] = useState<Chain | null>(null)
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null)
+  const [showChainSelector, setShowChainSelector] = useState(false)
+  const [showTokenSelector, setShowTokenSelector] = useState(false)
+  const [tokenSearchQuery, setTokenSearchQuery] = useState('')
+
+  // Fallback chains if API fails
+  const fallbackChains: Chain[] = [
+    { chainId: 'sol', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png', networkType: 'sol', symbol: 'sol' },
+    { chainId: '1', name: 'Ethereum', image: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/ethereum.svg', networkType: 'evm', symbol: 'eth' },
+    { chainId: '56', name: 'BSC', image: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/bsc.svg', networkType: 'evm', symbol: 'bsc' },
+    { chainId: '137', name: 'Polygon', image: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/polygon.svg', networkType: 'evm', symbol: 'pol' },
+    { chainId: '42161', name: 'Arbitrum', image: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/arbitrum.svg', networkType: 'evm', symbol: 'arb' },
+    { chainId: '10', name: 'Optimism', image: 'https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/chains/optimism.svg', networkType: 'evm', symbol: 'opt' },
+  ]
 
   // Initialize SDK on mount
   useEffect(() => {
     initializeCompassSDK()
+    fetchChains()
   }, [])
+
+  // Fetch available chains
+  const fetchChains = async () => {
+    try {
+      console.log('Fetching chains...')
+      const response = await axios.get('https://api2.blockend.com/v1/chains', {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_BLOCKEND_API_KEY || '',
+          'x-integrator-id': process.env.NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID || 'default'
+        }
+      })
+      
+      console.log('Chains response:', response.data)
+      
+      // API returns: { status: "success", data: [ {chainId, name, image, ...}, ... ] }
+      if (response.data?.status === 'success' && response.data?.data && Array.isArray(response.data.data)) {
+        setChains(response.data.data)
+        // Default to Solana
+        const solanaChain = response.data.data.find((c: Chain) => c.chainId === 'sol')
+        if (solanaChain) {
+          setSelectedChain(solanaChain)
+        } else if (response.data.data.length > 0) {
+          setSelectedChain(response.data.data[0])
+        }
+      } else {
+        console.error('Unexpected chains response format:', response.data)
+        // Use fallback chains
+        console.log('Using fallback chains')
+        setChains(fallbackChains)
+        setSelectedChain(fallbackChains[0])
+      }
+    } catch (error: any) {
+      console.error('Error fetching chains:', error.response?.data || error.message)
+      // Use fallback chains on error
+      console.log('Using fallback chains due to error')
+      setChains(fallbackChains)
+      setSelectedChain(fallbackChains[0])
+      toast.error('Using fallback chain list - some chains may be unavailable')
+    }
+  }
+
+  // Fetch tokens for selected chain
+  const fetchTokens = async (chainId: string) => {
+    try {
+      console.log('Fetching tokens for chain:', chainId)
+      const response = await axios.get(`https://api2.blockend.com/v1/tokens?chainId=${chainId}`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_BLOCKEND_API_KEY || '',
+          'x-integrator-id': process.env.NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID || 'default'
+        }
+      })
+      
+      console.log('Tokens response:', response.data)
+      
+      // API returns: { status: "success", data: { "chainId": [ {token1}, {token2}, ... ] } }
+      if (response.data?.status === 'success' && response.data?.data) {
+        const tokensForChain = response.data.data[chainId]
+        
+        if (tokensForChain && Array.isArray(tokensForChain)) {
+          setTokens(tokensForChain)
+          const nativeToken = tokensForChain.find((t: Token) => t.isNative)
+          if (nativeToken) {
+            setSelectedToken(nativeToken)
+          } else if (tokensForChain.length > 0) {
+            setSelectedToken(tokensForChain[0])
+          }
+        } else {
+          console.error('No tokens found for chain:', chainId)
+          // Use fallback tokens
+          const fallbackTokens = getFallbackTokens(chainId)
+          setTokens(fallbackTokens)
+          if (fallbackTokens.length > 0) {
+            setSelectedToken(fallbackTokens[0])
+          }
+        }
+      } else {
+        console.error('Unexpected tokens response format:', response.data)
+        // Use fallback tokens
+        const fallbackTokens = getFallbackTokens(chainId)
+        setTokens(fallbackTokens)
+        if (fallbackTokens.length > 0) {
+          setSelectedToken(fallbackTokens[0])
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching tokens:', error.response?.data || error.message)
+      // Use fallback tokens on error
+      const fallbackTokens = getFallbackTokens(chainId)
+      setTokens(fallbackTokens)
+      if (fallbackTokens.length > 0) {
+        setSelectedToken(fallbackTokens[0])
+      }
+      toast.error('Using fallback token list for this chain')
+    }
+  }
+
+  // Get fallback tokens for common chains
+  const getFallbackTokens = (chainId: string): Token[] => {
+    const fallbackTokensMap: { [key: string]: Token[] } = {
+      'sol': [
+        { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL', name: 'Solana', decimals: 9, chainId: 'sol', isNative: true, image: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png' },
+        { address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC', name: 'USD Coin', decimals: 6, chainId: 'sol', isNative: false, image: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png' },
+      ],
+      '1': [
+        { address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', symbol: 'ETH', name: 'Ethereum', decimals: 18, chainId: '1', isNative: true, image: 'https://assets.coingecko.com/coins/images/279/standard/ethereum.png' },
+        { address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', symbol: 'USDC', name: 'USD Coin', decimals: 6, chainId: '1', isNative: false, image: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png' },
+      ],
+      '56': [
+        { address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', symbol: 'BNB', name: 'BNB', decimals: 18, chainId: '56', isNative: true, image: 'https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png' },
+        { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', symbol: 'USDC', name: 'USD Coin', decimals: 18, chainId: '56', isNative: false, image: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png' },
+      ],
+      '137': [
+        { address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', symbol: 'MATIC', name: 'Polygon', decimals: 18, chainId: '137', isNative: true, image: 'https://assets.coingecko.com/coins/images/4713/standard/polygon.png' },
+        { address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', symbol: 'USDC', name: 'USD Coin', decimals: 6, chainId: '137', isNative: false, image: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png' },
+      ],
+    }
+    
+    return fallbackTokensMap[chainId] || []
+  }
+
+  // When chain changes, fetch its tokens
+  useEffect(() => {
+    if (selectedChain) {
+      fetchTokens(selectedChain.chainId)
+    }
+  }, [selectedChain])
 
   // Get Solana connection
   const getSolanaConnection = async (): Promise<Connection> => {
@@ -88,64 +243,17 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     }
   }
 
-  // Check SOL balance
-  const checkSOLBalance = async (walletAddress: string): Promise<number> => {
-    const connection = await getSolanaConnection()
-    try {
-      const publicKey = new PublicKey(walletAddress)
-      const balance = await connection.getBalance(publicKey)
-      return balance / 1e9
-    } catch (error) {
-      console.error("Error checking SOL balance:", error)
-      throw new Error("Failed to check SOL balance")
-    }
-  }
-
-  // Fetch SOL price from DexScreener
-  const fetchSolPrice = React.useCallback(async () => {
-    try {
-      const response = await axios.get(`https://api.dexscreener.com/latest/dex/pairs/solana/${SOL_USDC_PAIR_ADDRESS}`)
-      const pair = response.data.pairs?.[0] || null
-      if (pair?.priceUsd) {
-        const price = parseFloat(pair.priceUsd)
-        setSolPrice(price)
-        setUsdAmount((parseFloat(solAmount) * price).toFixed(2))
-      }
-    } catch (error) {
-      console.error('Error fetching SOL price:', error)
-    }
-  }, [solAmount])
-
-  // USD/SOL conversion helpers
-  const calculateUsdValue = (amount: string): string => {
-    if (!amount || solPrice === 0) return '0.00'
-    return (parseFloat(amount) * solPrice).toFixed(2)
-  }
-
-  const calculateSolFromUsd = (usdValue: string): string => {
-    if (!usdValue || solPrice === 0) return '0'
-    return (parseFloat(usdValue) / solPrice).toFixed(6)
-  }
-
-  const handleSolAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setSolAmount(value)
-    setUsdAmount(calculateUsdValue(value))
-  }
-
-  const handleUsdAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setUsdAmount(value)
-    setSolAmount(calculateSolFromUsd(value))
+  const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFromAmount(e.target.value)
   }
 
   // Get quote using Blockend Compass SDK
   const getCompassQuote = React.useCallback(async (walletAddress?: string) => {
-    if (!tokenData.address || tokenData.tradeStatus !== 'active') return
+    if (!tokenData.address || tokenData.tradeStatus !== 'active' || !selectedToken || !selectedChain) return
 
     try {
-      const amountInSol = parseFloat(solAmount)
-      if (isNaN(amountInSol) || amountInSol <= 0) {
+      const amount = parseFloat(fromAmount)
+      if (isNaN(amount) || amount <= 0) {
         setCompassQuote(null)
         return
       }
@@ -153,24 +261,23 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
       setLoading(true)
       setError(null)
       
-      // Calculate input amount in smallest unit (lamports for SOL)
-      const inputAmount = (amountInSol * 1e9).toString()
+      // Calculate input amount in smallest unit based on token decimals
+      const inputAmount = (amount * Math.pow(10, selectedToken.decimals)).toString()
       
       const quotes = await getQuotes({
-        fromChainId: 'sol',
-        fromAssetAddress: SOL_NATIVE_ADDRESS,
-        toChainId: 'sol',
+        fromChainId: selectedChain.chainId,
+        fromAssetAddress: selectedToken.address,
+        toChainId: 'sol', // Always to Solana for now (your token's chain)
         toAssetAddress: tokenData.address,
-        inputAmount: inputAmount, // Amount in lamports
-        inputAmountDisplay: solAmount,
+        inputAmount: inputAmount,
+        inputAmountDisplay: fromAmount,
         userWalletAddress: walletAddress || '11111111111111111111111111111111',
         recipient: walletAddress || '11111111111111111111111111111111',
-        slippage: Math.floor(slippage * 100), // Convert to basis points
-        sortBy: 'output', // Sort by best output amount
+        slippage: Math.floor(slippage * 100),
+        sortBy: 'output',
       })
 
       if (quotes?.data?.quotes && quotes.data.quotes.length > 0) {
-        // Get the best quote (first one is usually recommended)
         const bestQuote = quotes.data.quotes[0]
         setCompassQuote(bestQuote)
       } else {
@@ -185,7 +292,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     } finally {
       setLoading(false)
     }
-  }, [solAmount, slippage, tokenData.address, tokenData.tradeStatus])
+  }, [fromAmount, slippage, tokenData.address, tokenData.tradeStatus, selectedToken, selectedChain])
 
   // Execute swap using Blockend Compass SDK (manual flow)
   const executeCompassSwap = async () => {
@@ -204,7 +311,6 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
       setError(null)
       setTxStatus('Creating transaction...')
 
-      // Step 1: Create transaction
       const txResponse = await createTransaction({
         routeId: compassQuote.routeId,
       })
@@ -215,36 +321,39 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
       const connection = await getSolanaConnection()
 
-      // Step 2: Execute each step
       for (const step of txResponse.data.steps) {
         setTxStatus(`Executing ${step.stepType} transaction...`)
 
-        // Get transaction data for this step
         const nextTxResponse = await getNextTxn({
           routeId: compassQuote.routeId,
           stepId: step.stepId,
         })
 
-        if (!nextTxResponse?.data?.txnData?.txnSol?.data) {
+        if (!nextTxResponse?.data?.txnData) {
           throw new Error('No transaction data found')
         }
 
-        // Deserialize and sign transaction
-        const txnBuffer = Buffer.from(nextTxResponse.data.txnData.txnSol.data, 'base64')
-        const transaction = VersionedTransaction.deserialize(txnBuffer)
+        let signature: string
 
-        setTxStatus('Please approve transaction in wallet...')
-        
-        // Sign and send transaction - returns signature as string
-        const signature = await solanaWalletProvider.signAndSendTransaction(transaction)
+        // Handle different network types
+        if (nextTxResponse.data.txnData.txnSol?.data) {
+          // Solana transaction
+          const txnBuffer = Buffer.from(nextTxResponse.data.txnData.txnSol.data, 'base64')
+          const transaction = VersionedTransaction.deserialize(txnBuffer)
+          setTxStatus('Please approve transaction in wallet...')
+          signature = await solanaWalletProvider.signAndSendTransaction(transaction)
+          await connection.confirmTransaction(signature, 'confirmed')
+        } else if (nextTxResponse.data.txnData.txnEvm) {
+          // EVM transaction - would need EVM wallet integration
+          throw new Error('EVM transactions require connected EVM wallet')
+        } else {
+          throw new Error('Unsupported transaction type')
+        }
+
         console.log('Transaction signature:', signature)
-
         setTxStatus('Confirming transaction...')
 
-        // Wait for confirmation
-        await connection.confirmTransaction(signature, 'confirmed')
-
-        // Step 3: Check status
+        // Check status
         let currentStatus = 'in-progress'
         let attempts = 0
         const maxAttempts = 30
@@ -263,9 +372,8 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
               if (currentStatus === 'success') {
                 setTxStatus('Transaction successful!')
                 toast.success('Swap successful!')
-                onBuy?.(parseFloat(solAmount))
+                onBuy?.(parseFloat(fromAmount))
                 
-                // Refresh quote after successful swap
                 setTimeout(() => {
                   if (solanaWalletProvider?.publicKey) {
                     getCompassQuote(solanaWalletProvider.publicKey.toString())
@@ -283,7 +391,6 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
             console.log('Status check attempt failed, retrying...', statusError)
           }
 
-          // Wait 2 seconds before next status check
           if (currentStatus === 'in-progress') {
             await new Promise(resolve => setTimeout(resolve, 2000))
             attempts++
@@ -308,39 +415,26 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     }
   }
 
-  // Handle Jupiter link for graduated tokens
   const handleJupiterTrade = () => {
     const jupiterUrl = `https://jup.ag/tokens/${tokenData.address}`
     window.open(jupiterUrl, '_blank')
   }
 
-  // Effects
   useEffect(() => {
-    fetchSolPrice()
-    const interval = setInterval(fetchSolPrice, 30000) // Update every 30 seconds
-    return () => clearInterval(interval)
-  }, [fetchSolPrice])
-
-  useEffect(() => {
-    if (tokenData.address && solAmount && tokenData.tradeStatus === 'active') {
+    if (tokenData.address && fromAmount && tokenData.tradeStatus === 'active' && selectedToken) {
       const debounceTimer = setTimeout(() => {
         const walletAddress = solanaWalletProvider?.publicKey?.toString()
         getCompassQuote(walletAddress)
       }, 500)
       return () => clearTimeout(debounceTimer)
     }
-  }, [solAmount, slippage, tokenData.address, tokenData.tradeStatus, getCompassQuote, solanaWalletProvider])
+  }, [fromAmount, slippage, tokenData.address, tokenData.tradeStatus, selectedToken, getCompassQuote, solanaWalletProvider])
 
-  // Load SOL balance when wallet connects
-  useEffect(() => {
-    if (isConnected && solanaWalletProvider?.publicKey) {
-      checkSOLBalance(solanaWalletProvider.publicKey.toString())
-        .then(balance => setSolBalance(balance))
-        .catch(error => console.error('Failed to load balance:', error))
-    }
-  }, [isConnected, solanaWalletProvider])
+  const filteredTokens = tokens.filter(token => 
+    token.symbol.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
+    token.name.toLowerCase().includes(tokenSearchQuery.toLowerCase())
+  )
 
-  // If token is graduated, show Jupiter link
   if (tokenData.tradeStatus === 'graduated') {
     return (
       <div className="bg-[#040A25] rounded-[30px] p-6">
@@ -369,57 +463,108 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         <span className="text-xs text-gray-400">Slippage: {slippage}%</span>
       </div>
 
-      {/* You Pay Section */}
+      {/* From Token Selection */}
       <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20 mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-black font-medium text-sm">You pay</span>
-          <div className="text-right text-black text-xs">
-            Balance: {solBalance !== null ? solBalance.toFixed(4) : '-'} SOL
-          </div>
+        <span className="text-black font-medium text-sm mb-2 block">You pay</span>
+        
+        {/* Chain & Token Selector */}
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={() => setShowChainSelector(!showChainSelector)}
+            className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1 hover:bg-black/30 transition-colors"
+          >
+            {selectedChain?.image && <img src={selectedChain.image} alt={selectedChain.name} className="w-4 h-4" />}
+            <span className="text-black text-xs font-medium">{selectedChain?.name || 'Select Chain'}</span>
+            <ChevronDown className="w-3 h-3 text-black" />
+          </button>
+
+          <button
+            onClick={() => setShowTokenSelector(!showTokenSelector)}
+            className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1 hover:bg-black/30 transition-colors flex-1"
+          >
+            {selectedToken?.image && <img src={selectedToken.image} alt={selectedToken.symbol} className="w-4 h-4" />}
+            <span className="text-black text-xs font-medium">{selectedToken?.symbol || 'Select Token'}</span>
+            <ChevronDown className="w-3 h-3 text-black" />
+          </button>
         </div>
-        <div className="flex items-center mb-2 min-w-0">
-          <input
-            type="number"
-            value={solAmount}
-            onChange={handleSolAmountChange}
-            className="flex-1 min-w-0 bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
-            placeholder="0.0"
-            min="0"
-            step="0.1"
-          />
-          <div className="bg-black/20 rounded-lg px-2 py-1">
-            <span className="font-medium text-black text-sm">SOL</span>
-          </div>
-        </div>
-        <div className="flex items-center border-t border-black/10 pt-2 min-w-0">
-          <span className="text-black text-sm mr-2">≈</span>
-          <input
-            type="number"
-            value={usdAmount}
-            onChange={handleUsdAmountChange}
-            className="flex-1 min-w-0 bg-transparent text-black text-sm font-medium outline-none placeholder-gray-600"
-            placeholder="0.00"
-            min="0"
-            step="0.01"
-          />
-          <div className="bg-black/20 rounded-lg px-2 py-1">
-            <span className="font-medium text-black text-xs">USD</span>
-          </div>
-        </div>
-        {solPrice > 0 && (
-          <div className="text-xs text-black/70 mt-1">1 SOL ≈ ${solPrice.toFixed(2)} USD</div>
-        )}
+
+        {/* Amount Input */}
+        <input
+          type="number"
+          value={fromAmount}
+          onChange={handleFromAmountChange}
+          className="w-full bg-transparent text-black text-xl font-medium outline-none placeholder-gray-600"
+          placeholder="0.0"
+          min="0"
+          step="0.1"
+        />
       </div>
+
+      {/* Chain Selector Modal */}
+      {showChainSelector && (
+        <div className="absolute z-30 bg-[#040A25] border border-white/20 rounded-xl p-3 mt-2 w-[calc(100%-3rem)] max-h-60 overflow-y-auto">
+          <div className="text-white text-sm font-semibold mb-2">Select Chain</div>
+          {chains.map((chain) => (
+            <button
+              key={chain.chainId}
+              onClick={() => {
+                setSelectedChain(chain)
+                setShowChainSelector(false)
+              }}
+              className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <img src={chain.image} alt={chain.name} className="w-6 h-6" />
+              <span className="text-white text-sm">{chain.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Token Selector Modal */}
+      {showTokenSelector && (
+        <div className="absolute z-30 bg-[#040A25] border border-white/20 rounded-xl p-3 mt-2 w-[calc(100%-3rem)] max-h-80 overflow-hidden flex flex-col">
+          <div className="text-white text-sm font-semibold mb-2">Select Token</div>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={tokenSearchQuery}
+              onChange={(e) => setTokenSearchQuery(e.target.value)}
+              placeholder="Search token..."
+              className="w-full bg-white/5 text-white text-sm pl-8 pr-3 py-2 rounded-lg outline-none"
+            />
+          </div>
+          <div className="overflow-y-auto">
+            {filteredTokens.map((token) => (
+              <button
+                key={token.address}
+                onClick={() => {
+                  setSelectedToken(token)
+                  setShowTokenSelector(false)
+                  setTokenSearchQuery('')
+                }}
+                className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                {token.image && <img src={token.image} alt={token.symbol} className="w-6 h-6" />}
+                <div className="flex flex-col items-start">
+                  <span className="text-white text-sm font-medium">{token.symbol}</span>
+                  <span className="text-gray-400 text-xs">{token.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* You Receive Section */}
       <div className="bg-[#3d71e9] rounded-xl p-3 border border-white/20 mb-4">
         <span className="text-black font-medium text-sm">You receive</span>
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center justify-between">
           <input
             type="text"
             value={compassQuote?.outputAmountDisplay || '...'}
             readOnly
-            className="flex-1 min-w-0 truncate bg-transparent text-black text-xl font-medium outline-none"
+            className="flex-1 bg-transparent text-black text-xl font-medium outline-none"
           />
           <div className="bg-black/20 rounded-lg px-2 py-1">
             <span className="font-medium text-black text-sm">{tokenData.symbol}</span>
@@ -428,13 +573,6 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         {compassQuote?.providerDetails && (
           <div className="mt-1 text-xs text-black font-medium">
             via {compassQuote.providerDetails.name}
-          </div>
-        )}
-        {compassQuote?.tags?.includes('BEST') && (
-          <div className="mt-1">
-            <span className="text-xs bg-green-500/20 text-green-700 px-2 py-0.5 rounded">
-              Best Rate
-            </span>
           </div>
         )}
       </div>
@@ -453,9 +591,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
           {compassQuote.estimatedTimeInSeconds && (
             <div className="flex justify-between pt-2 border-t border-white/10">
               <span className="text-gray-300">Est. Time:</span>
-              <span className="font-medium text-white">
-                ~{compassQuote.estimatedTimeInSeconds}s
-              </span>
+              <span className="font-medium text-white">~{compassQuote.estimatedTimeInSeconds}s</span>
             </div>
           )}
         </div>
@@ -493,7 +629,7 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
           <button
             onClick={executeCompassSwap}
             disabled={loading || !compassQuote || !!error}
-            className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm relative overflow-visible"
+            className="flex-1 py-2 bg-gradient-to-r from-[#3d71e9] to-[#799ef3] hover:opacity-90 text-black font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
           >
             {loading ? 'Processing...' : 'Swap'}
           </button>

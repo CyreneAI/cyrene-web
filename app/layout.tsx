@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { headers } from "next/headers";
 import { AppKit } from '@/context/appkit';
@@ -69,7 +70,24 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en">
-  <body className={`${outfit.variable} font-outfit min-h-screen flex flex-col bg-[#010623]`}>
+      <body className={`${outfit.variable} font-outfit min-h-screen flex flex-col bg-[#010623]`}>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-4VQLXFP5Y4"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-4VQLXFP5Y4', {
+              page_title: document.title,
+              page_location: window.location.href,
+            });
+          `}
+        </Script>
+
         <div className="absolute inset-0"></div>
         <div className="relative z-10">
           <WalletProviderWrapper>
