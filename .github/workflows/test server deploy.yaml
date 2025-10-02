@@ -57,6 +57,8 @@ jobs:
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
             NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
             NEXT_PUBLIC_MONGO_URI=${{ secrets.NEXT_PUBLIC_MONGO_URI }}
+            NEXT_PUBLIC_BLOCKEND_API_KEY=${{ secrets.NEXT_PUBLIC_BLOCKEND_API_KEY }}
+            NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID=${{ secrets.NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID }}
 
   # 2️⃣ Deploy to Development Server via SSH
   deploy:
@@ -112,6 +114,8 @@ jobs:
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
             NEXT_PUBLIC_BIRDEYE_API_KEY=${{ secrets.NEXT_PUBLIC_BIRDEYE_API_KEY }}
             NEXT_PUBLIC_MONGO_URI="${{ secrets.NEXT_PUBLIC_MONGO_URI }}"
+            NEXT_PUBLIC_BLOCKEND_API_KEY=${{ secrets.NEXT_PUBLIC_BLOCKEND_API_KEY }}
+            NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID=${{ secrets.NEXT_PUBLIC_BLOCKEND_INTEGRATOR_ID }}
             
             EOF
 
