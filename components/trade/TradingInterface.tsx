@@ -129,10 +129,9 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
         setChains(fallbackChains)
         setSelectedChain(fallbackChains[0])
       }
-    } catch (error: any) {
-      console.error('Error fetching chains:', error.response?.data || error.message)
-      // Use fallback chains on error
-      console.log('Using fallback chains due to error')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error fetching chains:', errorMessage)
       setChains(fallbackChains)
       setSelectedChain(fallbackChains[0])
       toast.error('Using fallback chain list - some chains may be unavailable')
@@ -182,8 +181,9 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
           setSelectedToken(fallbackTokens[0])
         }
       }
-    } catch (error: any) {
-      console.error('Error fetching tokens:', error.response?.data || error.message)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error fetching chains:', errorMessage)
       // Use fallback tokens on error
       const fallbackTokens = getFallbackTokens(chainId)
       setTokens(fallbackTokens)

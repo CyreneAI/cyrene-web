@@ -162,27 +162,28 @@ const LeverageTrading: React.FC<LeverageTradingProps> = ({
       }
 
       // Send Jito bundle
-      const sendBundle = async () => {
-        await axios.post(JITO_BUNDLE_ENDPOINT, {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'sendBundle',
-          params: [
-            signedTxs.map((tx: any) => {
-              if (tx instanceof Transaction) {
-                const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false })
-                return btoa(String.fromCharCode(...serialized))
-              } else {
-                const serialized = tx.serialize()
-                return btoa(String.fromCharCode(...serialized))
-              }
-            }),
-            {
-              encoding: 'base64',
-            },
-          ],
-        })
-      }
+// Send Jito bundle
+const sendBundle = async () => {
+  await axios.post(JITO_BUNDLE_ENDPOINT, {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'sendBundle',
+    params: [
+      signedTxs.map((tx: Transaction | VersionedTransaction) => {
+        if (tx instanceof Transaction) {
+          const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false })
+          return btoa(String.fromCharCode(...serialized))
+        } else {
+          const serialized = tx.serialize()
+          return btoa(String.fromCharCode(...serialized))
+        }
+      }),
+      {
+        encoding: 'base64',
+      },
+    ],
+  })
+}
 
       // Retry logic
       const RETRIES = 3
@@ -193,7 +194,7 @@ const LeverageTrading: React.FC<LeverageTradingProps> = ({
           await sendBundle()
           console.log('Jito bundle sent successfully')
           break
-        } catch (err) {
+        } catch (err : unknown) {
           if (attempt < RETRIES) {
             console.error(`Bundle attempt ${attempt} failed. Retrying...`)
             await delay(1000)
