@@ -1059,7 +1059,7 @@ export default function Home() {
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[90vh] min-h-[450px] items-end md:items-end justify-center md:justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-6 sm:py-0 my-4 sm:my-10 md:my-12 relative rounded-[24px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[95vh] min-h-[500px] items-end md:items-end justify-center md:justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-6 sm:py-0 my-4 sm:my-10 md:my-12 relative rounded-[24px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
             
             {/* Background Image */}
             <Image 
@@ -1093,13 +1093,13 @@ export default function Home() {
               className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block w-auto h-auto" 
             />
             
-            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-6 sm:pb-8 md:pb-12 lg:pb-16">
+            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-2 sm:pb-4 md:pb-6 lg:pb-8 mt-8 sm:mt-10 md:mt-12 lg:mt-16">
       
               {/* Header Section */}
-              <header className="flex flex-col w-full max-w-[598px] gap-2 sm:gap-3 items-center relative flex-[0_0_auto]">
+              <header className="flex flex-col w-full max-w-[598px] gap-1 sm:gap-2 md:gap-3 items-center relative flex-[0_0_auto] mb-1 sm:mb-2 md:mb-3 lg:mb-4">
                 <ShinyText
                   text="JOURNEY WITH"
-                  className="relative w-fit font-outfit font-medium text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[20px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap"
+                  className="relative w-fit font-outfit font-medium text-[20px] sm:text-[22px] md:text-[24px] lg:text-[26px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[24px] sm:leading-[28px] md:leading-[32px] whitespace-nowrap"
                 />
 
                 <DecryptedText
@@ -1120,19 +1120,19 @@ export default function Home() {
                     font-moonhouse 
                     font-normal 
                     text-transparent 
-                    text-[72px] sm:text-[92px] md:text-[110px] 
+                    text-[72px] sm:text-[92px] md:text-[110px] lg:text-[120px]
                     text-center 
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
-                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    leading-[56px] sm:leading-[72px] md:leading-[88px] lg:leading-[100px]
                     whitespace-nowrap"
                   encryptedClassName="relative w-fit 
                     text-white/40
                     font-moonhouse 
                     font-normal 
-                    text-[60px] sm:text-[80px] md:text-[110px] 
+                    text-[60px] sm:text-[80px] md:text-[110px] lg:text-[120px]
                     text-center 
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
-                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    leading-[56px] sm:leading-[72px] md:leading-[88px] lg:leading-[100px]
                     whitespace-nowrap"
                 />
 
@@ -1140,14 +1140,14 @@ export default function Home() {
               
               {/* Portrait Image */}
               {/* Mobile-only soft radial glow behind the robot (hidden on md+) */}
-              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[52%] w-[340px] h-[180px] rounded-full blur-[56px] opacity-70 pointer-events-none z-10 block sm:hidden md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.22), rgba(20,30,60,0.0) 60%)'}} />
-              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[40%] w-[280px] h-[140px] rounded-full blur-[40px] opacity-80 pointer-events-none z-10 hidden sm:block md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.18), rgba(20,30,60,0.0) 60%)'}} />
-              <div className="robot-wrapper relative w-[300px] sm:w-[360px] md:w-[500px] lg:w-[700px] h-[255px] sm:h-[300px] md:h-[380px] lg:h-[498px] -mt-2 sm:-mt-4 md:-mt-6 transition-all z-20">
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[340px] h-[180px] rounded-full blur-[56px] opacity-70 pointer-events-none z-10 block sm:hidden md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.22), rgba(20,30,60,0.0) 60%)'}} />
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 bottom-[10%] w-[280px] h-[140px] rounded-full blur-[40px] opacity-80 pointer-events-none z-10 hidden sm:block md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.18), rgba(20,30,60,0.0) 60%)'}} />
+              <div className="robot-wrapper relative w-[320px] sm:w-[380px] md:w-[520px] lg:w-[740px] h-[272px] sm:h-[320px] md:h-[410px] lg:h-[540px] -mb-2 sm:-mb-3 md:-mb-4 lg:-mb-6 transition-all z-20">
                 <Image
                   src="/robo.webp"
                   alt="Portrait of Cyrene, a technologically advanced female humanoid"
                   fill
-                  className="object-contain scale-[1.18] sm:scale-100 origin-bottom"
+                  className="object-contain object-bottom scale-[1.12] sm:scale-105 md:scale-100 origin-bottom"
                   priority
                 />
               </div>
