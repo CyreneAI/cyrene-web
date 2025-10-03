@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import Image from "next/image";
@@ -21,6 +22,7 @@ import Stats from "@/components/Stats";
 import DecryptedText from "@/components/ui/DecryptedText";
 import ShinyText from "@/components/ShinyText";
 import ScrollVelocity from "@/components/ScrollVelocity";
+import WhyCyrene from "@/components/WhyCyrene";
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -1159,90 +1161,8 @@ export default function Home() {
 
           <LaunchHero />
 
-          {/* Why Launch on CyreneAI Section */}
-          <section className="py-20 px-6">
-            <div className="max-w-7xl mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-center mb-16"
-              >
-                <h1 className="font-moonhouse text-[30px] font-medium text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
-                  Why CyreneAI ?
-                </h1>
-                <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
-              </motion.div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Earn from Day 1 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="bg-gradient-to-br from-[#2C3C70]/40 via-[#18285C]/30 to-[#2C3C70]/40 backdrop-blur-sm border border-[#2C3C70]/50 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Earn from Day 1
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      Get 1% of trading volume as fees — no upfront cost.
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Aligned Incentives */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="bg-gradient-to-br from-[#17224A]/50 via-[#2C3C70]/40 to-[#18285C]/50 backdrop-blur-sm border border-[#2C3C70]/60 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Aligned Incentives
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      10% team tokens, 6-month cliff, 1-year vesting for long-term growth.
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Internet Capital Markets */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="bg-gradient-to-br from-[#0A122E]/95 via-[#17224A]/90 to-[#0A122E]/95 backdrop-blur-sm border border-[#2C3C70]/40 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/20 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Internet Capital Markets
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      Launch early, build community, raise seed — all on-chain, with full control.
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </section>
+          {/* Why Cyrene Section (Animation + Feature rows) */}
+          <WhyCyrene />
 
 
 
