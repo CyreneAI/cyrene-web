@@ -18,8 +18,12 @@ export const GlowButton = ({ children, active = false, ...props }: GlowButtonPro
       position: 'relative',
       zIndex: 0,
       userSelect: 'none',
-      padding: '5px 10px',
+      padding: '8px 16px',
       borderRadius: '10px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '80px',
     }}
     className={`relative ${props.className || ''}`}
   >

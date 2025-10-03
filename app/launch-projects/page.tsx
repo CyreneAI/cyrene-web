@@ -1014,20 +1014,23 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
           <label className="block text-gray-300 text-sm font-medium mb-2">
             Project Category *
           </label>
-          <select
-            name="projectCategory"
-            value={projectData.projectCategory}
-            onChange={onProjectInfoChange}
-            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-            required
-          >
-            <option value="">Select category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.name}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              name="projectCategory"
+              value={projectData.projectCategory}
+              onChange={onProjectInfoChange}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none"
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
@@ -1035,20 +1038,23 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         <label className="block text-gray-300 text-sm font-medium mb-2">
           Industry *
         </label>
-        <select
-          name="projectIndustry"
-          value={projectData.projectIndustry}
-          onChange={onProjectInfoChange}
-          className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-          required
-        >
-          <option value="">Select industry</option>
-          {industries.map((industry) => (
-            <option key={industry.id} value={industry.name}>
-              {industry.name}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            name="projectIndustry"
+            value={projectData.projectIndustry}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg pl-4 pr-10 py-3 text-white focus:outline-none focus:border-blue-500 appearance-none"
+            required
+          >
+            <option value="">Select industry</option>
+            {industries.map((industry) => (
+              <option key={industry.id} value={industry.name}>
+                {industry.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div>
@@ -1126,11 +1132,11 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <Github className="w-4 h-4 inline mr-1" />
-            GitHub URL
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <Github className="w-4 h-4 text-blue-400" />
+            <span>GitHub URL</span>
           </label>
           <input
             type="url"
@@ -1143,9 +1149,9 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
         </div>
 
         <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <Globe className="w-4 h-4 inline mr-1" />
-            Website URL
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <Globe className="w-4 h-4 text-purple-300" />
+            <span>Website URL</span>
           </label>
           <input
             type="url"
@@ -1156,11 +1162,13 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
             placeholder="https://yourproject.com"
           />
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
-            <FileText className="w-4 h-4 inline mr-1" />
-            Docs / Whitepaper URL
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <FileText className="w-4 h-4 text-amber-300" />
+            <span>Docs / Whitepaper URL</span>
           </label>
           <input
             type="url"
@@ -1171,50 +1179,53 @@ const ProjectInfoTab: React.FC<ProjectInfoTabProps> = ({
             placeholder="https://docs.yourproject.com"
           />
         </div>
+
         <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">
-              <FaXTwitter className="w-4 h-4 inline mr-1" />
-              Twitter/X URL
-            </label>
-            <input
-              type="url"
-              name="twitterUrl"
-              value={projectData.twitterUrl}
-              onChange={onProjectInfoChange}
-              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              placeholder="https://twitter.com/..."
-            />
-          </div>
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <FaXTwitter className="w-4 h-4 text-sky-400" />
+            <span>Twitter/X URL</span>
+          </label>
+          <input
+            type="url"
+            name="twitterUrl"
+            value={projectData.twitterUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://twitter.com/..."
+          />
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">
-              <Instagram className="w-4 h-4 inline mr-1" />
-              Instagram URL
-            </label>
-            <input
-              type="url"
-              name="instagramUrl"
-              value={projectData.instagramUrl}
-              onChange={onProjectInfoChange}
-              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              placeholder="https://instagram.com/..."
-            />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <Instagram className="w-4 h-4 text-pink-400" />
+            <span>Instagram URL</span>
+          </label>
+          <input
+            type="url"
+            name="instagramUrl"
+            value={projectData.instagramUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://instagram.com/..."
+          />
+        </div>
 
-          <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">
-              <Linkedin className="w-4 h-4 inline mr-1" />
-              LinkedIn URL
-            </label>
-            <input
-              type="url"
-              name="linkedinUrl"
-              value={projectData.linkedinUrl}
-              onChange={onProjectInfoChange}
-              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              placeholder="https://linkedin.com/company/..."
-            />
-          </div>
+        <div>
+          <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+            <Linkedin className="w-4 h-4 text-blue-300" />
+            <span>LinkedIn URL</span>
+          </label>
+          <input
+            type="url"
+            name="linkedinUrl"
+            value={projectData.linkedinUrl}
+            onChange={onProjectInfoChange}
+            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            placeholder="https://linkedin.com/company/..."
+          />
+        </div>
       </div>
     </motion.div>
   );
@@ -1260,7 +1271,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
       </div>
 
       {!isExistingIdea && (
-        <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-6">
+        <div className="bg-gray-800 border border-gray-600 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">Project Stage</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
@@ -1301,7 +1312,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
       )}
 
       {isExistingIdea && (
-        <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/30 rounded-xl p-6">
+        <div className="bg-gray-800 border border-gray-600 rounded-xl p-6">
           <div className="flex items-center gap-3">
             <Rocket className="w-6 h-6 text-green-400" />
             <div>
@@ -1427,10 +1438,11 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  LinkedIn URL
+                <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+                  <Linkedin className="w-4 h-4 text-blue-300" />
+                  <span>LinkedIn URL</span>
                 </label>
                 <input
                   type="url"
@@ -1443,8 +1455,9 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  Twitter URL
+                <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+                  <FaXTwitter className="w-4 h-4 text-sky-400" />
+                  <span>Twitter URL</span>
                 </label>
                 <input
                   type="url"
@@ -1455,20 +1468,21 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
                   placeholder="https://twitter.com/..."
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  GitHub URL
-                </label>
-                <input
-                  type="url"
-                  name="githubUrl"
-                  value={newTeamMember.githubUrl}
-                  onChange={onTeamMemberChange}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="https://github.com/..."
-                />
-              </div>
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-gray-300 text-sm font-medium mb-2">
+                <Github className="w-4 h-4 text-blue-400" />
+                <span>GitHub URL</span>
+              </label>
+              <input
+                type="url"
+                name="githubUrl"
+                value={newTeamMember.githubUrl}
+                onChange={onTeamMemberChange}
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="https://github.com/..."
+              />
             </div>
 
             <div className="mb-4">
@@ -1520,7 +1534,7 @@ const TeamDetailsTab: React.FC<TeamDetailsTabProps> = ({
         <button
           onClick={onSaveProject}
           disabled={isSaving || projectData.teamMembers.length === 0}
-          className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
         >
           {isSaving ? (
             <div className="flex items-center gap-2">
@@ -1818,7 +1832,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
       )}
 
       {/* Token Information */}
-      <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-6">
+      <div className="bg-gray-800 border border-gray-600 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Token Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -1853,11 +1867,11 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
       </div>
 
       {/* Bot Protection Section - ENHANCED WITH DYNAMIC CALCULATION */}
-      <div className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 border border-cyan-500/30 rounded-xl p-6">
+      <div className="bg-gray-800 border border-gray-600 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Zap className="w-6 h-6 text-cyan-400" />
+          <Zap className="w-6 h-6 text-blue-400" />
           <h3 className="text-lg font-semibold text-white">Bot Protection</h3>
-          <div className="px-2 py-1 bg-cyan-600 text-cyan-100 rounded text-xs font-medium">
+          <div className="px-2 py-1 bg-blue-600 text-blue-100 rounded text-xs font-medium">
             RECOMMENDED
           </div>
         </div>
@@ -1881,8 +1895,8 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 <div className={`
                   w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200
                   ${projectData.enableFirstBuy 
-                    ? 'bg-cyan-500 border-cyan-500 shadow-lg shadow-cyan-500/30' 
-                    : 'bg-gray-700 border-gray-500 hover:border-cyan-400'
+                    ? 'bg-blue-500 border-blue-500 shadow-lg shadow-blue-500/30' 
+                    : 'bg-gray-700 border-gray-500 hover:border-blue-400'
                   }
                   ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}>
@@ -1914,20 +1928,22 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
             >
               {/* Token Purchase Calculator */}
               {projectData.firstBuyAmountSol > 0 && (
-                <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4 mb-4">
-                  <h4 className="text-sm font-semibold text-blue-300 mb-2">📊 Purchase Calculation</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <span className="text-gray-400">Expected tokens:</span>
-                      <div className="text-blue-300 font-mono">{formatNumber(expectedTokens)}</div>
+                <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    📊 Purchase Calculation
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                      <div className="text-xs text-gray-400 mb-1">Expected tokens</div>
+                      <div className="text-white font-semibold text-sm">{formatNumber(expectedTokens)}</div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Min tokens (95%):</span>
-                      <div className="text-green-300 font-mono">{formatNumber(suggestedMinimum)}</div>
+                    <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                      <div className="text-xs text-gray-400 mb-1">Min tokens (95%)</div>
+                      <div className="text-green-400 font-semibold text-sm">{formatNumber(suggestedMinimum)}</div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">% of supply:</span>
-                      <div className="text-cyan-300 font-mono">{((expectedTokens / projectData.totalTokenSupply) * 100).toFixed(3)}%</div>
+                    <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                      <div className="text-xs text-gray-400 mb-1">% of supply</div>
+                      <div className="text-blue-400 font-semibold text-sm">{((expectedTokens / projectData.totalTokenSupply) * 100).toFixed(3)}%</div>
                     </div>
                   </div>
                 </div>
@@ -1943,7 +1959,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                     name="firstBuyAmountSol"
                     value={projectData.firstBuyAmountSol}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                     min="0.001"
                     max="10"
                     step="0.001"
@@ -1966,7 +1982,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                       name="minimumTokensOut"
                       value={projectData.minimumTokensOut}
                       onChange={handleInputChange}
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
                       min="1"
                       disabled={isLoading}
                       required={projectData.enableFirstBuy}
@@ -1983,7 +1999,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                         } as React.ChangeEvent<HTMLInputElement>;
                         onProjectInfoChange(syntheticEvent);
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                       disabled={isLoading}
                     >
                       Auto
@@ -1995,7 +2011,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
                 </div>
               </div>
 
-              <div className="text-xs text-cyan-300 bg-cyan-900/20 border border-cyan-500/20 rounded-lg p-3">
+              <div className="text-xs text-green-300 bg-green-900/20 border border-green-500/20 rounded-lg p-3">
                 ✅ <strong>Bot Protection Active:</strong> Your purchase will be executed in the same transaction as pool creation, 
                 preventing bots from buying before you can get your own tokens.
               </div>
@@ -2079,7 +2095,7 @@ const FundraiseTab: React.FC<FundraiseTabProps> = ({
       {/* Launch Button */}
       <button
         onClick={handleLaunchClick}
-        className="w-full bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white py-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading || !projectData.tokenName || !projectData.tokenSymbol || !projectData.projectImage}
       >
         {isLoading ? (

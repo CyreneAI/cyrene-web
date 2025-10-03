@@ -340,7 +340,7 @@ const executeSwap = async () => {
     fetchPairData();
     const interval = setInterval(fetchPairData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPairData]);
 
   useEffect(() => {
     if (address) {
@@ -366,23 +366,23 @@ const executeSwap = async () => {
   }
 
   return (
-    <div className="bg-[rgba(33,37,52,0.5)] backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border  border-blue-500/20 max-w-2xl mx-auto">
+    <div className="bg-[rgba(33,37,52,0.5)] backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-blue-500/20 max-w-xl mx-auto">
       {/* Header with logo */}
-      <div className="p-6 border-b  border-blue-500/20">
+      <div className="p-4 border-b border-blue-500/20">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {pairData?.baseToken.logoURI && (
               <Image 
               src={pairData.baseToken.logoURI || '/default-token.png'} 
               alt={pairData.baseToken.symbol}
-              width={40}
-              height={40}
+              width={32}
+              height={32}
               className="rounded-full"
             />
             )}
-            <h2 className="text-2xl font-bold text-white">CYAI Swap</h2>
+            <h2 className="text-xl font-bold text-white">CYAI Swap</h2>
           </div>
-          <div className={`text-xl font-bold ${
+          <div className={`text-lg font-bold ${
             (pairData?.priceChange.h24 || 0) >= 0 ? 'text-green-400' : 'text-red-400'
           }`}>
             {(pairData?.priceChange.h24 || 0).toFixed(2)}%
@@ -391,12 +391,12 @@ const executeSwap = async () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b  border-blue-500/20">
+      <div className="flex border-b border-blue-500/20">
         <button
           onClick={() => setActiveTab('swap')}
-          className={`flex-1 py-4 font-medium text-lg ${
+          className={`flex-1 py-3 font-medium text-base transition-colors ${
             activeTab === 'swap' 
-              ? 'text-white border-b-2 border-[#00A3FF]' 
+              ? 'text-white border-b-2 border-blue-500' 
               : 'text-[#8A8A8A] hover:text-white'
           }`}
         >
@@ -404,9 +404,9 @@ const executeSwap = async () => {
         </button>
         <button
           onClick={() => setActiveTab('info')}
-          className={`flex-1 py-4 font-medium text-lg ${
+          className={`flex-1 py-3 font-medium text-base transition-colors ${
             activeTab === 'info' 
-              ? 'text-white border-b-2 border-[#00A3FF]' 
+              ? 'text-white border-b-2 border-blue-500' 
               : 'text-[#8A8A8A] hover:text-white'
           }`}
         >
@@ -415,18 +415,18 @@ const executeSwap = async () => {
       </div>
 
       {/* Content Area */}
-      <div className="p-6">
+      <div className="p-4">
         {activeTab === 'swap' ? (
           <>
             {/* Swap Form */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Input Section */}
             {/* Input Section */}
-<div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-4 border  border-blue-500/20">
-  <div className="flex justify-between items-center mb-3">
-    <span className="text-[#AAAAAA]">You pay</span>
+<div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-3 border border-blue-500/20">
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-[#AAAAAA] text-sm">You pay</span>
     <div className="flex flex-col items-end">
-      <span className="text-sm text-[#AAAAAA]">
+      <span className="text-xs text-[#AAAAAA]">
         Balance: {solBalance !== null ? solBalance.toFixed(4) : '-'} SOL
       </span>
       <span className="text-xs text-[#777777]">
@@ -439,22 +439,22 @@ const executeSwap = async () => {
       type="number"
       value={amount}
       onChange={(e) => setAmount(e.target.value)}
-      className="flex-1 bg-transparent text-white text-2xl outline-none placeholder-[#555555]"
+      className="flex-1 bg-transparent text-white text-xl outline-none placeholder-[#555555]"
       placeholder="0.0"
       min="0"
       step="0.1"
     />
-    <div className="bg-[rgba(109,116,139,0.1)] rounded-lg px-4 py-2">
-      <span className="font-medium text-white">SOL</span>
+    <div className="bg-[rgba(109,116,139,0.1)] rounded-lg px-3 py-1.5">
+      <span className="font-medium text-white text-sm">SOL</span>
     </div>
   </div>
 </div>
 
               {/* Output Section */}
-              <div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-4 border border-blue-500/20">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[#AAAAAA]">You receive</span>
-                  <span className="text-sm text-[#AAAAAA]">
+              <div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-3 border border-blue-500/20">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[#AAAAAA] text-sm">You receive</span>
+                  <span className="text-xs text-[#AAAAAA]">
                     Balance: {CYAIBalance !== null ? CYAIBalance.toLocaleString() : '-'} CYAI
                   </span>
                 </div>
@@ -463,38 +463,38 @@ const executeSwap = async () => {
                     type="text"
                     value={quote ? (parseFloat(quote.outAmount) / 10 ** CYAI_DECIMALS).toFixed(4) : '0.0'}
                     readOnly
-                    className="flex-1 bg-transparent text-white text-2xl outline-none"
+                    className="flex-1 bg-transparent text-white text-xl outline-none"
                   />
-                  <div className="bg-[rgba(109,116,139,0.1)] rounded-lg px-4 py-2">
-                    <span className="font-medium text-white">CYAI</span>
+                  <div className="bg-[rgba(109,116,139,0.1)] rounded-lg px-3 py-1.5">
+                    <span className="font-medium text-white text-sm">CYAI</span>
                   </div>
                 </div>
               </div>
 
               {/* Price Info */}
               {quote && (
-                <div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-4 border border-blue-500/20 space-y-3">
+                <div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-3 border border-blue-500/20 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-[#AAAAAA]">Exchange Rate</span>
-                    <span className="font-medium text-white">
+                    <span className="text-[#AAAAAA] text-sm">Exchange Rate</span>
+                    <span className="font-medium text-white text-sm">
                       1 SOL = {formatPrice(quote)} CYAI
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#AAAAAA]">SOL Price</span>
-                    <span className="font-medium text-white">
+                    <span className="text-[#AAAAAA] text-sm">SOL Price</span>
+                    <span className="font-medium text-white text-sm">
                       ${formatSolUsdPrice(pairData)} USD
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#AAAAAA]">Minimum Received</span>
-                    <span className="font-medium text-white">
+                    <span className="text-[#AAAAAA] text-sm">Minimum Received</span>
+                    <span className="font-medium text-white text-sm">
                       {(parseFloat(quote.outAmount) / 10 ** CYAI_DECIMALS * (1 - slippage / 100)).toFixed(4)} CYAI
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#AAAAAA]">Price Impact</span>
-                    <span className={parseFloat(quote.priceImpactPct) > 1 ? 'text-red-400' : 'text-green-400'}>
+                    <span className="text-[#AAAAAA] text-sm">Price Impact</span>
+                    <span className={`text-sm ${parseFloat(quote.priceImpactPct) > 1 ? 'text-red-400' : 'text-green-400'}`}>
                       {quote.priceImpactPct}%
                     </span>
                   </div>
@@ -504,56 +504,86 @@ const executeSwap = async () => {
               {/* Slippage Settings */}
               <div className="bg-[rgba(33,37,52,0.5)] rounded-xl p-4 border border-blue-500/20">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-[#AAAAAA]">Slippage Tolerance</span>
-                  <span className="text-sm text-[#00A3FF]">
+                  <span className="text-[#AAAAAA] font-medium text-sm">Slippage Tolerance</span>
+                  <span className="text-sm text-blue-400 font-semibold">
                     {slippage}%
                   </span>
                 </div>
-                <div className="flex gap-2">
+                {/* Presets row */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
                   {[0.5, 1, 2].map((value) => (
                     <button
                       key={value}
                       onClick={() => setSlippage(value)}
-                      className={`flex-1 py-3 rounded-lg text-sm font-medium ${
+                      aria-pressed={slippage === value}
+                      className={`py-2.5 rounded-lg text-sm font-semibold transition-all ${
                         slippage === value 
-                          ? 'bg-[#00A3FF] text-white' 
-                          : 'bg-[rgba(109,116,139,0.1)] text-[#AAAAAA] hover:bg-[#3A3A3A]'
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 ring-2 ring-blue-400/50 shadow-lg shadow-blue-500/20' 
+                          : 'bg-[rgba(109,116,139,0.15)] text-[#AAAAAA] hover:bg-gray-700/50 border border-gray-700/50'
                       }`}
                     >
                       {value}%
                     </button>
                   ))}
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      value={slippage}
-                      onChange={(e) => setSlippage(Math.min(10, Math.max(0.1, parseFloat(e.target.value) || 0.5)))}
-                      className="w-full h-full py-3 px-4 bg-[rgba(109,116,139,0.1)] rounded-lg text-right text-white outline-none"
-                      min="0.1"
-                      max="10"
-                      step="0.1"
-                    />
-                    <span className="absolute right-3 top-3 text-[#AAAAAA]">%</span>
+                </div>
+                {/* Custom value row */}
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#AAAAAA] font-medium uppercase tracking-wider">Custom Amount</label>
+                  <div className="relative">
+                    <div className="flex items-center gap-2 bg-[rgba(109,116,139,0.15)] border border-gray-700 rounded-lg p-1 hover:border-blue-500/30 transition-colors">
+                      <input
+                        type="number"
+                        value={slippage}
+                        onChange={(e) => setSlippage(Math.min(10, Math.max(0.1, parseFloat(e.target.value) || 0.5)))}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
+                        className="flex-1 bg-transparent py-2 px-2.5 text-white text-sm font-medium outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        min="0.1"
+                        max="10"
+                        step="0.1"
+                        inputMode="decimal"
+                      />
+                      <div className="flex flex-col gap-0.5 pr-1">
+                        <button
+                          onClick={() => setSlippage(Math.min(10, slippage + 0.1))}
+                          className="w-7 h-4 flex items-center justify-center bg-gray-700 hover:bg-blue-600 rounded text-white transition-colors group"
+                          aria-label="Increase slippage"
+                        >
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setSlippage(Math.max(0.1, slippage - 0.1))}
+                          className="w-7 h-4 flex items-center justify-center bg-gray-700 hover:bg-blue-600 rounded text-white transition-colors group"
+                          aria-label="Decrease slippage"
+                        >
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </div>
+                      <span className="text-[#AAAAAA] font-medium pr-1.5 text-sm">%</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button
                   onClick={() => {
                     fetchPairData();
                     getQuote();
                   }}
                   disabled={loading}
-                  className="flex-1 py-4 bg-[rgba(109,116,139,0.1)] hover:bg-[#3A3A3A] text-white rounded-xl disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 transition-colors font-medium text-sm"
                 >
                   Refresh
                 </button>
                 <button
                   onClick={executeSwap}
                   disabled={loading || !quote || !isConnected || !isQuoteValid()}
-                  className="flex-1 py-4 bg-gradient-to-r from-[#00A3FF] to-[#00F0FF] hover:opacity-90 text-white text-lg font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {!isConnected ? 'Connect Wallet' : loading ? 'Processing...' : 'Swap Now'}
                 </button>
@@ -562,7 +592,7 @@ const executeSwap = async () => {
           </>
         ) : (
           /* Token Info Tab */
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Market Data Grid */}
             <div className="grid grid-cols-2 gap-4">
               {[
@@ -614,7 +644,7 @@ const executeSwap = async () => {
               href={`https://dexscreener.com/solana/${PAIR_ADDRESS}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full py-4 bg-gradient-to-r from-[#00A3FF] to-[#00F0FF] hover:opacity-90 text-center rounded-xl font-medium transition-colors text-white"
+              className="block w-full py-4 bg-blue-600 hover:bg-blue-700 text-center rounded-lg font-medium transition-colors text-white"
             >
               View on DexScreener
             </a>

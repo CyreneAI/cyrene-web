@@ -12,7 +12,9 @@ import {
   Twitter,
   Radio,
   VideoIcon,
-  ShieldCheck
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { FaXTwitter } from "react-icons/fa6";
 import { toast } from 'sonner';
@@ -28,6 +30,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSocialInteractions } from '@/hooks/useSocialInteractions';
+import { SearchBar } from "@/components/common/SearchBar";
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -58,6 +61,113 @@ const VerifiedBadge = ({ className = "" }: { className?: string }) => (
   </div>
 );
 
+// Pagination Component
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}
+
+const Pagination: React.FC<PaginationProps> = ({ 
+  currentPage, 
+  totalPages, 
+  onPageChange, 
+  className = "" 
+}) => {
+  if (totalPages <= 1) return null;
+
+  const getVisiblePages = () => {
+    const delta = 1;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, '...');
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push('...', totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots;
+  };
+
+  const visiblePages = getVisiblePages();
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`flex items-center justify-center gap-1.5 ${className}`}
+    >
+      {/* Previous button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className={`flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-sm transition-all duration-300 ${
+          currentPage === 1
+            ? 'border-gray-700/30 text-gray-600 cursor-not-allowed opacity-50'
+            : 'border-gray-600/40 text-gray-300 hover:border-blue-400/60 hover:text-blue-300 hover:bg-blue-500/15 hover:shadow-lg hover:shadow-blue-500/20'
+        }`}
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </motion.button>
+
+      {/* Page numbers */}
+      <div className="flex items-center gap-1">
+        {visiblePages.map((page, index) => (
+          <React.Fragment key={index}>
+            {page === '...' ? (
+              <span className="text-gray-500 px-3 text-sm">•••</span>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onPageChange(page as number)}
+                className={`flex items-center justify-center w-10 h-10 rounded-xl border text-sm font-semibold backdrop-blur-sm transition-all duration-300 ${
+                  currentPage === page
+                    ? 'border-blue-400/60 bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-blue-200 shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/20'
+                    : 'border-gray-600/40 text-gray-300 hover:border-blue-400/50 hover:text-blue-300 hover:bg-blue-500/10 hover:shadow-md hover:shadow-blue-500/10'
+                }`}
+              >
+                {page}
+              </motion.button>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* Next button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className={`flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-sm transition-all duration-300 ${
+          currentPage === totalPages
+            ? 'border-gray-700/30 text-gray-600 cursor-not-allowed opacity-50'
+            : 'border-gray-600/40 text-gray-300 hover:border-blue-400/60 hover:text-blue-300 hover:bg-blue-500/15 hover:shadow-lg hover:shadow-blue-500/20'
+        }`}
+      >
+        <ChevronRight className="w-4 h-4" />
+      </motion.button>
+    </motion.div>
+  );
+};
+
 export default function ExploreProjectsPage() {
   const router = useRouter();
   const [launchedTokens, setLaunchedTokens] = useState<LaunchedTokenData[]>([]);
@@ -71,7 +181,12 @@ export default function ExploreProjectsPage() {
   const [tokenMetadataCache, setTokenMetadataCache] = useState<Map<string, TokenMetadata>>(new Map());
   const [isCyreneTeamMember, setIsCyreneTeamMember] = useState(false);
   
-  const { address, isConnected } = useAppKitAccount();
+  // Pagination states
+  const [currentIdeasPage, setCurrentIdeasPage] = useState(1);
+  const [currentTokensPage, setCurrentTokensPage] = useState(1);
+  const itemsPerPage = 6; // Number of items per page
+
+const { address, isConnected } = useAppKitAccount();
 
   // Check if user is a CyreneAI team member
   useEffect(() => {
@@ -212,7 +327,7 @@ export default function ExploreProjectsPage() {
       // Verified first
       if (a.isVerified && !b.isVerified) return -1;
       if (!a.isVerified && b.isVerified) return 1;
-      
+
       const aIsLive = isProjectLiveStreaming(a.projectIdeaId || a.contractAddress);
       const bIsLive = isProjectLiveStreaming(b.projectIdeaId || b.contractAddress);
       
@@ -228,7 +343,7 @@ export default function ExploreProjectsPage() {
       // Verified first
       if (a.isVerified && !b.isVerified) return -1;
       if (!a.isVerified && b.isVerified) return 1;
-      
+
       const aIsLive = isProjectLiveStreaming(a.id || '');
       const bIsLive = isProjectLiveStreaming(b.id || '');
       
@@ -275,6 +390,66 @@ export default function ExploreProjectsPage() {
   // Count live streams for display
   const liveStreamCount = Array.from(liveStreams.values()).filter(stream => stream.isLive).length;
 
+  // Pagination calculations
+  const totalIdeasPages = Math.ceil(filteredIdeas.length / itemsPerPage);
+  const totalTokensPages = Math.ceil(filteredTokens.length / itemsPerPage);
+  
+  // Get paginated data
+  const getCurrentIdeas = () => {
+    const startIndex = (currentIdeasPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredIdeas.slice(startIndex, endIndex);
+  };
+  
+  const getCurrentTokens = () => {
+    const startIndex = (currentTokensPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredTokens.slice(startIndex, endIndex);
+  };
+
+  // Reset pagination when search query changes
+  useEffect(() => {
+    setCurrentIdeasPage(1);
+    setCurrentTokensPage(1);
+  }, [searchQuery]);
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if no input is focused
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      if (e.key === 'ArrowLeft' && e.ctrlKey) {
+        // Ctrl + Left Arrow - Previous page for Ideas
+        e.preventDefault();
+        if (currentIdeasPage > 1) {
+          setCurrentIdeasPage(prev => prev - 1);
+        }
+      } else if (e.key === 'ArrowRight' && e.ctrlKey) {
+        // Ctrl + Right Arrow - Next page for Ideas
+        e.preventDefault();
+        if (currentIdeasPage < totalIdeasPages) {
+          setCurrentIdeasPage(prev => prev + 1);
+        }
+      } else if (e.key === 'ArrowLeft' && e.shiftKey) {
+        // Shift + Left Arrow - Previous page for Tokens
+        e.preventDefault();
+        if (currentTokensPage > 1) {
+          setCurrentTokensPage(prev => prev - 1);
+        }
+      } else if (e.key === 'ArrowRight' && e.shiftKey) {
+        // Shift + Right Arrow - Next page for Tokens
+        e.preventDefault();
+        if (currentTokensPage < totalTokensPages) {
+          setCurrentTokensPage(prev => prev + 1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIdeasPage, totalIdeasPages, currentTokensPage, totalTokensPages]);
+
   return (
     <>
       {/* Background Text */}
@@ -286,25 +461,28 @@ export default function ExploreProjectsPage() {
 
       <div className="min-h-screen text-white py-20 px-4 mt-24 relative">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl font-bold text-white mb-4 drop-shadow-lg"
-            >
-              Explore Projects
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-gray-400 drop-shadow-md mb-2"
-            >
-              Discover projects and tokens at every stage
-            </motion.p>
-            
-            {/* Admin badge for CyreneAI team members */}
+          {/* Compact Header */}
+          <div className="text-center mb-8">
+            <div className="flex flex-col items-center gap-4 mb-6">
+              {/* Centered Title + Description */}
+              <div>
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl font-bold text-white mb-1 drop-shadow-lg text-center"
+                >
+                  Explore Projects
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-gray-400 text-sm drop-shadow-md text-center"
+                >
+                  Discover projects and tokens at every stage
+                </motion.p>
+
+                {/* Admin badge for CyreneAI team members */}
             {/* {isCyreneTeamMember && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -316,40 +494,40 @@ export default function ExploreProjectsPage() {
                 <span>CyreneAI Team - Verification Controls Active</span>
               </motion.div>
             )} */}
-            
-            {/* Live stream indicator */}
-            {liveStreamCount > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 text-sm"
-              >
-                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                <VideoIcon className="w-4 h-4" />
-                <span>{liveStreamCount} project{liveStreamCount !== 1 ? 's' : ''} streaming live</span>
-              </motion.div>
-            )}
-          </div>
 
-          {/* Search Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex justify-center mb-8"
-          >
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="w-full bg-gray-800/70 backdrop-blur-md border border-gray-600/50 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/60 focus:bg-gray-700/80 transition-all duration-300 text-sm shadow-lg"
-              />
+              </div>
+
+              {/* Live indicator (row 1) */}
+              <div className="flex justify-center">
+                {liveStreamCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600/20 border border-red-500/30 rounded-full text-red-300 text-sm"
+                  >
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    <VideoIcon className="w-4 h-4" />
+                    <span>{liveStreamCount} live</span>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Search (row 2) - same width/position as Explore Agents */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="w-full mt-2 mb-8 px-4"
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(v) => handleSearch({ target: { value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                  placeholder="Search projects..."
+                />
+              </motion.div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Content */}
           {isLoading ? (
@@ -380,14 +558,14 @@ export default function ExploreProjectsPage() {
             </div>
           ) : (
             <>
-              {/* Phase Columns */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Inception Column */}
+              {/* Two Column Layout - With pagination */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                {/* Ideation Column */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
-                  className="bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl"
+                  className="bg-gradient-to-b from-gray-900/90 to-gray-900/60 backdrop-blur-xl border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
                 >
                   {/* Column Header */}
                   <div className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-600/50 p-4">
@@ -409,28 +587,59 @@ export default function ExploreProjectsPage() {
                     </div>
                   </div>
 
-                  {/* Column Content */}
-                  <div className="p-4 min-h-[600px]">
-                    <div className="space-y-3">
-                      {filteredIdeas.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-                          <p className="text-gray-400">No projects in ideation phase</p>
+                  {/* Column Content - Fixed height with pagination */}
+                  <div className="flex-1 px-4 pb-4">
+                    <AnimatePresence mode="wait">
+                      <motion.div 
+                        key={`ideas-page-${currentIdeasPage}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-3 pt-3 min-h-[600px]"
+                      >
+                        {filteredIdeas.length === 0 ? (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 bg-gray-800/60 rounded-xl flex items-center justify-center mx-auto mb-3">
+                              <Lightbulb className="w-6 h-6 text-gray-500" />
+                            </div>
+                            <p className="text-gray-400 text-base">No projects in ideation phase</p>
+                            <p className="text-gray-500 text-sm mt-1">Be the first to submit an idea!</p>
+                          </div>
+                        ) : (
+                          getCurrentIdeas().map((idea, index) => (
+                            <ProjectIdeaCard
+                              key={idea.id}
+                              idea={idea}
+                              index={index}
+                              formatDate={formatDate}
+                              streamInfo={getStreamInfo(idea.id || '')}
+                              isCyreneTeamMember={isCyreneTeamMember}
+                              onVerificationChange={() => loadAllData(false)}
+                            />
+                          ))
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                    
+                    {/* Pagination for Ideas */}
+                    {totalIdeasPages > 1 && (
+                      <div className="mt-6 flex flex-col items-center gap-3">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="text-xs text-gray-400">
+                            Showing {(currentIdeasPage - 1) * itemsPerPage + 1} - {Math.min(currentIdeasPage * itemsPerPage, filteredIdeas.length)} of {filteredIdeas.length} projects
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Use Ctrl + ← → to navigate
+                          </div>
                         </div>
-                      ) : (
-                        filteredIdeas.map((idea, index) => (
-                          <ProjectIdeaCard
-                            key={idea.id}
-                            idea={idea}
-                            index={index}
-                            formatDate={formatDate}
-                            streamInfo={getStreamInfo(idea.id || '')}
-                            isCyreneTeamMember={isCyreneTeamMember}
-                            onVerificationChange={() => loadAllData(false)}
-                          />
-                        ))
-                      )}
-                    </div>
+                        <Pagination
+                          currentPage={currentIdeasPage}
+                          totalPages={totalIdeasPages}
+                          onPageChange={setCurrentIdeasPage}
+                        />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
 
@@ -439,7 +648,7 @@ export default function ExploreProjectsPage() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
-                  className="bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl overflow-hidden shadow-2xl"
+                  className="bg-gradient-to-b from-gray-900/90 to-gray-900/60 backdrop-blur-xl border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
                 >
                   {/* Column Header */}
                   <div className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-600/50 p-4">
@@ -461,30 +670,61 @@ export default function ExploreProjectsPage() {
                     </div>
                   </div>
 
-                  {/* Column Content */}
-                  <div className="p-4 min-h-[600px]">
-                    <div className="space-y-3">
-                      {filteredTokens.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Rocket className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-                          <p className="text-gray-400">No tokens launched yet</p>
+                  {/* Column Content - Fixed height with pagination */}
+                  <div className="flex-1 px-4 pb-4">
+                    <AnimatePresence mode="wait">
+                      <motion.div 
+                        key={`tokens-page-${currentTokensPage}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-3 pt-3 min-h-[600px]"
+                      >
+                        {filteredTokens.length === 0 ? (
+                          <div className="text-center py-12">
+                            <div className="w-12 h-12 bg-gray-800/60 rounded-xl flex items-center justify-center mx-auto mb-3">
+                              <Rocket className="w-6 h-6 text-gray-500" />
+                            </div>
+                            <p className="text-gray-400 text-base">No tokens launched yet</p>
+                            <p className="text-gray-500 text-sm mt-1">Projects will appear here once launched</p>
+                          </div>
+                        ) : (
+                          getCurrentTokens().map((token, index) => (
+                            <TokenCard
+                              key={token.contractAddress}
+                              token={token}
+                              index={index}
+                              onTradeClick={() => handleTradeClick(token)}
+                              formatDate={formatDate}
+                              fetchTokenMetadata={fetchTokenMetadata}
+                              streamInfo={getStreamInfo(token.projectIdeaId || token.contractAddress)}
+                              isCyreneTeamMember={isCyreneTeamMember}
+                              onVerificationChange={() => loadAllData(false)}
+                            />
+                          ))
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                    
+                    {/* Pagination for Tokens */}
+                    {totalTokensPages > 1 && (
+                      <div className="mt-6 flex flex-col items-center gap-3">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="text-xs text-gray-400">
+                            Showing {(currentTokensPage - 1) * itemsPerPage + 1} - {Math.min(currentTokensPage * itemsPerPage, filteredTokens.length)} of {filteredTokens.length} tokens
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Use Shift + ← → to navigate
+                          </div>
                         </div>
-                      ) : (
-                        filteredTokens.map((token, index) => (
-                          <TokenCard
-                            key={token.contractAddress}
-                            token={token}
-                            index={index}
-                            onTradeClick={() => handleTradeClick(token)}
-                            formatDate={formatDate}
-                            fetchTokenMetadata={fetchTokenMetadata}
-                            streamInfo={getStreamInfo(token.projectIdeaId || token.contractAddress)}
-                            isCyreneTeamMember={isCyreneTeamMember}
-                            onVerificationChange={() => loadAllData(false)}
-                          />
-                        ))
-                      )}
-                    </div>
+                        <Pagination
+                          currentPage={currentTokensPage}
+                          totalPages={totalTokensPages}
+                          onPageChange={setCurrentTokensPage}
+                        />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </div>
@@ -568,12 +808,12 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className={`relative bg-gray-900/80 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/90 transition-all duration-300 group shadow-lg cursor-pointer ${
-        isLive 
-          ? 'border-green-500/60 ring-1 ring-green-400/20' 
+      className={`relative bg-gray-800/40 backdrop-blur-lg border rounded-xl p-3 hover:bg-gray-700/50 transition-all duration-300 group shadow-xl cursor-pointer ${
+        isLive
+          ? 'border-green-500/50 ring-1 ring-green-400/20 shadow-green-500/10'
           : idea.isVerified
-          ? 'border-blue-500/40 ring-1 ring-blue-400/10'
-          : 'border-gray-700/50 hover:border-gray-600/60'
+            ? 'border-blue-500/40 ring-1 ring-blue-400/10'
+            : 'border-gray-600/30 hover:border-gray-500/50'
       }`}
     >
       {/* Enhanced live streaming indicator */}
@@ -587,13 +827,30 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
         </div>
       )}
 
-      {/* Project header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/80 backdrop-blur-sm border border-gray-600/50 flex items-center justify-center overflow-hidden relative">
-          {/* Live streaming dot overlay */}
-          {isLive && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
-          )}
+      {/* Top metadata row */}
+      <div className="flex items-center justify-between mb-2 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            <Users className="w-3 h-3 text-blue-400" />
+            <span>{idea.teamMembers.length}</span>
+          </div>
+          <span>•</span>
+          <div className="flex items-center gap-0.5">
+            <Users className="w-3 h-3 text-green-400" />
+            <span>{socialLoading ? '...' : stats.followerCount}</span>
+          </div>
+          <span>•</span>
+          <div className="flex items-center gap-0.5">
+            <Heart className="w-3 h-3 text-red-400" />
+            <span>{socialLoading ? '...' : stats.likeCount}</span>
+          </div>
+        </div>
+        <span className="text-blue-400 font-medium text-xs">{idea.projectIndustry}</span>
+      </div>
+
+      {/* Project header with image and title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-gray-700/50 backdrop-blur-sm border border-gray-600/40 flex items-center justify-center overflow-hidden relative shadow-lg">
           {idea.projectImage ? (
             <img
               src={idea.projectImage}
@@ -615,20 +872,9 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
             </h3>
             {idea.isVerified && <VerifiedBadge />}
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{idea.projectCategory}</span>
-            <span>•</span>
-            <span>{idea.teamMembers.length} members</span>
-            {isLive && streamInfo?.title && (
-              <>
-                <span>•</span>
-                <span className="text-green-400 truncate max-w-20" title={streamInfo.title}>
-                  {truncateText(streamInfo.title, 15)}
-                </span>
-              </>
-            )}
-          </div>
+          <p className="text-gray-400 text-xs">{idea.projectCategory}</p>
         </div>
+      </div>
 
         <div className="flex items-center gap-1">
           {/* Verification button for CyreneAI team members */}
@@ -661,42 +907,36 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
               <Github className="w-4 h-4" />
             </button>
           )}
-          {idea.twitterUrl && (
+
+          {/* Verification button for CyreneAI team members */}
+          {isCyreneTeamMember && (
             <button
-              onClick={(e) => handleLinkClick(e, idea.twitterUrl!)}
-              className="p-1 text-gray-400 hover:text-blue-400 transition-colors rounded"
-              title="Twitter/X"
+              onClick={handleVerificationToggle}
+              disabled={isVerifying}
+              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
+                idea.isVerified 
+                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+                  : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
+              }`}
+              title={idea.isVerified ? 'Click to unverify' : 'Click to verify'}
             >
-              <FaXTwitter className="w-4 h-4" />
+              {isVerifying ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-3 h-3" />
+              )}
+              <span>{idea.isVerified ? 'Verified' : 'Verify'}</span>
             </button>
           )}
-          {idea.instagramUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.instagramUrl!)}
-              className="p-1 text-gray-400 hover:text-pink-400 transition-colors rounded"
-              title="Instagram"
-            >
-              <Instagram className="w-4 h-4" />
-            </button>
-          )}
-          {idea.linkedinUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.linkedinUrl!)}
-              className="p-1 text-gray-400 hover:text-blue-500 transition-colors rounded"
-              title="LinkedIn"
-            >
-              <Linkedin className="w-4 h-4" />
-            </button>
-          )}
-          {idea.websiteUrl && (
-            <button
-              onClick={(e) => handleLinkClick(e, idea.websiteUrl!)}
-              className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded"
-              title="Website"
-            >
-              <Globe className="w-4 h-4" />
-            </button>
-          )}
+
+          {/* Open button */}
+          <button
+            className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded text-xs font-medium transition-all duration-200"
+            title="Open project"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open
+          </button>
         </div>
       </div>
 
@@ -824,7 +1064,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
 
   const handleVerificationToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!address) return;
+    if (!address || !token.contractAddress) return;
 
     setIsVerifying(true);
     try {
@@ -881,12 +1121,12 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleCardClick}
-      className={`bg-gray-900/90 backdrop-blur-md border rounded-xl p-4 hover:bg-gray-800/95 transition-all duration-300 group shadow-xl cursor-pointer relative ${
-        isLive 
-          ? 'border-green-500/60 ring-1 ring-green-400/20' 
+      className={`bg-gray-800/40 backdrop-blur-lg border rounded-xl p-3 hover:bg-gray-700/50 transition-all duration-300 group shadow-xl cursor-pointer relative ${
+        isLive
+          ? 'border-green-500/50 ring-1 ring-green-400/20 shadow-green-500/10'
           : token.isVerified
-          ? 'border-blue-500/40 ring-1 ring-blue-400/10'
-          : 'border-gray-700/60 hover:border-gray-600/70'
+            ? 'border-blue-500/40 ring-1 ring-blue-400/10'
+            : 'border-gray-600/30 hover:border-gray-500/50'
       }`}
     >
       {/* Enhanced live streaming indicator */}
@@ -900,13 +1140,83 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
         </div>
       )}
 
-      {/* Token header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-gray-800/90 backdrop-blur-sm border border-gray-600/60 flex items-center justify-center overflow-hidden relative">
-          {/* Live streaming dot overlay */}
-          {isLive && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse z-10"></div>
+      {/* Top metadata row */}
+      <div className="flex items-center justify-between mb-2 text-xs text-gray-400">
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            <Users className="w-3 h-3 text-blue-400" />
+            <span>{Math.floor(Math.random() * 10) + 1}</span>
+          </div>
+          <span>•</span>
+          <div className="flex items-center gap-0.5">
+            <Users className="w-3 h-3 text-green-400" />
+            <span>{socialLoading ? '...' : stats.followerCount}</span>
+          </div>
+          <span>•</span>
+          <div className="flex items-center gap-0.5">
+            <Heart className="w-3 h-3 text-red-400" />
+            <span>{socialLoading ? '...' : stats.likeCount}</span>
+          </div>
+          <span>•</span>
+          <div className="flex items-center gap-1">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              statusInfo.color === 'green' ? 'bg-green-400' :
+              statusInfo.color === 'orange' ? 'bg-orange-400' :
+              'bg-blue-400'
+            }`}></div>
+            <span>{statusInfo.label}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Verified Tab */}
+          {token.isVerified && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/20 border border-blue-400/40 rounded-lg backdrop-blur-sm"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-medium text-blue-300">Verified</span>
+            </motion.div>
           )}
+
+          {/* Contract Address Copy Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={(e) => copyToClipboard(token.contractAddress, 'Contract Address', e)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 group backdrop-blur-sm ${
+              copiedField === 'Contract Address'
+                ? 'bg-gradient-to-r from-green-500/20 to-green-600/10 border border-green-400/40'
+                : 'bg-gradient-to-r from-gray-800/60 to-gray-700/40 hover:from-gray-700/60 hover:to-gray-600/40 border border-gray-600/30 hover:border-blue-400/40'
+            }`}
+            title={`Copy contract address: ${token.contractAddress}`}
+          >
+            <span className={`font-mono text-xs font-medium transition-colors ${
+              copiedField === 'Contract Address'
+                ? 'text-green-300'
+                : 'text-gray-300 group-hover:text-blue-300'
+            }`}>
+              {truncateAddress(token.contractAddress)}
+            </span>
+            <motion.div
+              animate={copiedField === 'Contract Address' ? { rotate: 360 } : { rotate: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {copiedField === 'Contract Address' ? (
+                <Check className="w-3.5 h-3.5 text-green-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+              )}
+            </motion.div>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Project header with image and title */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-12 h-12 rounded-xl bg-gray-700/50 backdrop-blur-sm border border-gray-600/40 flex items-center justify-center overflow-hidden relative shadow-lg">
           {imageLoading ? (
             <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
           ) : tokenImage ? (
@@ -930,28 +1240,20 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
             </h3>
             {token.isVerified && <VerifiedBadge />}
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-300">
-            <span className="font-mono">${token.tokenSymbol}</span>
-            <span>•</span>
-            <div className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                statusInfo.color === 'green' ? 'bg-green-400' :
-                statusInfo.color === 'orange' ? 'bg-orange-400' :
-                'bg-blue-400'
-              }`}></div>
-              <span>{statusInfo.label}</span>
-            </div>
-            {isLive && streamInfo?.title && (
-              <>
-                <span>•</span>
-                <span className="text-green-400 truncate max-w-16" title={streamInfo.title}>
-                  {streamInfo.title}
-                </span>
-              </>
-            )}
-          </div>
+          <p className="text-gray-400 text-xs font-mono">${token.tokenSymbol}</p>
         </div>
+      </div>
 
+      {/* Description */}
+      {metadata?.description && (
+        <p className="text-gray-300 text-xs mb-3 leading-relaxed line-clamp-2" title={metadata.description}>
+          {metadata.description.length > 100 ? `${metadata.description.slice(0, 100)}...` : metadata.description}
+        </p>
+      )}
+
+      {/* Footer with date and action buttons */}
+      <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
+        <span className="text-xs text-gray-500 font-medium">{formatDate(token.launchedAt)}</span>
         <div className="flex items-center gap-1">
           {/* Verification button for CyreneAI team members */}
           {isCyreneTeamMember && (
@@ -980,64 +1282,45 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
           >
             Trade
           </button>
-          
+
+          {/* Verification button for CyreneAI team members */}
+          {isCyreneTeamMember && (
+            <button
+              onClick={handleVerificationToggle}
+              disabled={isVerifying}
+              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
+                token.isVerified 
+                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+                  : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
+              }`}
+              title={token.isVerified ? 'Click to unverify' : 'Click to verify'}
+            >
+              {isVerifying ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-3 h-3" />
+              )}
+              <span>{token.isVerified ? 'Verified' : 'Verify'}</span>
+            </button>
+          )}
+
+          {/* Open button */}
           <button
-            onClick={(e) => copyToClipboard(token.contractAddress, 'Contract', e)}
-            className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700/40"
-            title="Copy contract"
+            className="flex items-center gap-1 px-2 py-1 bg-gray-700/40 hover:bg-gray-600/50 text-white transition-colors rounded text-xs font-medium"
+            title="Open project"
           >
-            {copiedField === 'Contract' ? (
-              <Check className="w-4 h-4 text-green-400" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
+            <ExternalLink className="w-3 h-3" />
+            Open
+          </button>
+
+          {/* Trade button */}
+          <button
+            onClick={handleTradeClick}
+            className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded text-xs font-medium transition-all duration-200"
+          >
+            Trade
           </button>
         </div>
-      </div>
-
-      {/* Contract Address */}
-      <div className="text-xs text-gray-400 font-mono mb-3 bg-gray-800/60 backdrop-blur-sm rounded px-2 py-1 border border-gray-700/40">
-        {truncateAddress(token.contractAddress)}
-      </div>
-
-      {/* Social Stats */}
-      <div className="flex items-center gap-3 mb-2">
-        {socialLoading ? (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            <span>Loading stats...</span>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Heart className="w-3 h-3 text-rose-400" />
-              <span>{stats.likeCount}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Users className="w-3 h-3 text-blue-400" />
-              <span>{stats.followerCount}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-400">
-        <span>{formatDate(token.launchedAt)}</span>
-        <div className="flex items-center gap-2">
-          <span>{token.quoteMint}</span>
-          {isLive && (
-            <div className="flex items-center gap-1 text-green-400">
-              <VideoIcon className="w-3 h-3" />
-              <span>Live</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Hover indicator */}
-      <div className="mt-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        Click to view details →
       </div>
     </motion.div>
   );

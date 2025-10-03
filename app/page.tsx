@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import Image from "next/image";
@@ -21,6 +22,7 @@ import Stats from "@/components/Stats";
 import DecryptedText from "@/components/ui/DecryptedText";
 import ShinyText from "@/components/ShinyText";
 import ScrollVelocity from "@/components/ScrollVelocity";
+import WhyCyrene from "@/components/WhyCyrene";
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -1059,7 +1061,7 @@ export default function Home() {
         {/* Your existing content */}
         <div className="relative">
           {/* Hero Section */}
-          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[90vh] min-h-[450px] items-end md:items-end justify-center md:justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-6 sm:py-0 my-4 sm:my-10 md:my-12 relative rounded-[24px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
+          <section aria-labelledby="cyrene-hero-title" className="hero-section flex w-[90%] max-w-[1700px] mx-auto h-[95vh] min-h-[500px] items-end md:items-end justify-center md:justify-center gap-2.5 px-4 sm:px-8 xl:px-[320px] 2xl:px-[517px] py-6 sm:py-0 my-4 sm:my-10 md:my-12 relative rounded-[24px] sm:rounded-[30px] md:rounded-[45px] lg:rounded-[60px] overflow-hidden">
             
             {/* Background Image */}
             <Image 
@@ -1093,13 +1095,13 @@ export default function Home() {
               className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 hidden md:block w-auto h-auto" 
             />
             
-            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-6 sm:pb-8 md:pb-12 lg:pb-16">
+            <div className="hero-content inline-flex flex-col justify-end items-center relative flex-[0_0_auto] w-full pb-2 sm:pb-4 md:pb-6 lg:pb-8 mt-8 sm:mt-10 md:mt-12 lg:mt-16">
       
               {/* Header Section */}
-              <header className="flex flex-col w-full max-w-[598px] gap-2 sm:gap-3 items-center relative flex-[0_0_auto]">
+              <header className="flex flex-col w-full max-w-[598px] gap-1 sm:gap-2 md:gap-3 items-center relative flex-[0_0_auto] mb-1 sm:mb-2 md:mb-3 lg:mb-4">
                 <ShinyText
                   text="JOURNEY WITH"
-                  className="relative w-fit font-outfit font-medium text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[20px] sm:leading-[24px] md:leading-[27.3px] whitespace-nowrap"
+                  className="relative w-fit font-outfit font-medium text-[20px] sm:text-[22px] md:text-[24px] lg:text-[26px] text-center tracking-[8px] sm:tracking-[10px] md:tracking-[13.47px] leading-[24px] sm:leading-[28px] md:leading-[32px] whitespace-nowrap"
                 />
 
                 <DecryptedText
@@ -1120,19 +1122,19 @@ export default function Home() {
                     font-moonhouse 
                     font-normal 
                     text-transparent 
-                    text-[72px] sm:text-[92px] md:text-[110px] 
+                    text-[72px] sm:text-[92px] md:text-[110px] lg:text-[120px]
                     text-center 
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
-                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    leading-[56px] sm:leading-[72px] md:leading-[88px] lg:leading-[100px]
                     whitespace-nowrap"
                   encryptedClassName="relative w-fit 
                     text-white/40
                     font-moonhouse 
                     font-normal 
-                    text-[60px] sm:text-[80px] md:text-[110px] 
+                    text-[60px] sm:text-[80px] md:text-[110px] lg:text-[120px]
                     text-center 
                     tracking-[4px] sm:tracking-[6px] md:tracking-[8.00px] 
-                    leading-[45px] sm:leading-[60px] md:leading-[77.0px] 
+                    leading-[56px] sm:leading-[72px] md:leading-[88px] lg:leading-[100px]
                     whitespace-nowrap"
                 />
 
@@ -1140,14 +1142,14 @@ export default function Home() {
               
               {/* Portrait Image */}
               {/* Mobile-only soft radial glow behind the robot (hidden on md+) */}
-              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[52%] w-[340px] h-[180px] rounded-full blur-[56px] opacity-70 pointer-events-none z-10 block sm:hidden md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.22), rgba(20,30,60,0.0) 60%)'}} />
-              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 top-[40%] w-[280px] h-[140px] rounded-full blur-[40px] opacity-80 pointer-events-none z-10 hidden sm:block md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.18), rgba(20,30,60,0.0) 60%)'}} />
-              <div className="robot-wrapper relative w-[300px] sm:w-[360px] md:w-[500px] lg:w-[700px] h-[255px] sm:h-[300px] md:h-[380px] lg:h-[498px] -mt-2 sm:-mt-4 md:-mt-6 transition-all z-20">
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[340px] h-[180px] rounded-full blur-[56px] opacity-70 pointer-events-none z-10 block sm:hidden md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.22), rgba(20,30,60,0.0) 60%)'}} />
+              <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 bottom-[10%] w-[280px] h-[140px] rounded-full blur-[40px] opacity-80 pointer-events-none z-10 hidden sm:block md:hidden lg:hidden" style={{background: 'radial-gradient(closest-side, rgba(60,150,255,0.18), rgba(20,30,60,0.0) 60%)'}} />
+              <div className="robot-wrapper relative w-[320px] sm:w-[380px] md:w-[520px] lg:w-[740px] h-[272px] sm:h-[320px] md:h-[410px] lg:h-[540px] -mb-2 sm:-mb-3 md:-mb-4 lg:-mb-6 transition-all z-20">
                 <Image
                   src="/robo.webp"
                   alt="Portrait of Cyrene, a technologically advanced female humanoid"
                   fill
-                  className="object-contain scale-[1.18] sm:scale-100 origin-bottom"
+                  className="object-contain object-bottom scale-[1.12] sm:scale-105 md:scale-100 origin-bottom"
                   priority
                 />
               </div>
@@ -1159,90 +1161,8 @@ export default function Home() {
 
           <LaunchHero />
 
-          {/* Why Launch on CyreneAI Section */}
-          <section className="py-20 px-6">
-            <div className="max-w-7xl mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-center mb-16"
-              >
-                <h1 className="font-moonhouse text-[30px] font-medium text-white mb-4 uppercase tracking-[6px] leading-[130%] text-center">
-                  Why CyreneAI ?
-                </h1>
-                <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
-              </motion.div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Earn from Day 1 */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="bg-gradient-to-br from-[#2C3C70]/40 via-[#18285C]/30 to-[#2C3C70]/40 backdrop-blur-sm border border-[#2C3C70]/50 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Earn from Day 1
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      Get 1% of trading volume as fees — no upfront cost.
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Aligned Incentives */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="bg-gradient-to-br from-[#17224A]/50 via-[#2C3C70]/40 to-[#18285C]/50 backdrop-blur-sm border border-[#2C3C70]/60 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/30 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Aligned Incentives
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      10% team tokens, 6-month cliff, 1-year vesting for long-term growth.
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Internet Capital Markets */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="bg-gradient-to-br from-[#0A122E]/95 via-[#17224A]/90 to-[#0A122E]/95 backdrop-blur-sm border border-[#2C3C70]/40 rounded-2xl p-8 relative overflow-hidden shadow-xl hover:shadow-[#2C3C70]/20 transition-all duration-500 group"
-                >
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#2C3C70] to-[#18285C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-white text-xl font-outfit font-bold mb-4">
-                      Internet Capital Markets
-                    </h3>
-                    <p className="text-[#9DABD8]/90 font-outfit text-base leading-relaxed">
-                      Launch early, build community, raise seed — all on-chain, with full control.
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </section>
+          {/* Why Cyrene Section (Animation + Feature rows) */}
+          <WhyCyrene />
 
 
 

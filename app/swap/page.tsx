@@ -13,10 +13,10 @@ export default function SwapPage() {
       </div>
     </div>
 
-    <div className="min-h-screen flex flex-col items-center pt-24 pb-12">
+            <div className="min-h-screen flex flex-col items-center pt-[64px] sm:pt-[88px] md:pt-[96px] lg:pt-[120px] xl:pt-[144px] pb-12">
     {/* Logo Section - Same as your page.tsx */}
-      <div className="w-full max-w-[1400px] mb-16 flex justify-center">
-        <div className="relative w-[300px] h-[100px] sm:w-[600px] sm:h-[200px]">
+      <div className="w-full max-w-[1400px] mb-4 flex justify-center">
+        <div className="relative w-[160px] h-[53px] sm:w-[220px] sm:h-[73px]">
           <Image
             src="/CyreneAI logo_text.svg"
             alt="Stories Logo"
