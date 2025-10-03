@@ -57,7 +57,7 @@ interface LiveStreamInfo {
 // Verification Badge Component
 const VerifiedBadge = ({ className = "" }: { className?: string }) => (
   <div className={`flex items-center gap-1 ${className}`} title="Verified by CyreneAI">
-    <ShieldCheck className="w-4 h-4 text-blue-400" />
+    <ShieldCheck className="w-4 h-4 text-green-300" />
   </div>
 );
 
@@ -916,7 +916,7 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
               disabled={isVerifying}
               className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
                 idea.isVerified 
-                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+            ? 'border border-green-400/30 text-green-300' 
                   : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
               }`}
               title={idea.isVerified ? 'Click to unverify' : 'Click to verify'}
@@ -924,20 +924,13 @@ const ProjectIdeaCard: React.FC<ProjectIdeaCardProps> = ({
               {isVerifying ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <ShieldCheck className="w-3 h-3" />
+                <ShieldCheck className="w-3 h-3 text-current" />
               )}
               <span>{idea.isVerified ? 'Verified' : 'Verify'}</span>
             </button>
           )}
 
-          {/* Open button */}
-          <button
-            className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-300 rounded text-xs font-medium transition-all duration-200"
-            title="Open project"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open
-          </button>
+          {/* Open button removed */}
         </div>
       </div>
     </motion.div>
@@ -1128,10 +1121,10 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/20 border border-blue-400/40 rounded-lg backdrop-blur-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-green-400/40 rounded-lg"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-xs font-medium text-blue-300">Verified</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-green-300" />
+                <span className="text-xs font-medium text-green-300">Verified</span>
             </motion.div>
           )}
 
@@ -1211,31 +1204,39 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
       <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
         <span className="text-xs text-gray-500 font-medium">{formatDate(token.launchedAt)}</span>
         <div className="flex items-center gap-1">
-          {/* Website button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const websiteUrl = metadata?.attributes?.find(attr => attr.trait_type === 'website')?.value || `https://${token.tokenName.toLowerCase()}.com`;
-              window.open(websiteUrl, '_blank', 'noopener,noreferrer');
-            }}
-            className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded hover:bg-gray-600/40"
-            title="Website"
-          >
-            <Globe className="w-3.5 h-3.5" />
-          </button>
+          {/* Website button - only show if metadata contains valid website URL */}
+          {metadata?.attributes?.find(attr => attr.trait_type === 'website')?.value && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const websiteUrl = metadata?.attributes?.find(attr => attr.trait_type === 'website')?.value;
+                if (websiteUrl) {
+                  window.open(websiteUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="p-1 text-gray-400 hover:text-green-400 transition-colors rounded hover:bg-gray-600/40"
+              title="Website"
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </button>
+          )}
 
-          {/* GitHub button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const githubUrl = metadata?.attributes?.find(attr => attr.trait_type === 'github')?.value || `https://github.com/${token.tokenName.toLowerCase()}`;
-              window.open(githubUrl, '_blank', 'noopener,noreferrer');
-            }}
-            className="p-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-600/40"
-            title="GitHub"
-          >
-            <Github className="w-3.5 h-3.5" />
-          </button>
+          {/* GitHub button - only show if metadata contains valid GitHub URL */}
+          {metadata?.attributes?.find(attr => attr.trait_type === 'github')?.value && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const githubUrl = metadata?.attributes?.find(attr => attr.trait_type === 'github')?.value;
+                if (githubUrl) {
+                  window.open(githubUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="p-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-600/40"
+              title="GitHub"
+            >
+              <Github className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Verification button for CyreneAI team members */}
           {isCyreneTeamMember && (
@@ -1244,7 +1245,7 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
               disabled={isVerifying}
               className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-all ${
                 token.isVerified 
-                  ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-400/30' 
+                  ? 'border border-green-400/30 text-green-300' 
                   : 'bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 border border-gray-600/30'
               }`}
               title={token.isVerified ? 'Click to unverify' : 'Click to verify'}
@@ -1252,20 +1253,13 @@ const TokenCard: React.FC<TokenCardProps> = React.memo(({
               {isVerifying ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <ShieldCheck className="w-3 h-3" />
+                <ShieldCheck className="w-3 h-3 text-current" />
               )}
               <span>{token.isVerified ? 'Verified' : 'Verify'}</span>
             </button>
           )}
 
-          {/* Open button */}
-          <button
-            className="flex items-center gap-1 px-2 py-1 bg-gray-700/40 hover:bg-gray-600/50 text-white transition-colors rounded text-xs font-medium"
-            title="Open project"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open
-          </button>
+          {/* Open button removed */}
 
           {/* Trade button */}
           <button
