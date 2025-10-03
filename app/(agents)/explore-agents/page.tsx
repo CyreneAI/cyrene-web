@@ -10,6 +10,7 @@
   import { motion } from "framer-motion";
   import StarCanvas from "@/components/StarCanvas";
   import { Search } from 'lucide-react';
+  import { SearchBar } from "@/components/common/SearchBar";
   import { GlowButton } from "@/components/ui/glow-button";
   import { useAppKitAccount } from '@reown/appkit/react';
   import { useWallet } from '@solana/wallet-adapter-react';
@@ -303,12 +304,12 @@
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center mb-12"
+              className="text-center mb-8"
             >
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r text-white bg-clip-text text-transparent">
                 Explore Agents
               </h1>
-              <p className="mt-4 text-gray-400">
+              <p className="mt-3 text-gray-400 text-sm">
                 Discover and interact with our diverse collection of AI agents
               </p>
             </motion.div>
@@ -318,20 +319,13 @@
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="mb-12"
+              className="mt-2 mb-8 px-4"
             >
-              <div className="relative max-w-2xl mx-auto">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-100" />
-                <input
-                  type="text"
-                  placeholder="Search agents..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-900/50 backdrop-blur-xl border border-white/10 rounded-full
-                          text-white placeholder-gray-400 focus:outline-none focus:border-[#3985FF]/50
-                          transition-all duration-300"
-                />
-              </div>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search agents..."
+              />
             </motion.div>
 
             {/* Launch Agent Button */}

@@ -30,6 +30,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSocialInteractions } from '@/hooks/useSocialInteractions';
+import { SearchBar } from "@/components/common/SearchBar";
 
 // Interface for token metadata from IPFS
 interface TokenMetadata {
@@ -496,8 +497,8 @@ const { address, isConnected } = useAppKitAccount();
 
               </div>
 
-              {/* Centered controls row: live indicator + search */}
-              <div className="flex items-center gap-4">
+              {/* Live indicator (row 1) */}
+              <div className="flex justify-center">
                 {liveStreamCount > 0 && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -510,25 +511,21 @@ const { address, isConnected } = useAppKitAccount();
                     <span>{liveStreamCount} live</span>
                   </motion.div>
                 )}
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="w-full max-w-md mx-auto"
-                >
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Search projects..."
-                      value={searchQuery}
-                      onChange={handleSearch}
-                      aria-label="Search projects"
-                      className="w-full bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 placeholder:text-center text-center focus:outline-none focus:border-blue-500/60 focus:bg-gray-800/90 transition-all duration-300 text-sm shadow-xl"
-                    />
-                  </div>
-                </motion.div>
               </div>
+
+              {/* Search (row 2) - same width/position as Explore Agents */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="w-full mt-2 mb-8 px-4"
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(v) => handleSearch({ target: { value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                  placeholder="Search projects..."
+                />
+              </motion.div>
             </div>
           </div>
 
