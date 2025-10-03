@@ -58,6 +58,8 @@
       if (agentInfoUrl) {
         const response = await fetch(agentInfoUrl);
         agentInfo = await response.json();
+        // Update header once info is loaded
+        updateAgentHeader();
       }
     } catch (error) {
       console.error("Error fetching agent info:", error);
@@ -431,27 +433,31 @@
     }
 
     /* Chat Panel with dynamic sizing */
-    #agent-panel {
-        position: absolute;
-        bottom: 80px;
-        right: 0;
-        width: min(${sizeConfig.maxWidth}, 85vw);
-        min-width: ${sizeConfig.minWidth || "300px"};
-        aspect-ratio: 1 / 1.4;
-        max-height: 85vh;
-        height: auto;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-        transform: translateY(20px) scale(0.95);
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-    }
+  #agent-panel {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: min(${sizeConfig.maxWidth}, 85vw);
+    min-width: ${sizeConfig.minWidth || "300px"};
+    aspect-ratio: 1 / 1.4;
+    max-height: 85vh;
+    height: auto;
+    background: rgba(2, 6, 23, 0.55); /* slate-950 with opacity */
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    color: #e5e7eb; /* text-gray-200 */
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-sizing: border-box;
+  }
 
     #agent-panel.open {
         transform: translateY(0) scale(1);
@@ -482,54 +488,75 @@
     }
 
     /* Header */
-    #agent-header {
-        padding: 20px;
-        background: linear-gradient(135deg, ${config.primaryColor}, #1e40af);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
+  #agent-header {
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(25, 53, 119, 0.9), rgba(17, 24, 39, 0.9));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
 
     #agent-header:hover {
         background: linear-gradient(135deg, #1e40af, ${config.primaryColor});
     }
 
-    .agent-agent-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+  .agent-agent-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-    .agent-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: 600;
-        flex-shrink: 0;
-    }
+  .agent-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.12), 0 6px 14px rgba(0,0,0,0.35);
+  }
 
-    .agent-agent-details h3 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-    }
+  .agent-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-    .agent-status {
-        margin: 0;
-        font-size: 12px;
-        opacity: 0.9;
-        display: flex;
-        align-items: center;
-        gap: 4px;
+  .agent-avatar span {
+    color: #e5e7eb;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.4px;
+  }
+
+  .agent-agent-details h3 {
+    margin: 0 0 2px 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     }
+  .agent-agent-details { line-height: 1.1; }
+
+  .agent-status {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+  }
 
     .agent-status::before {
         content: '';
@@ -565,33 +592,33 @@
     }
 
     /* Messages */
-    #agent-messages {
-        flex: 1;
-        padding: 20px;
-        overflow-y: auto;
-        background: #f8fafc;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
+  #agent-messages {
+    flex: 1;
+    padding: 18px;
+    overflow-y: auto;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
 
     #agent-panel.minimized #agent-messages {
         display: none;
     }
 
-    .agent-message {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-    }
+  .agent-message {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
 
     .agent-message.user {
         flex-direction: row-reverse;
     }
 
-    .agent-message-avatar {
-        width: 32px;
-        height: 32px;
+  .agent-message-avatar {
+    width: 32px;
+    height: 32px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -599,6 +626,11 @@
         font-size: 12px;
         font-weight: 600;
         flex-shrink: 0;
+        overflow: hidden;
+        background: rgba(255,255,255,0.18);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        margin-top: 2px; /* visually center with bubble */
     }
 
     .agent-message.user .agent-message-avatar {
@@ -606,48 +638,69 @@
         color: white;
     }
 
-    .agent-message.bot .agent-message-avatar {
-        background: #e5e7eb;
-        color: #6b7280;
-    }
+  .agent-message.bot .agent-message-avatar {
+    background: rgba(255,255,255,0.18);
+    color: #ffffff;
+  }
 
-    .agent-message-content {
-        max-width: 75%;
-        padding: 12px 16px;
-        border-radius: 18px;
-        line-height: 1.4;
-        word-wrap: break-word;
-        position: relative;
-    }
+  .agent-message-content {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    position: relative; /* for absolutely positioned audio button */
+  }
 
-    .agent-message.user .agent-message-content {
-        background: ${config.primaryColor};
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
+  .agent-message.user .agent-message-content {
+    background: ${config.primaryColor};
+    color: white;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 6px 16px rgba(19,102,217,0.25);
+  }
 
-    .agent-message.bot .agent-message-content {
-        background: white;
-        color: #374151;
-        border: 1px solid #e5e7eb;
-        border-bottom-left-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+  .agent-message.bot .agent-message-content {
+    background: rgba(255,255,255,0.08);
+    color: #e5e7eb;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-bottom-left-radius: 6px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  }
 
-    .agent-timestamp {
-        font-size: 11px;
-        color: #9ca3af;
-        text-align: center;
-        margin-top: 4px;
-    }
+  /* Improve text and audio control layout inside message content */
+  .agent-message-content .agent-audio-control {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 1;
+  }
+
+  .agent-message-content .agent-message-text {
+    white-space: pre-wrap;
+    padding-right: 34px; /* room for audio control */
+  }
+
+  .agent-timestamp {
+    font-size: 11px;
+    color: #9ca3af;
+    text-align: left;
+    margin-top: 6px;
+  }
+
+  .agent-message.user .agent-timestamp {
+    text-align: right;
+    color: rgba(255,255,255,0.8);
+  }
 
     /* Input Area */
-    #agent-input-area {
-        padding: 16px 20px 20px;
-        background: white;
-        border-top: 1px solid #e5e7eb;
-        flex-shrink: 0;
-    }
+  #agent-input-area {
+    padding: 14px 18px 18px;
+    background: rgba(2, 6, 23, 0.55);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
 
     #agent-panel.minimized #agent-input-area {
         display: none;
@@ -660,45 +713,47 @@
         gap: 8px;
     }
 
-    #agent-input {
-        flex: 1;
-        padding: 12px 16px;
-        border: 1px solid #e5e7eb;
-        border-radius: 20px;
-        font-size: 14px;
-        outline: none;
-        resize: none;
-        font-family: inherit;
-        max-height: 100px;
-        min-height: 44px;
-        transition: border-color 0.2s;
-        background: #f9fafb;
-    }
+  #agent-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 22px;
+    font-size: 14px;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    max-height: 100px;
+    min-height: 44px;
+    transition: border-color 0.2s, background 0.2s;
+    background: rgba(255,255,255,0.06);
+    color: #e5e7eb;
+  }
 
-    #agent-input:focus {
-        border-color: ${config.primaryColor};
-        background: white;
-    }
+  #agent-input:focus {
+    border-color: ${config.primaryColor};
+    background: rgba(255,255,255,0.1);
+  }
 
     #agent-input::placeholder {
         color: #9ca3af;
     }
 
-    #agent-send {
-        background: ${config.primaryColor};
-        border: none;
-        border-radius: 50%;
-        width: 44px;
-        height: 44px;
-        color: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        transition: all 0.2s;
-        flex-shrink: 0;
-    }
+  #agent-send {
+    background: ${config.primaryColor};
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    box-shadow: 0 8px 18px rgba(19,102,217,0.35);
+  }
 
     #agent-send:hover:not(:disabled) {
         background: #1e40af;
@@ -927,6 +982,9 @@
         #agent-input-area {
             padding: 12px 16px 16px;
         }
+    .agent-message-content .agent-message-text {
+      padding-right: 30px; /* slightly smaller on mobile */
+    }
     }
 
     /* Extra small screens for large size */
@@ -996,24 +1054,39 @@
       <div id="agent-header">
         <div class="agent-agent-info">
           <div class="agent-avatar">
-            AI
+            <img id="agent-avatar-img" alt="${config.agentName}" style="display:none;" />
+            <span id="agent-avatar-fallback">${(config.agentName && config.agentName[0]) ? config.agentName[0].toUpperCase() : 'AI'}</span>
           </div>
           <div class="agent-agent-details">
-            <h3>${config.agentName}</h3>
-            <p class="agent-status">Online</p>
+            <h3 id="agent-name">${config.agentName}</h3>
+            <p class="agent-status" id="agent-role">AI Assistant</p>
           </div>
         </div>
         <div class="agent-controls">
-          <button id="agent-minimize" class="agent-control-btn"></button>
-          <button id="agent-close" class="agent-control-btn" title="Close">-</button>
+          <button id="agent-minimize" class="agent-control-btn" title="Minimize" aria-label="Minimize">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="11" width="14" height="2" fill="currentColor"/>
+            </svg>
+          </button>
+          <button id="agent-close" class="agent-control-btn" title="Close" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
       </div>
       
       <div id="agent-messages">
         <div class="agent-message bot">
-          <div class="agent-message-avatar">AI</div>
+          <div class="agent-message-avatar" id="agent-first-msg-avatar">AI</div>
           <div class="agent-message-content">
-            ${config.greeting || `How can I help you today?`}
+            <button class="agent-audio-control" data-message-text="${(config.greeting || `How can I help you today?`).replace(/"/g, '&quot;')}" data-audio-id="0" title="Play message">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <div class="agent-message-text">${config.greeting || `How can I help you today?`}</div>
             <div class="agent-timestamp">${new Date().toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -1067,6 +1140,49 @@
   document.body.appendChild(widget);
 
   // Widget functionality
+  function updateAgentHeader() {
+    try {
+      const avatarImgEl = document.getElementById("agent-avatar-img");
+      const avatarFallbackEl = document.getElementById("agent-avatar-fallback");
+      const nameEl = document.getElementById("agent-name");
+      const roleEl = document.getElementById("agent-role");
+      const firstMsgAvatar = document.getElementById("agent-first-msg-avatar");
+
+      if (agentInfo) {
+        if (agentInfo.agentName && nameEl) nameEl.textContent = agentInfo.agentName;
+        if (roleEl) roleEl.textContent = agentInfo.role || "AI Assistant";
+        if (agentInfo.avatar_img && avatarImgEl && avatarFallbackEl) {
+          avatarImgEl.src = `https://ipfs.erebrus.io/ipfs/${agentInfo.avatar_img}`;
+          avatarImgEl.style.display = 'block';
+          avatarFallbackEl.style.display = 'none';
+          avatarImgEl.onerror = () => {
+            avatarImgEl.style.display = 'none';
+            avatarFallbackEl.style.display = 'block';
+          };
+        }
+
+        // Also update the avatar in the very first message bubble, if present
+        if (firstMsgAvatar && agentInfo.avatar_img) {
+          try {
+            let url = agentInfo.avatar_img;
+            if (!url.startsWith('http')) url = `https://ipfs.erebrus.io/ipfs/${url}`;
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = agentInfo.agentName || 'AI';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+            img.onerror = () => {
+              firstMsgAvatar.textContent = 'AI';
+            };
+            firstMsgAvatar.innerHTML = '';
+            firstMsgAvatar.appendChild(img);
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to update agent header', e);
+    }
+  }
+
   const button = document.getElementById("agent-button");
   const panel = document.getElementById("agent-panel");
   const closeBtn = document.getElementById("agent-close");
@@ -1174,7 +1290,7 @@
       messageDiv.innerHTML = `
         <div class="agent-message-avatar">You</div>
         <div class="agent-message-content">
-          ${escapeHtml(content)}
+          <div class="agent-message-text">${escapeHtml(content)}</div>
           <div class="agent-timestamp">${timestamp}</div>
         </div>
       `;
@@ -1182,19 +1298,15 @@
       // Always add audio controls for bot messages (even if no audio URL initially)
       const audioControls = `
         <button class="agent-audio-control" data-message-text="${escapeHtml(content)}" data-audio-id="${messagesContainer.children.length}" title="Play message">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
-          </svg>
+          <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n            <path d=\"M8 5V19L19 12L8 5Z\" fill=\"currentColor\"/>\n          </svg>
         </button>
       `;
 
       messageDiv.innerHTML = `
         <div class="agent-message-avatar">AI</div>
         <div class="agent-message-content">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            ${audioControls}
-            <div>${escapeHtml(content)}</div>
-          </div>
+          ${audioControls}
+          <div class="agent-message-text">${escapeHtml(content)}</div>
           <div class="agent-timestamp">${timestamp}</div>
         </div>
       `;
